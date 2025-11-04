@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { Button, Input, Text } from '../../components/common';
+import { theme } from '../../theme';
 
 export const LoginScreen = ({ navigation }: any) => {
     const [emailOrUsername, setEmailOrUsername] = useState('');
@@ -24,92 +26,82 @@ export const LoginScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>🎣 Fishable</Text>
-            <Text style={styles.subtitle}>Connectez-vous</Text>
-
-            <TextInput
-                style={styles.input}
-                placeholder="Email ou nom d'utilisateur"
-                value={emailOrUsername}
-                onChangeText={setEmailOrUsername}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-
-            <TextInput
-                style={styles.input}
-                placeholder="Mot de passe"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
-
-            <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>
-                    {loading ? 'Connexion...' : 'Se connecter'}
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+            <View style={styles.header}>
+                <Text variant="h1" align="center">🎣</Text>
+                <Text variant="h2" align="center" weight="bold">Fishable</Text>
+                <Text variant="body" color="secondary" align="center" style={styles.subtitle}>
+                    Connectez-vous à votre compte
                 </Text>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.link}>Pas encore de compte ? S'inscrire</Text>
-            </TouchableOpacity>
+            <View style={styles.form}>
+                <Input
+                    label="Email ou nom d'utilisateur"
+                    value={emailOrUsername}
+                    onChangeText={setEmailOrUsername}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    placeholder="john@example.com ou john"
+                />
 
-            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text style={styles.link}>Mot de passe oublié ?</Text>
-            </TouchableOpacity>
-        </View>
+                <Input
+                    label="Mot de passe"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    placeholder="••••••••"
+                />
+
+                <Button
+                    title="Se connecter"
+                    onPress={handleLogin}
+                    loading={loading}
+                    disabled={loading}
+                    fullWidth
+                    size="lg"
+                />
+
+                <Button
+                    title="Pas encore de compte ? S'inscrire"
+                    onPress={() => navigation.navigate('Register')}
+                    variant="ghost"
+                    fullWidth
+                    style={styles.linkButton}
+                />
+
+                <Button
+                    title="Mot de passe oublié ?"
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                    variant="ghost"
+                    fullWidth
+                    size="sm"
+                />
+            </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
+        backgroundColor: theme.colors.background.default,
     },
-    title: {
-        fontSize: 48,
-        textAlign: 'center',
-        marginBottom: 10,
+    content: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: theme.layout.screenPadding,
+    },
+    header: {
+        marginBottom: theme.spacing[8],
     },
     subtitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 30,
+        marginTop: theme.spacing[2],
     },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        padding: 15,
-        marginBottom: 15,
-        borderRadius: 8,
-        fontSize: 16,
+    form: {
+        width: '100%',
     },
-    button: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 15,
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: '#fff',
-        textAlign: 'center',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    link: {
-        color: '#007AFF',
-        textAlign: 'center',
-        marginTop: 10,
+    linkButton: {
+        marginTop: theme.spacing[2],
     },
 });
