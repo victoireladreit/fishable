@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
@@ -8,7 +7,7 @@ interface AuthContextType {
     session: Session | null;
     loading: boolean;
     signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
-    signIn: (email: string, password: string) => Promise<{ error: any }>;
+    signIn: (emailOrUsername: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -40,6 +39,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signUp = async (email: string, password: string, username: string) => {
         try {
+            // Vérifier si le username existe déjà
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('username', username)
+                .single();
+
+            if (existingProfile) {
+                return { error: { message: 'Ce nom d\'utilisateur est déjà pris' } };
+            }
+
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
@@ -70,14 +80,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const signIn = async (email: string, password: string) => {
+    const signIn = async (emailOrUsername: string, password: string) => {
         try {
+            let email = emailOrUsername;
+
+            // Vérifier si c'est un email ou un username
+            if (!emailOrUsername.includes('@')) {
+                // C'est un username, récupérer l'email associé
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('username', emailOrUsername)
+                    .single();
+
+                if (profileError || !profile) {
+                    return { error: { message: 'Nom d\'utilisateur ou mot de passe incorrect' } };
+                }
+
+                // Récupérer l'email depuis auth.users via l'ID
+                const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.id);
+
+                if (userError || !user) {
+                    // Fallback: utiliser une fonction RPC côté serveur
+                    const { data: emailData, error: emailError } = await supabase
+                        .rpc('get_email_by_username', { username_input: emailOrUsername });
+
+                    if (emailError || !emailData) {
+                        return { error: { message: 'Nom d\'utilisateur ou mot de passe incorrect' } };
+                    }
+
+                    email = emailData;
+                } else {
+                    email = user.email!;
+                }
+            }
+
             const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
-            return { error };
+            if (error) {
+                return { error: { message: 'Email/nom d\'utilisateur ou mot de passe incorrect' } };
+            }
+
+            return { error: null };
         } catch (error) {
             return { error };
         }

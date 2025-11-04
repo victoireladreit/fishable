@@ -3,19 +3,19 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { useAuth } from '../../contexts/AuthContext';
 
 export const LoginScreen = ({ navigation }: any) => {
-    const [email, setEmail] = useState('');
+    const [emailOrUsername, setEmailOrUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { signIn } = useAuth();
 
     const handleLogin = async () => {
-        if (!email || !password) {
+        if (!emailOrUsername || !password) {
             Alert.alert('Erreur', 'Veuillez remplir tous les champs');
             return;
         }
 
         setLoading(true);
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(emailOrUsername, password);
         setLoading(false);
 
         if (error) {
@@ -30,9 +30,9 @@ export const LoginScreen = ({ navigation }: any) => {
 
             <TextInput
                 style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
+                placeholder="Email ou nom d'utilisateur"
+                value={emailOrUsername}
+                onChangeText={setEmailOrUsername}
                 autoCapitalize="none"
                 keyboardType="email-address"
             />
