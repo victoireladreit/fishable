@@ -49,20 +49,18 @@ export const Button: React.FC<ButtonProps> = ({
         textStyle,
     ];
 
+    const isButtonDisabled = disabled || loading;
+
+    console.log("Button", typeof loading);
+
     return (
         <TouchableOpacity
             style={buttonStyles}
             onPress={onPress}
-            disabled={disabled || loading}
+            disabled={isButtonDisabled}
             activeOpacity={0.7}
         >
-            {loading ? (
-                <ActivityIndicator
-                    color={variant === 'outline' ? theme.colors.primary[500] : theme.colors.white}
-                />
-            ) : (
-                <Text style={textStyles}>{title}</Text>
-            )}
+            <Text style={textStyles}>{title}</Text>
         </TouchableOpacity>
     );
 };
