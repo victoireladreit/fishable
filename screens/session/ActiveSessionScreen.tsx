@@ -1,14 +1,31 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
-import { FishingSessionsService, FishingSession } from '../../services';
-import { colors } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
+import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
-import { useTimer } from '../../hooks/useTimer';
+import { useTimer, formatTime } from '../../hooks';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
+
+type Visibility = 'public' | 'region' | 'private';
+
+const visibilityOptions: { key: Visibility; label: string }[] = [
+    { key: 'private', label: 'Privé' },
+    { key: 'region', label: 'Région' },
+    { key: 'public', label: 'Public' },
+];
+
+const visibilityInfo = `
+• Privé : Personne ne peut voir la localisation de votre session.\n
+• Région : Seule la région (ex: "Haute-Savoie") est visible, pas le point GPS exact.\n
+• Public : La localisation GPS exacte de votre session est visible par les autres utilisateurs.
+`;
+
+const INPUT_HEIGHT = 50;
 
 export const ActiveSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
@@ -17,134 +34,226 @@ export const ActiveSessionScreen = () => {
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const { seconds: elapsedTime, formatTime, start, setSeconds } = useTimer(0);
+    const [locationName, setLocationName] = useState('');
+    const [region, setRegion] = useState('');
+    const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
+
+    const { seconds, start, stop } = useTimer();
 
     useEffect(() => {
+        let isActive = true;
         const fetchSession = async () => {
-            setLoading(true);
             try {
                 const fetchedSession = await FishingSessionsService.getSessionById(sessionId);
-                if (fetchedSession) {
-                    setSession(fetchedSession);
-                    // Une fois la session chargée, calculer le temps écoulé et mettre à jour le timer
-                    const initialElapsedTime = Math.floor((Date.now() - new Date(fetchedSession.started_at).getTime()) / 1000);
-                    setSeconds(initialElapsedTime);
-                    start(); // Démarrer le timer
-                } else {
-                    Alert.alert('Erreur', 'Session introuvable.');
-                    navigation.goBack();
+                if (isActive) {
+                    if (fetchedSession) {
+                        setSession(fetchedSession);
+                        setLocationName(fetchedSession.location_name || '');
+                        setRegion(fetchedSession.region || '');
+                        setLocationVisibility(fetchedSession.location_visibility || 'region');
+                    } else {
+                        Alert.alert('Erreur', 'Session invalide ou introuvable.');
+                        navigation.goBack();
+                    }
                 }
             } catch (error) {
-                console.error('Erreur chargement session:', error);
-                Alert.alert('Erreur', 'Impossible de charger la session.');
-                navigation.goBack();
+                if (isActive) console.error('Erreur chargement session:', error);
             } finally {
-                setLoading(false);
+                if (isActive) setLoading(false);
             }
         };
         fetchSession();
-    }, [sessionId, navigation, setSeconds, start]);
-
-    const handleEndSession = useCallback(async () => {
-        Alert.alert(
-            'Terminer la session',
-            'Êtes-vous sûr de vouloir terminer cette session ?',
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Terminer',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await FishingSessionsService.updateSession(sessionId, { status: 'completed', ended_at: new Date().toISOString() });
-                            Alert.alert('Session terminée', 'Votre session a bien été enregistrée.');
-                            navigation.popToTop();
-                        } catch (error) {
-                            console.error('Erreur fin de session:', error);
-                            Alert.alert('Erreur', 'Impossible de terminer la session.');
-                        }
-                    },
-                },
-            ]
-        );
+        return () => { isActive = false; };
     }, [sessionId, navigation]);
 
+    useEffect(() => {
+        if (session && session.started_at) {
+            const initialSeconds = Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000);
+            start(initialSeconds);
+        }
+        return () => stop();
+    }, [session, start, stop]);
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        const updates: FishingSessionUpdate = { location_name: locationName, region, location_visibility: locationVisibility };
+        try {
+            await FishingSessionsService.updateSession(sessionId, updates);
+            Alert.alert('Succès', 'Les informations ont été mises à jour.');
+        } catch (error) {
+            console.error('Erreur sauvegarde session:', error);
+            Alert.alert('Erreur', 'Impossible de sauvegarder.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleEndSession = () => {
+        if (!session?.started_at) return;
+
+        Alert.alert('Terminer la session', 'Êtes-vous sûr ?', [
+            { text: 'Annuler', style: 'cancel' },
+            {
+                text: 'Terminer',
+                style: 'destructive',
+                onPress: async () => {
+                    stop();
+
+                    // Calcul de la durée en minutes
+                    const startTime = new Date(session.started_at).getTime();
+                    const endTime = Date.now();
+                    const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
+
+                    try {
+                        await FishingSessionsService.updateSession(sessionId, { 
+                            status: 'completed', 
+                            ended_at: new Date(endTime).toISOString(),
+                            duration_minutes: durationMinutes,
+                        });
+                        navigation.popToTop();
+                    } catch (error) {
+                        console.error('Erreur fin de session:', error);
+                    }
+                },
+            },
+        ]);
+    };
+
     if (loading || !session) {
-        return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color={colors.primary['500']} />
-            </View>
-        );
+        return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.container}>
-                <Text style={styles.title}>{session.location_name}</Text>
-                <View style={styles.timerContainer}>
-                    <Text style={styles.timerText}>{formatTime(elapsedTime)}</Text>
-                </View>
-                <Text style={styles.infoText}>Session démarrée le {new Date(session.started_at!).toLocaleString('fr-FR')}</Text>
+        <ScrollView 
+            style={styles.scrollContainer} 
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+        >
+            <View style={styles.timerContainer}><Text style={styles.timerText}>{formatTime(seconds)}</Text></View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Nom du Spot</Text>
+                <TextInput style={styles.input} value={locationName} onChangeText={setLocationName} placeholder="Ex: Ponton du lac" placeholderTextColor={theme.colors.text.disabled} />
             </View>
 
-            <TouchableOpacity style={styles.endButton} onPress={handleEndSession}>
-                <Text style={styles.buttonText}>Terminer la session</Text>
-            </TouchableOpacity>
-        </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Région / Ville</Text>
+                <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Ex: Annecy, Haute-Savoie" placeholderTextColor={theme.colors.text.disabled} />
+            </View>
+
+            <View style={styles.formGroup}>
+                <View style={styles.labelContainer}>
+                    <Text style={styles.label}>Visibilité de la localisation</Text>
+                    <TouchableOpacity onPress={() => Alert.alert('Niveaux de visibilité', visibilityInfo)}>
+                        <Ionicons name="information-circle-outline" size={theme.iconSizes.sm} color={theme.colors.primary[500]} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.visibilitySelector}>
+                    {visibilityOptions.map(opt => (
+                        <TouchableOpacity
+                            key={opt.key}
+                            style={[styles.visibilityOption, locationVisibility === opt.key && styles.visibilityOptionSelected]}
+                            onPress={() => setLocationVisibility(opt.key)}
+                        >
+                            <Text style={[styles.visibilityText, locationVisibility === opt.key && styles.visibilityTextSelected]}>{opt.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View style={{width: '100%', marginTop: theme.spacing[4]}}>
+                <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving}>
+                    {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.endButton]} onPress={handleEndSession}>
+                    <Text style={styles.buttonText}>Terminer la session</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
-        alignItems: 'center',
+    scrollContainer: { flex: 1, backgroundColor: theme.colors.background.default },
+    container: { 
+        flexGrow: 1, 
+        justifyContent: 'center', 
+        padding: theme.layout.containerPadding 
     },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.primary['900'],
-        marginBottom: 20,
-        marginTop: 30,
-    },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.default },
     timerContainer: {
-        backgroundColor: '#f5f5f5',
-        padding: 20,
-        borderRadius: 100,
-        width: 200,
-        height: 200,
+        width: 220,
+        height: 220,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 30,
+        backgroundColor: theme.colors.primary[50],
+        borderRadius: theme.borderRadius.full,
         borderWidth: 5,
-        borderColor: colors.primary['500'],
+        borderColor: theme.colors.primary[200],
+        marginBottom: theme.spacing[8],
+        alignSelf: 'center',
     },
     timerText: {
-        fontSize: 30,
-        fontWeight: 'bold',
-        color: colors.primary['900'],
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['4xl'],
+        color: theme.colors.primary[700],
     },
-    infoText: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 40,
+    formGroup: { width: '100%', marginBottom: theme.spacing[5] },
+    labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    label: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+        fontWeight: theme.typography.fontWeight.medium,
+        marginBottom: theme.spacing[3],
     },
-    endButton: {
-        backgroundColor: colors.error.main,
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 8,
+    input: {
+        backgroundColor: theme.colors.background.paper,
+        color: theme.colors.text.primary,
+        height: INPUT_HEIGHT,
+        borderWidth: 1,
+        borderColor: theme.colors.border.main,
+        borderRadius: theme.borderRadius.base,
+        paddingHorizontal: theme.spacing[4],
+        fontSize: theme.typography.fontSize.base,
     },
+    visibilitySelector: {
+        flexDirection: 'row',
+        width: '100%',
+        backgroundColor: theme.colors.gray[100],
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing[1],
+    },
+    visibilityOption: { flex: 1, paddingVertical: theme.spacing[2], borderRadius: theme.borderRadius.base, alignItems: 'center' },
+    visibilityOptionSelected: {
+        backgroundColor: theme.colors.white,
+        ...theme.shadows.sm,
+    },
+    visibilityText: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
+        fontWeight: theme.typography.fontWeight.medium,
+    },
+    visibilityTextSelected: { color: theme.colors.primary[600] },
+    button: {
+        height: INPUT_HEIGHT,
+        justifyContent: 'center',
+        borderRadius: theme.borderRadius.base,
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: theme.spacing[3],
+        ...theme.shadows.base,
+    },
+    saveButton: { backgroundColor: theme.colors.primary[500] },
+    endButton: { backgroundColor: theme.colors.error.main, ...theme.shadows.none },
+    buttonDisabled: { backgroundColor: theme.colors.primary[300] },
     buttonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.inverse,
+        fontWeight: theme.typography.fontWeight.bold,
     },
 });

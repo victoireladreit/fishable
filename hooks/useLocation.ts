@@ -1,46 +1,55 @@
-import * as Location from 'expo-location'
-import { useEffect, useState } from 'react'
+import { useState } from 'react';
+import * as Location from 'expo-location';
+import { Alert } from 'react-native';
 
 export const useLocation = () => {
-    const [location, setLocation] = useState<Location.LocationObject | null>(null)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    const [loading, setLoading] = useState(false)
+    const [location, setLocation] = useState<Location.LocationObject | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const requestPermission = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync()
+    const getLocation = async () => {
+        setLoading(true);
+        setErrorMsg(null);
+
+        let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-            setErrorMsg('Permission de localisation refusée')
-            return false
-        }
-        return true
-    }
-
-    const getCurrentLocation = async () => {
-        setLoading(true)
-        const hasPermission = await requestPermission()
-        if (!hasPermission) {
-            setLoading(false)
-            return
+            setErrorMsg('La permission d\'accès à la localisation a été refusée.');
+            Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la localisation pour utiliser cette fonctionnalité.');
+            setLoading(false);
+            return null;
         }
 
-        const loc = await Location.getCurrentPositionAsync({})
-        setLocation(loc)
-        setLoading(false)
-    }
+        try {
+            const currentLocation = await Location.getCurrentPositionAsync({});
+            setLocation(currentLocation);
+            setLoading(false);
+            return currentLocation;
+        } catch (error) {
+            console.error("Erreur lors de la récupération de la position :", error);
+            setErrorMsg("Impossible d'obtenir la position actuelle.");
+            Alert.alert('Erreur de localisation', "Impossible d'obtenir la position actuelle. Veuillez vérifier vos paramètres GPS.");
+            setLoading(false);
+            return null;
+        }
+    };
 
-    const watchPosition = async () => {
-        const hasPermission = await requestPermission()
-        if (!hasPermission) return
+    /**
+     * Convertit les coordonnées GPS en une adresse lisible (ville, région).
+     */
+    const getRegionFromCoords = async (coords: { latitude: number; longitude: number; }) => {
+        try {
+            const geocode = await Location.reverseGeocodeAsync(coords);
+            if (geocode.length > 0) {
+                const { city, region, country } = geocode[0];
+                // Formatte l'adresse pour être lisible, ex: "Annecy, Haute-Savoie"
+                return [city, region].filter(Boolean).join(', ');
+            }
+            return null;
+        } catch (error) {
+            console.error("Erreur de géocodage inversé :", error);
+            return null;
+        }
+    };
 
-        return Location.watchPositionAsync(
-            { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 5 },
-            (loc) => setLocation(loc)
-        )
-    }
-
-    useEffect(() => {
-        getCurrentLocation()
-    }, [])
-
-    return { location, errorMsg, loading, getCurrentLocation, watchPosition }
-}
+    return { getLocation, getRegionFromCoords, location, loading, errorMsg };
+};

@@ -1,44 +1,46 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
-export const useTimer = (initialSeconds = 0) => {
-    const [seconds, setSeconds] = useState(initialSeconds);
-    const [isRunning, setIsRunning] = useState(false);
+// Fonction utilitaire pure pour formater le temps, séparée du hook.
+export const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+
+    return [hours, minutes, seconds]
+        .map((v) => String(v).padStart(2, '0'))
+        .join(':');
+};
+
+export const useTimer = () => {
+    const [seconds, setSeconds] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const start = useCallback(() => {
-        if (isRunning) return;
-        setIsRunning(true);
-        intervalRef.current = setInterval(() => {
-            setSeconds((prev) => prev + 1);
-        }, 1000);
-    }, [isRunning]);
-
-    const pause = () => {
-        setIsRunning(false);
+    // `useCallback` avec [] garantit que la fonction est créée UNE SEULE FOIS.
+    // Elle est donc stable et ne provoquera pas de re-rendus inutiles.
+    const start = useCallback((initialSeconds: number = 0) => {
         if (intervalRef.current) clearInterval(intervalRef.current);
-    };
 
-    const reset = () => {
-        pause();
-        setSeconds(0);
-    };
+        setSeconds(initialSeconds);
 
-    useEffect(() => {
-        // Démarrer le timer automatiquement si des secondes initiales sont fournies
-        if (initialSeconds > 0) {
-            start();
+        intervalRef.current = setInterval(() => {
+            // La mise à jour fonctionnelle est la clé : elle évite les problèmes de closure.
+            setSeconds(prevSeconds => prevSeconds + 1);
+        }, 1000);
+    }, []);
+
+    // La fonction `stop` est également stable.
+    const stop = useCallback(() => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
         }
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, [initialSeconds]);
+    }, []);
 
-    const formatTime = (timeInSeconds: number) => {
-        const hrs = Math.floor(timeInSeconds / 3600);
-        const mins = Math.floor((timeInSeconds % 3600) / 60);
-        const secs = timeInSeconds % 60;
-        return [hrs, mins, secs].map((v) => String(v).padStart(2, '0')).join(':');
-    };
+    // Le `useEffect` de nettoyage s'assure que le timer est toujours arrêté
+    // lorsque le composant est retiré de l'écran.
+    useEffect(() => {
+        return () => stop();
+    }, [stop]);
 
-    return { seconds, setSeconds, formatTime, isRunning, start, pause, reset };
+    return { seconds, start, stop };
 };

@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionInsert, FishingSessionsService } from '../../services';
 import { colors } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
+import { useLocation } from '../../hooks/useLocation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
 
@@ -14,6 +15,7 @@ export const NewSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const [locationName, setLocationName] = useState('');
     const [loading, setLoading] = useState(false);
+    const { getLocation, getRegionFromCoords, loading: locationLoading } = useLocation();
 
     const handleStartSession = async () => {
         if (!user) {
@@ -28,11 +30,22 @@ export const NewSessionScreen = () => {
 
         setLoading(true);
 
+        const location = await getLocation();
+        let regionName: string | null = null;
+
+        if (location) {
+            regionName = await getRegionFromCoords(location.coords);
+        }
+
         const sessionData: FishingSessionInsert = {
             user_id: user.id,
             location_name: locationName,
             status: 'active',
             started_at: new Date().toISOString(),
+            location_lat: location?.coords.latitude,
+            location_lng: location?.coords.longitude,
+            region: regionName,
+            location_visibility: 'region', // Visibilité par défaut à 'region'
         };
 
         try {
@@ -51,6 +64,8 @@ export const NewSessionScreen = () => {
         }
     };
 
+    const isLoading = loading || locationLoading;
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Nouvelle Session</Text>
@@ -62,11 +77,11 @@ export const NewSessionScreen = () => {
                 placeholderTextColor="#999"
             />
             <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
+                style={[styles.button, isLoading && styles.buttonDisabled]}
                 onPress={handleStartSession}
-                disabled={loading}
+                disabled={isLoading}
             >
-                {loading ? (
+                {isLoading ? (
                     <ActivityIndicator color="#fff" />
                 ) : (
                     <Text style={styles.buttonText}>Démarrer la session</Text>
