@@ -72,7 +72,7 @@ export const LoginScreen = ({ navigation }: any) => {
 
                 <Button
                     title="Mot de passe oublié ?"
-                    onPress={() => navigation.navigate('ForgotPassword')}
+                    onPress={() => navigation.navigate('ForgotPassword')} // implémenter la navigation
                     variant="ghost"
                     fullWidth
                     size="sm"

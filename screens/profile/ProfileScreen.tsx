@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { theme } from '../../theme';
 import { ProfileService, Profile } from '../../services/profile.service';
 import { Ionicons } from '@expo/vector-icons';
+import { useImagePicker } from '../../hooks';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const INPUT_HEIGHT = 50;
 
@@ -15,6 +17,10 @@ export const ProfileScreen = () => {
 
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+    const { pickImage, takePhoto } = useImagePicker();
+    const { showActionSheetWithOptions } = useActionSheet();
 
     const loadProfile = useCallback(async () => {
         if (!user) return;
@@ -24,6 +30,7 @@ export const ProfileScreen = () => {
                 setProfile(userProfile);
                 setFullName(userProfile.full_name || '');
                 setBio(userProfile.bio || '');
+                setAvatarUrl(userProfile.avatar_url);
             }
         } catch (error) {
             console.error("Erreur chargement profil:", error);
@@ -51,45 +58,113 @@ export const ProfileScreen = () => {
         }
     };
 
-    const handleSignOut = () => {
-        Alert.alert(
-            "Se déconnecter",
-            "Êtes-vous sûr de vouloir vous déconnecter ?",
-            [
-                { text: "Annuler", style: "cancel" },
-                { text: "Se déconnecter", style: "destructive", onPress: signOut },
-            ]
+    const handleAvatarChange = async (imageAsset: { uri: string } | null) => {
+        if (!user || !imageAsset || !imageAsset.uri) return;
+        setLoading(true);
+        try {
+            const newAvatarUrl = await ProfileService.uploadAvatar(user.id, imageAsset.uri);
+            await ProfileService.updateProfile(user.id, { avatar_url: newAvatarUrl });
+            setAvatarUrl(newAvatarUrl);
+            Alert.alert("Succès", "Votre photo de profil a été mise à jour.");
+        } catch (error) {
+            Alert.alert("Erreur", "Impossible de changer la photo de profil.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteAvatar = () => {
+        if (!avatarUrl || !user) return;
+        Alert.alert("Supprimer la photo", "Êtes-vous sûr de vouloir supprimer votre photo de profil ?", [
+            { text: "Annuler", style: "cancel" },
+            {
+                text: "Supprimer", style: "destructive",
+                onPress: async () => {
+                    setLoading(true);
+                    try {
+                        await ProfileService.deleteAvatar(avatarUrl);
+                        await ProfileService.updateProfile(user.id, { avatar_url: null });
+                        setAvatarUrl(null);
+                        Alert.alert("Succès", "Votre photo de profil a été supprimée.");
+                    } catch (error) {
+                        Alert.alert("Erreur", "Impossible de supprimer la photo de profil.");
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+            },
+        ]);
+    };
+
+    const showAvatarOptions = () => {
+        const options = ["Prendre une photo", "Choisir depuis la photothèque"];
+        let destructiveButtonIndex: number | undefined = undefined;
+        
+        if (avatarUrl) {
+            options.push("Supprimer la photo");
+            destructiveButtonIndex = options.length - 1; // L'index de "Supprimer"
+        }
+        
+        options.push("Annuler");
+        const cancelButtonIndex = options.length - 1;
+
+        showActionSheetWithOptions(
+            {
+                options,
+                cancelButtonIndex,
+                destructiveButtonIndex, // On passe l'index ici
+                // On peut même styler le texte destructif pour être sûr
+                destructiveColor: theme.colors.error.main,
+            },
+            async (buttonIndex) => {
+                if (buttonIndex === 0) { // Prendre une photo
+                    const photo = await takePhoto();
+                    handleAvatarChange(photo);
+                } else if (buttonIndex === 1) { // Choisir depuis la photothèque
+                    const image = await pickImage();
+                    handleAvatarChange(image);
+                } else if (buttonIndex === destructiveButtonIndex) { // Supprimer
+                    handleDeleteAvatar();
+                }
+            }
         );
     };
 
-    if (loading && !profile) { // Afficher le loader uniquement au premier chargement
+    const handleSignOut = () => {
+        Alert.alert("Se déconnecter", "Êtes-vous sûr de vouloir vous déconnecter ?", [
+            { text: "Annuler", style: "cancel" },
+            { text: "Se déconnecter", style: "destructive", onPress: signOut },
+        ]);
+    };
+
+    if (loading && !profile) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={handleSignOut} disabled={isEditing}>
-                    <Ionicons name={"log-out-outline"} size={theme.iconSizes.lg} color={isEditing ? theme.colors.text.disabled : theme.colors.error.main} />
-                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSignOut} disabled={isEditing}><Ionicons name={"log-out-outline"} size={theme.iconSizes.lg} color={isEditing ? theme.colors.text.disabled : theme.colors.error.main} /></TouchableOpacity>
                 <Text style={styles.title}>Mon Profil</Text>
-                <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
-                    <Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
-                </TouchableOpacity>
+                <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}><Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} /></TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContentContainer} keyboardShouldPersistTaps="handled">
+                <View style={styles.avatarContainer}>
+                    <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatar} />
+                </View>
+
+                {isEditing && (
+                    <TouchableOpacity onPress={showAvatarOptions}>
+                        <Text style={styles.changePictureText}>Modifier la photo de profil</Text>
+                    </TouchableOpacity>
+                )}
+
                 {isEditing ? (
-                    <>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Nom complet</Text>
-                            <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Votre nom et prénom" placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Biographie</Text>
-                            <TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio} placeholder="Parlez un peu de vous..." multiline placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-                    </>
+                    <View style={{marginTop: theme.spacing[6]}}>
+                        <View style={styles.formGroup}><Text style={styles.label}>Nom complet</Text><TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Votre nom et prénom" /></View>
+                        <View style={styles.formGroup}><Text style={styles.label}>Biographie</Text><TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio} placeholder="Parlez un peu de vous..." multiline /></View>
+                    </View>
                 ) : (
                     <View style={styles.infoCard}>
                         <View style={styles.infoRow}><Text style={styles.label}>Nom d'utilisateur</Text><Text style={styles.info}>{profile?.username}</Text></View>
@@ -114,22 +189,13 @@ export const ProfileScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background.default },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.layout.screenPadding,
-        paddingVertical: theme.spacing[3],
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border.light,
-    },
-    title: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['xl'],
-        color: theme.colors.text.primary,
-    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.layout.screenPadding, paddingVertical: theme.spacing[3], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
+    title: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['xl'], color: theme.colors.text.primary },
     scrollContentContainer: { flexGrow: 1, padding: theme.layout.containerPadding },
-    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light },
+    avatarContainer: { alignSelf: 'center', marginBottom: theme.spacing[2] },
+    avatar: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: theme.colors.primary[200] },
+    changePictureText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.primary[500], textAlign: 'center', marginBottom: theme.spacing[6] },
+    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
     infoRow: { paddingVertical: theme.spacing[4], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
     label: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     info: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.primary, fontWeight: theme.typography.fontWeight.medium },
