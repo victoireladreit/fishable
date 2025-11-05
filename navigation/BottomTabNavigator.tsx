@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons'; // Assurez-vous d'avoir installé @expo/vector-icons
+import { Ionicons } from '@expo/vector-icons';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
-import { colors } from '../theme';
-import {HomeScreen} from "../screens/home/HomeScreen";
+import { theme } from '../theme';
+import {HomeScreen} from "../screens/home/HomeScreen"; // Importer le thème complet
 
 export type TabParamList = {
     HomeTab: undefined;
@@ -32,8 +32,16 @@ export const BottomTabNavigator = () => {
 
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: colors.primary['500'],
-                tabBarInactiveTintColor: 'gray',
+                tabBarActiveTintColor: theme.colors.primary[500],      // Utilise le thème
+                tabBarInactiveTintColor: theme.colors.text.disabled,  // Utilise le thème
+                tabBarStyle: {
+                    backgroundColor: theme.colors.background.paper, // Fond de la barre d'onglets
+                    borderTopColor: theme.colors.border.light,      // Couleur de la bordure supérieure
+                },
+                tabBarLabelStyle: {
+                    fontFamily: theme.typography.fontFamily.medium,
+                    fontWeight: theme.typography.fontWeight.medium,
+                }
             })}
         >
             <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Accueil' }} />

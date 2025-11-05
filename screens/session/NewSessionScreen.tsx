@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionInsert, FishingSessionsService } from '../../services';
-import { colors } from '../../theme';
+import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { useLocation } from '../../hooks/useLocation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
+
+const INPUT_HEIGHT = 50;
 
 export const NewSessionScreen = () => {
     const { user } = useAuth();
@@ -45,7 +47,7 @@ export const NewSessionScreen = () => {
             location_lat: location?.coords.latitude,
             location_lng: location?.coords.longitude,
             region: regionName,
-            location_visibility: 'region', // Visibilité par défaut à 'region'
+            location_visibility: 'region',
         };
 
         try {
@@ -67,66 +69,76 @@ export const NewSessionScreen = () => {
     const isLoading = loading || locationLoading;
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Nouvelle Session</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Nom du spot (ex: Lac du Salagou)"
-                value={locationName}
-                onChangeText={setLocationName}
-                placeholderTextColor="#999"
-            />
-            <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
-                onPress={handleStartSession}
-                disabled={isLoading}
-            >
-                {isLoading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>Démarrer la session</Text>
-                )}
-            </TouchableOpacity>
-        </View>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.contentContainer}>
+                <Text style={styles.title}>Nouvelle Session</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Nom du spot (ex: Lac du Salagou)"
+                    value={locationName}
+                    onChangeText={setLocationName}
+                    placeholderTextColor={theme.colors.text.disabled}
+                />
+                <TouchableOpacity
+                    style={[styles.button, isLoading && styles.buttonDisabled]}
+                    onPress={handleStartSession}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color={theme.colors.white} />
+                    ) : (
+                        <Text style={styles.buttonText}>🚀 Démarrer la session</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: theme.colors.background.default,
+    },
+    contentContainer: {
+        flex: 1,
         justifyContent: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
+        padding: theme.layout.containerPadding,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['4xl'],
+        color: theme.colors.text.primary,
         textAlign: 'center',
-        marginBottom: 30,
-        color: colors.primary['900'],
+        marginBottom: theme.spacing[10],
     },
     input: {
-        backgroundColor: '#f5f5f5',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
-        borderRadius: 8,
-        fontSize: 16,
-        marginBottom: 20,
+        backgroundColor: theme.colors.background.paper,
+        color: theme.colors.text.primary,
+        height: INPUT_HEIGHT,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: theme.colors.border.main,
+        borderRadius: theme.borderRadius.base,
+        paddingHorizontal: theme.spacing[4],
+        fontSize: theme.typography.fontSize.base,
+        marginBottom: theme.spacing[6],
     },
     button: {
-        backgroundColor: colors.primary['500'],
-        padding: 15,
-        borderRadius: 8,
+        height: INPUT_HEIGHT,
+        justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: theme.colors.primary[500],
+        borderRadius: theme.borderRadius.base,
+        ...theme.shadows.base,
     },
     buttonDisabled: {
-        backgroundColor: colors.primary['300'],
+        backgroundColor: theme.colors.primary[300],
+        ...theme.shadows.none,
     },
     buttonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.inverse,
+        fontWeight: theme.typography.fontWeight.bold,
     },
 });
