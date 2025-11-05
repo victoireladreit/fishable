@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionsService, FishingSession } from '../../services';
@@ -16,7 +16,6 @@ const formatDuration = (totalMinutes: number | null) => {
     return `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim();
 };
 
-// Le style du bouton supprimer est modifié ici
 const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, onPress: () => void) => {
     const trans = dragX.interpolate({
         inputRange: [-80, 0],
@@ -24,8 +23,8 @@ const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dr
         extrapolate: 'clamp',
     });
     return (
-        <TouchableOpacity onPress={onPress} style={styles.deleteButton}>
-            <Animated.View style={{ transform: [{ translateX: trans }] }}>
+        <TouchableOpacity onPress={onPress} style={styles.deleteButtonContainer}>
+            <Animated.View style={[styles.deleteButton, { transform: [{ translateX: trans }] }]}>
                 <Ionicons name="trash-outline" size={theme.iconSizes.lg} color={theme.colors.error.main} />
             </Animated.View>
         </TouchableOpacity>
@@ -57,24 +56,29 @@ export const HistoryScreen = () => {
     const { user } = useAuth();
     const [sessions, setSessions] = useState<FishingSession[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false); // État pour le pull-to-refresh
+
+    const loadSessions = useCallback(async () => {
+        if (!user) return;
+        try {
+            const userSessions = await FishingSessionsService.getSessions({userId: user.id});
+            const completedSessions = userSessions?.filter(s => s.status === 'completed') || [];
+            setSessions(completedSessions);
+        } catch (error) {
+            console.error("Erreur lors du chargement de l'historique:", error);
+        }
+    }, [user]);
 
     useEffect(() => {
-        if (!user) return;
+        setLoading(true);
+        loadSessions().finally(() => setLoading(false));
+    }, [loadSessions]);
 
-        const loadSessions = async () => {
-            try {
-                const userSessions = await FishingSessionsService.getSessions({userId: user.id});
-                const completedSessions = userSessions?.filter(s => s.status === 'completed') || [];
-                setSessions(completedSessions);
-            } catch (error) {
-                console.error("Erreur lors du chargement de l'historique:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadSessions();
-    }, [user]);
+    const handleRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        await loadSessions();
+        setIsRefreshing(false);
+    }, [loadSessions]);
 
     const handleDelete = (sessionId: string) => {
         Alert.alert(
@@ -117,6 +121,8 @@ export const HistoryScreen = () => {
                         renderItem={({ item }) => <SessionCard session={item} onDelete={() => handleDelete(item.id)} />}
                         keyExtractor={item => item.id}
                         contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
+                        onRefresh={handleRefresh} // Prop pour déclencher le rafraîchissement
+                        refreshing={isRefreshing} // Prop pour afficher l'indicateur
                     />
                 )
             }
@@ -180,15 +186,20 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.sm,
         color: theme.colors.text.secondary,
     },
+    deleteButtonContainer: {
+        width: 80,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: theme.spacing[2],
+    },
     deleteButton: {
         backgroundColor: theme.colors.error.light,
-        opacity: 0.8,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
+        height: '100%',
         borderRadius: theme.borderRadius.md,
         borderWidth: 1,
-        marginLeft: theme.spacing[2],
-        borderColor: theme.colors.error.dark,
+        borderColor: theme.colors.error.main,
     },
 });
