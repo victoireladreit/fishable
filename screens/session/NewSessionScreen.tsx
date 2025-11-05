@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing[4],
         fontSize: theme.typography.fontSize.base,
         marginBottom: theme.spacing[6],
+        width: '100%', // Assurer la pleine largeur
     },
     button: {
         height: INPUT_HEIGHT,
@@ -130,6 +131,7 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.primary[500],
         borderRadius: theme.borderRadius.base,
         ...theme.shadows.base,
+        width: '100%', // Assurer la pleine largeur
     },
     buttonDisabled: {
         backgroundColor: theme.colors.primary[300],

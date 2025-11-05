@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
-import { theme } from '../theme'; // Importer le thème complet
+import { theme } from '../theme';
 
 import { NewSessionScreen, ActiveSessionScreen } from '../screens/session';
 import { BottomTabNavigator } from './BottomTabNavigator';
@@ -27,35 +27,46 @@ const RootNavigator = () => {
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {
-                    backgroundColor: theme.colors.background.paper, // Fond de l'en-tête
+                    backgroundColor: theme.colors.background.paper,
                 },
-                headerTintColor: theme.colors.text.primary, // Couleur du titre et de la flèche de retour
+                headerTintColor: theme.colors.text.primary,
                 headerTitleStyle: {
                     fontFamily: theme.typography.fontFamily.bold,
                     fontWeight: theme.typography.fontWeight.bold,
                     fontSize: theme.typography.fontSize.lg,
                 },
-                headerBackVisible: false,
             }}
         >
             {user ? (
                 <>
-                    <Stack.Screen
+                    <Stack.Screen 
                         name="Home"
-                        component={BottomTabNavigator}
-                        options={{ headerShown: false }}
+                        component={BottomTabNavigator} 
+                        options={{ headerShown: false }} 
                     />
-                    <Stack.Screen
-                        name="ActiveSession"
-                        component={ActiveSessionScreen}
-                        options={{ title: 'Session en cours' }}
+                    <Stack.Screen 
+                        name="ActiveSession" 
+                        component={ActiveSessionScreen} 
+                        options={{ 
+                            title: 'Session en cours',
+                            headerTitleStyle: { // Style spécifique pour ce titre
+                                fontFamily: theme.typography.fontFamily.bold,
+                                fontWeight: theme.typography.fontWeight.bold,
+                                fontSize: theme.typography.fontSize.xl, // Plus grand
+                            }
+                        }} 
                     />
                     <Stack.Screen
                         name="NewSession"
                         component={NewSessionScreen}
                         options={{
                             title: 'Nouvelle session',
-                            presentation: 'modal', // Affiche l'écran par-dessus les autres
+                            presentation: 'modal',
+                            headerTitleStyle: { // Style spécifique pour ce titre
+                                fontFamily: theme.typography.fontFamily.bold,
+                                fontWeight: theme.typography.fontWeight.bold,
+                                fontSize: theme.typography.fontSize.xl, // Plus grand
+                            }
                         }}
                     />
                 </>
