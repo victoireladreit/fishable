@@ -4,9 +4,9 @@ import { TabParamList } from './BottomTabNavigator';
 export type RootStackParamList = {
     Login: undefined;
     Register: undefined;
-    Home: NavigatorScreenParams<TabParamList>; // Paramètres pour le navigateur à onglets
+    ForgotPassword: undefined; // Ajout de l'écran
+    Main: NavigatorScreenParams<TabParamList>;
     NewSession: undefined;
     ActiveSession: { sessionId: string };
-    History: undefined; // Ajout de l'écran d'historique
-    SessionDetail: { sessionId: string }; // Ajout de l'écran de détail (pour une future utilisation)
+    SessionSummary: { sessionId: string };
 };

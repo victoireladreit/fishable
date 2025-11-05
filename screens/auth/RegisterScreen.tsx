@@ -1,228 +1,87 @@
-
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Input, Text } from '../../components/common';
 import { theme } from '../../theme';
+import { useNavigation } from '@react-navigation/native';
 
-export const RegisterScreen = ({ navigation }: any) => {
+const INPUT_HEIGHT = 50;
+
+export const RegisterScreen = () => {
+    const { signUp } = useAuth();
+    const navigation = useNavigation();
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // États d'erreur pour chaque champ
-    const [errors, setErrors] = useState({
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-    });
-
-    const { signUp } = useAuth();
-
-    const validateForm = () => {
-        const newErrors = {
-            username: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-        };
-
-        let isValid = true;
-
-        // Validation username
-        if (!username) {
-            newErrors.username = 'Le nom d\'utilisateur est requis';
-            isValid = false;
-        } else if (username.length < 3) {
-            newErrors.username = 'Minimum 3 caractères';
-            isValid = false;
-        }
-
-        // Validation email
-        if (!email) {
-            newErrors.email = 'L\'email est requis';
-            isValid = false;
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = 'Email invalide';
-            isValid = false;
-        }
-
-        // Validation password
-        if (!password) {
-            newErrors.password = 'Le mot de passe est requis';
-            isValid = false;
-        } else if (password.length < 6) {
-            newErrors.password = 'Minimum 6 caractères';
-            isValid = false;
-        }
-
-        // Validation confirm password
-        if (!confirmPassword) {
-            newErrors.confirmPassword = 'Veuillez confirmer le mot de passe';
-            isValid = false;
-        } else if (password !== confirmPassword) {
-            newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-            isValid = false;
-        }
-
-        setErrors(newErrors);
-        return isValid;
-    };
-
     const handleRegister = async () => {
-        // Reset errors
-        setErrors({
-            username: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-        });
-
-        // Validation
-        if (!validateForm()) {
+        if (!email || !password || !username) {
+            Alert.alert("Attention", "Veuillez remplir tous les champs.");
             return;
         }
-
         setLoading(true);
         const { error } = await signUp(email, password, username);
         setLoading(false);
-
         if (error) {
-            Alert.alert('Erreur d\'inscription', error.message);
+            Alert.alert("Erreur d'inscription", error.message);
         } else {
-            Alert.alert(
-                'Inscription réussie ! 🎣',
-                'Vérifiez votre email pour confirmer votre compte.',
-                [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-            );
+            Alert.alert("Succès", "Votre compte a été créé. Veuillez vérifier vos e-mails pour confirmer votre inscription.");
+            navigation.goBack();
         }
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.header}>
-                <Text variant="h1" align="center">🎣</Text>
-                <Text variant="h2" align="center" weight="bold">Créer un compte</Text>
-                <Text variant="body" color="secondary" align="center" style={styles.subtitle}>
-                    Rejoignez la communauté Fishable
-                </Text>
-            </View>
-
-            <View style={styles.form}>
-                <Input
-                    label="Nom d'utilisateur"
-                    value={username}
-                    onChangeText={(text) => {
-                        setUsername(text);
-                        if (errors.username) {
-                            setErrors({ ...errors, username: '' });
-                        }
-                    }}
-                    autoCapitalize="none"
-                    placeholder="john_doe"
-                    error={errors.username}
-                    helperText="Minimum 3 caractères, sans espaces"
-                />
-
-                <Input
-                    label="Email"
+        <SafeAreaView style={styles.container}>
+            <View style={styles.contentContainer}>
+                <Text style={styles.title}>Créer un compte</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email"
                     value={email}
-                    onChangeText={(text) => {
-                        setEmail(text);
-                        if (errors.email) {
-                            setErrors({ ...errors, email: '' });
-                        }
-                    }}
-                    autoCapitalize="none"
+                    onChangeText={setEmail}
+                    placeholderTextColor={theme.colors.text.disabled}
                     keyboardType="email-address"
-                    placeholder="john@example.com"
-                    error={errors.email}
+                    autoCapitalize="none"
                 />
-
-                <Input
-                    label="Mot de passe"
+                <TextInput
+                    style={styles.input}
+                    placeholder="Nom d'utilisateur"
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholderTextColor={theme.colors.text.disabled}
+                    autoCapitalize="none"
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Mot de passe"
                     value={password}
-                    onChangeText={(text) => {
-                        setPassword(text);
-                        if (errors.password) {
-                            setErrors({ ...errors, password: '' });
-                        }
-                    }}
+                    onChangeText={setPassword}
+                    placeholderTextColor={theme.colors.text.disabled}
                     secureTextEntry
-                    placeholder="••••••••"
-                    error={errors.password}
-                    helperText="Minimum 6 caractères"
                 />
-
-                <Input
-                    label="Confirmer le mot de passe"
-                    value={confirmPassword}
-                    onChangeText={(text) => {
-                        setConfirmPassword(text);
-                        if (errors.confirmPassword) {
-                            setErrors({ ...errors, confirmPassword: '' });
-                        }
-                    }}
-                    secureTextEntry
-                    placeholder="••••••••"
-                    error={errors.confirmPassword}
-                />
-
-                <Button
-                    title="S'inscrire"
+                <TouchableOpacity
+                    style={[styles.button, loading && styles.buttonDisabled]}
                     onPress={handleRegister}
-                    loading={loading}
                     disabled={loading}
-                    fullWidth
-                    size="lg"
-                    style={styles.registerButton}
-                />
-
-                <Button
-                    title="Déjà un compte ? Se connecter"
-                    onPress={() => navigation.goBack()}
-                    variant="ghost"
-                    fullWidth
-                />
+                >
+                    {loading ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>S'inscrire</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.loginLink} onPress={() => navigation.goBack()}>
+                    <Text style={styles.linkText}>Déjà un compte ? Se connecter</Text>
+                </TouchableOpacity>
             </View>
-
-            <View style={styles.footer}>
-                <Text variant="caption" color="secondary" align="center">
-                    En vous inscrivant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité
-                </Text>
-            </View>
-        </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background.default,
-    },
-    content: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: theme.layout.screenPadding,
-    },
-    header: {
-        marginBottom: theme.spacing[6],
-    },
-    subtitle: {
-        marginTop: theme.spacing[2],
-    },
-    form: {
-        width: '100%',
-    },
-    registerButton: {
-        marginTop: theme.spacing[2],
-        marginBottom: theme.spacing[4],
-    },
-    footer: {
-        marginTop: theme.spacing[6],
-        paddingHorizontal: theme.spacing[4],
-    },
+    container: { flex: 1, backgroundColor: theme.colors.background.default },
+    contentContainer: { flex: 1, justifyContent: 'center', padding: theme.layout.containerPadding },
+    title: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['4xl'], color: theme.colors.text.primary, textAlign: 'center', marginBottom: theme.spacing[10] },
+    input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base, marginBottom: theme.spacing[4] },
+    button: { height: INPUT_HEIGHT, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.primary[500], borderRadius: theme.borderRadius.base, ...theme.shadows.base, marginTop: theme.spacing[4] },
+    buttonDisabled: { backgroundColor: theme.colors.primary[300], ...theme.shadows.none },
+    buttonText: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize.base, color: theme.colors.text.inverse, fontWeight: theme.typography.fontWeight.bold },
+    loginLink: { marginTop: theme.spacing[8] },
+    linkText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.primary[500], textAlign: 'center' },
 });

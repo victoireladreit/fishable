@@ -8,7 +8,7 @@ import { theme } from '../theme';
 
 import { NewSessionScreen, ActiveSessionScreen } from '../screens/session';
 import { BottomTabNavigator } from './BottomTabNavigator';
-import { LoginScreen, RegisterScreen } from '../screens/auth';
+import {ForgotPasswordScreen, LoginScreen, RegisterScreen} from '../screens/auth';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -40,7 +40,7 @@ const RootNavigator = () => {
             {user ? (
                 <>
                     <Stack.Screen 
-                        name="Home"
+                        name="Main"
                         component={BottomTabNavigator} 
                         options={{ headerShown: false }} 
                     />
@@ -49,10 +49,10 @@ const RootNavigator = () => {
                         component={ActiveSessionScreen} 
                         options={{ 
                             title: 'Session en cours',
-                            headerTitleStyle: { // Style spécifique pour ce titre
+                            headerTitleStyle: { 
                                 fontFamily: theme.typography.fontFamily.bold,
                                 fontWeight: theme.typography.fontWeight.bold,
-                                fontSize: theme.typography.fontSize.xl, // Plus grand
+                                fontSize: theme.typography.fontSize.xl,
                             }
                         }} 
                     />
@@ -62,10 +62,10 @@ const RootNavigator = () => {
                         options={{
                             title: 'Nouvelle session',
                             presentation: 'modal',
-                            headerTitleStyle: { // Style spécifique pour ce titre
+                            headerTitleStyle: { 
                                 fontFamily: theme.typography.fontFamily.bold,
                                 fontWeight: theme.typography.fontWeight.bold,
-                                fontSize: theme.typography.fontSize.xl, // Plus grand
+                                fontSize: theme.typography.fontSize.xl,
                             }
                         }}
                     />
@@ -74,6 +74,7 @@ const RootNavigator = () => {
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
                 </>
             )}
         </Stack.Navigator>
