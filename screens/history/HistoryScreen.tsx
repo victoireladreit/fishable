@@ -1,10 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Animated, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
+import { RootStackParamList } from '../../navigation/types';
+
+type HistoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionSummary'>;
 
 const formatDuration = (totalMinutes: number | null) => {
     if (totalMinutes === null || totalMinutes < 0) return null;
@@ -31,22 +36,24 @@ const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dr
     );
 };
 
-const SessionCard = ({ session, onDelete }: { session: FishingSession, onDelete: () => void }) => {
+const SessionCard = ({ session, onDelete, onNavigate }: { session: FishingSession, onDelete: () => void, onNavigate: () => void }) => {
     const date = session.ended_at ? new Date(session.ended_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Date inconnue';
     const duration = formatDuration(session.duration_minutes);
 
     return (
         <View style={styles.cardWrapper}>
             <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, onDelete)}>
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>{session.location_name || 'Session sans nom'}</Text>
-                    <View style={styles.cardInfoContainer}>
-                        <Text style={styles.cardInfoText}>{date}</Text>
-                        {duration && (
-                            <Text style={styles.cardInfoText}>{duration}</Text>
-                        )}
+                <TouchableOpacity onPress={onNavigate}>
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>{session.location_name || 'Session sans nom'}</Text>
+                        <View style={styles.cardInfoContainer}>
+                            <Text style={styles.cardInfoText}>{date}</Text>
+                            {duration && (
+                                <Text style={styles.cardInfoText}>{duration}</Text>
+                            )}
+                        </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Swipeable>
         </View>
     );
@@ -54,9 +61,10 @@ const SessionCard = ({ session, onDelete }: { session: FishingSession, onDelete:
 
 export const HistoryScreen = () => {
     const { user } = useAuth();
+    const navigation = useNavigation<HistoryNavigationProp>();
     const [sessions, setSessions] = useState<FishingSession[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isRefreshing, setIsRefreshing] = useState(false); // État pour le pull-to-refresh
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const loadSessions = useCallback(async () => {
         if (!user) return;
@@ -118,11 +126,17 @@ export const HistoryScreen = () => {
                 ) : (
                     <FlatList
                         data={sessions}
-                        renderItem={({ item }) => <SessionCard session={item} onDelete={() => handleDelete(item.id)} />}
+                        renderItem={({ item }) => (
+                            <SessionCard 
+                                session={item} 
+                                onDelete={() => handleDelete(item.id)} 
+                                onNavigate={() => navigation.navigate('SessionDetail', { sessionId: item.id })} 
+                            />
+                        )}
                         keyExtractor={item => item.id}
                         contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
-                        onRefresh={handleRefresh} // Prop pour déclencher le rafraîchissement
-                        refreshing={isRefreshing} // Prop pour afficher l'indicateur
+                        onRefresh={handleRefresh}
+                        refreshing={isRefreshing}
                     />
                 )
             }
@@ -134,6 +148,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background.default,
+        paddingTop: Platform.OS === 'android' ? theme.spacing[12] : 0,
     },
     center: {
         flex: 1,

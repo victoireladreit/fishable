@@ -1,6 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
-// Définition des écrans de la barre d'onglets
 export type MainTabParamList = {
     HomeTab: undefined;
     History: undefined;
@@ -8,7 +7,6 @@ export type MainTabParamList = {
     Settings: undefined;
 };
 
-// Définition de tous les écrans de l'application
 export type RootStackParamList = {
     Login: undefined;
     Register: undefined;
@@ -16,5 +14,6 @@ export type RootStackParamList = {
     Home: NavigatorScreenParams<MainTabParamList>; // Onglets imbriqués
     NewSession: undefined;
     ActiveSession: { sessionId: string };
+    SessionDetail: { sessionId: string }; // Nouvel écran
     SessionSummary: { sessionId: string };
 };

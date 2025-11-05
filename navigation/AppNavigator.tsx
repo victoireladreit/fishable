@@ -6,9 +6,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
 import { theme } from '../theme';
 
-import { NewSessionScreen, ActiveSessionScreen } from '../screens/session';
+import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../screens/session';
 import { BottomTabNavigator } from './BottomTabNavigator';
-import {ForgotPasswordScreen, LoginScreen, RegisterScreen} from '../screens/auth';
+import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -39,36 +39,10 @@ const RootNavigator = () => {
         >
             {user ? (
                 <>
-                    <Stack.Screen 
-                        name="Home"
-                        component={BottomTabNavigator} 
-                        options={{ headerShown: false }} 
-                    />
-                    <Stack.Screen 
-                        name="ActiveSession" 
-                        component={ActiveSessionScreen} 
-                        options={{ 
-                            title: 'Session en cours',
-                            headerTitleStyle: { 
-                                fontFamily: theme.typography.fontFamily.bold,
-                                fontWeight: theme.typography.fontWeight.bold,
-                                fontSize: theme.typography.fontSize.xl,
-                            }
-                        }} 
-                    />
-                    <Stack.Screen
-                        name="NewSession"
-                        component={NewSessionScreen}
-                        options={{
-                            title: 'Nouvelle session',
-                            presentation: 'modal',
-                            headerTitleStyle: { 
-                                fontFamily: theme.typography.fontFamily.bold,
-                                fontWeight: theme.typography.fontWeight.bold,
-                                fontSize: theme.typography.fontSize.xl,
-                            }
-                        }}
-                    />
+                    <Stack.Screen name="Home" component={BottomTabNavigator} options={{ headerShown: false }} />
+                    <Stack.Screen name="ActiveSession" component={ActiveSessionScreen} options={{ title: 'Session en cours' }} />
+                    <Stack.Screen name="SessionDetail" component={SessionDetailScreen} options={{ title: 'Détails de la session' }} />
+                    <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ title: 'Nouvelle session', presentation: 'modal' }} />
                 </>
             ) : (
                 <>
