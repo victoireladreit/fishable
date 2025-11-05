@@ -10,7 +10,7 @@ import { useActionSheet } from '@expo/react-native-action-sheet';
 const INPUT_HEIGHT = 50;
 
 export const ProfileScreen = () => {
-    const { user, signOut } = useAuth();
+    const { user } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -102,7 +102,7 @@ export const ProfileScreen = () => {
         
         if (avatarUrl) {
             options.push("Supprimer la photo");
-            destructiveButtonIndex = options.length - 1; // L'index de "Supprimer"
+            destructiveButtonIndex = options.length - 1;
         }
         
         options.push("Annuler");
@@ -112,29 +112,21 @@ export const ProfileScreen = () => {
             {
                 options,
                 cancelButtonIndex,
-                destructiveButtonIndex, // On passe l'index ici
-                // On peut même styler le texte destructif pour être sûr
+                destructiveButtonIndex,
                 destructiveColor: theme.colors.error.main,
             },
             async (buttonIndex) => {
-                if (buttonIndex === 0) { // Prendre une photo
+                if (buttonIndex === 0) {
                     const photo = await takePhoto();
                     handleAvatarChange(photo);
-                } else if (buttonIndex === 1) { // Choisir depuis la photothèque
+                } else if (buttonIndex === 1) {
                     const image = await pickImage();
                     handleAvatarChange(image);
-                } else if (buttonIndex === destructiveButtonIndex) { // Supprimer
+                } else if (buttonIndex === destructiveButtonIndex) {
                     handleDeleteAvatar();
                 }
             }
         );
-    };
-
-    const handleSignOut = () => {
-        Alert.alert("Se déconnecter", "Êtes-vous sûr de vouloir vous déconnecter ?", [
-            { text: "Annuler", style: "cancel" },
-            { text: "Se déconnecter", style: "destructive", onPress: signOut },
-        ]);
     };
 
     if (loading && !profile) {
@@ -144,9 +136,10 @@ export const ProfileScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={handleSignOut} disabled={isEditing}><Ionicons name={"log-out-outline"} size={theme.iconSizes.lg} color={isEditing ? theme.colors.text.disabled : theme.colors.error.main} /></TouchableOpacity>
                 <Text style={styles.title}>Mon Profil</Text>
-                <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}><Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
+                    <Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContentContainer} keyboardShouldPersistTaps="handled">
@@ -189,9 +182,20 @@ export const ProfileScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background.default },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.layout.screenPadding, paddingVertical: theme.spacing[3], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
-    title: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['xl'], color: theme.colors.text.primary },
-    scrollContentContainer: { flexGrow: 1, padding: theme.layout.containerPadding },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: theme.layout.screenPadding,
+        marginTop: theme.spacing[4],
+        marginBottom: theme.spacing[4],
+    },
+    title: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['4xl'],
+        color: theme.colors.text.primary,
+    },
+    scrollContentContainer: { flexGrow: 1, paddingHorizontal: theme.layout.containerPadding },
     avatarContainer: { alignSelf: 'center', marginBottom: theme.spacing[2] },
     avatar: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: theme.colors.primary[200] },
     changePictureText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.primary[500], textAlign: 'center', marginBottom: theme.spacing[6] },

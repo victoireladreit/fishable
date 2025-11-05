@@ -40,7 +40,7 @@ const RootNavigator = () => {
             {user ? (
                 <>
                     <Stack.Screen 
-                        name="Main"
+                        name="Home"
                         component={BottomTabNavigator} 
                         options={{ headerShown: false }} 
                     />

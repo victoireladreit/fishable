@@ -3,16 +3,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { theme } from '../theme';
-import {HomeScreen} from "../screens/home/HomeScreen"; // Importer le thème complet
+import { MainTabParamList } from './types';
+import {HomeScreen} from "../screens/home/HomeScreen"; // Importer le type depuis le fichier central
 
-export type TabParamList = {
-    HomeTab: undefined;
-    History: undefined;
-    Profile: undefined;
-};
-
-const Tab = createBottomTabNavigator<TabParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const BottomTabNavigator = () => {
     return (
@@ -28,15 +24,17 @@ export const BottomTabNavigator = () => {
                         iconName = focused ? 'time' : 'time-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
+                    } else if (route.name === 'Settings') {
+                        iconName = focused ? 'settings' : 'settings-outline';
                     }
 
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: theme.colors.primary[500],      // Utilise le thème
-                tabBarInactiveTintColor: theme.colors.text.disabled,  // Utilise le thème
+                tabBarActiveTintColor: theme.colors.primary[500],
+                tabBarInactiveTintColor: theme.colors.text.disabled,
                 tabBarStyle: {
-                    backgroundColor: theme.colors.background.paper, // Fond de la barre d'onglets
-                    borderTopColor: theme.colors.border.light,      // Couleur de la bordure supérieure
+                    backgroundColor: theme.colors.background.paper,
+                    borderTopColor: theme.colors.border.light,
                 },
                 tabBarLabelStyle: {
                     fontFamily: theme.typography.fontFamily.medium,
@@ -47,6 +45,7 @@ export const BottomTabNavigator = () => {
             <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Accueil' }} />
             <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'Historique' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
+            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
         </Tab.Navigator>
     );
 };

@@ -10,6 +10,9 @@ interface AuthContextType {
     signIn: (emailOrUsername: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: any }>;
+    updateUserEmail: (newEmail: string) => Promise<{ error: any }>;
+    updateUserPassword: (newPassword: string) => Promise<{ error: any }>;
+    deleteAccount: () => Promise<{ error: any }>; // Nouvelle fonction
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,14 +23,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Récupérer la session actuelle
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        // Écouter les changements d'authentification
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
@@ -135,12 +136,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const resetPassword = async (email: string) => {
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'fishable://reset-password',
-            });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: 'fishable://reset-password',
+        });
+        return { error };
+    };
 
-            return { error };
+    const updateUserEmail = async (newEmail: string) => {
+        const { error } = await supabase.auth.updateUser({ email: newEmail });
+        return { error };
+    };
+
+    const updateUserPassword = async (newPassword: string) => {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        return { error };
+    };
+
+    // Nouvelle fonction pour appeler la Edge Function
+    const deleteAccount = async () => {
+        try {
+            const { error } = await supabase.functions.invoke('delete-user', {
+                method: 'POST',
+            });
+            if (error) throw error;
+            await signOut(); // Forcer la déconnexion
+            return { error: null };
         } catch (error) {
             return { error };
         }
@@ -156,6 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 signIn,
                 signOut,
                 resetPassword,
+                updateUserEmail,
+                updateUserPassword,
+                deleteAccount,
             }}
         >
             {children}
