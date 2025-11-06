@@ -3,10 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
-import { FishingSessionInsert, FishingSessionsService } from '../../services';
+import { FishingSessionInsert, FishingSessionsService, WeatherService } from '../../services';
 import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { useLocation, useLocationTracking } from '../../hooks';
+import { getWindStrengthCategory } from '../../lib/weather';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
 
@@ -35,10 +36,14 @@ export const NewSessionScreen = () => {
 
         const location = await getLocation();
         let regionName: string | null = null;
+        let weatherData = null;
 
         if (location) {
             regionName = await getRegionFromCoords(location.coords);
+            weatherData = await WeatherService.getWeatherByCoords(location.coords.latitude, location.coords.longitude);
         }
+
+        const windStrength = weatherData?.windSpeed ? getWindStrengthCategory(weatherData.windSpeed) : null;
 
         const sessionData: FishingSessionInsert = {
             user_id: user.id,
@@ -49,6 +54,10 @@ export const NewSessionScreen = () => {
             location_lng: location?.coords.longitude,
             region: regionName,
             location_visibility: 'region',
+            weather_temp: weatherData?.temperature,
+            weather_conditions: weatherData?.conditions,
+            wind_speed_kmh: weatherData?.windSpeed,
+            wind_strength: windStrength,
         };
 
         try {

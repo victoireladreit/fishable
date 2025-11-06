@@ -139,6 +139,7 @@ export interface Database {
                     water_clarity: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
                     water_current: 'none' | 'light' | 'moderate' | 'strong' | null
                     wind_strength: 'calm' | 'light' | 'moderate' | 'strong' | null
+                    wind_speed_kmh: number | null
                     water_level: 'low' | 'normal' | 'high' | null
                     status: 'active' | 'completed' | 'draft' | null
                     caption: string | null
@@ -164,6 +165,7 @@ export interface Database {
                     water_clarity?: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
                     water_current?: 'none' | 'light' | 'moderate' | 'strong' | null
                     wind_strength?: 'calm' | 'light' | 'moderate' | 'strong' | null
+                    wind_speed_kmh?: number | null
                     water_level?: 'low' | 'normal' | 'high' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null
@@ -189,6 +191,7 @@ export interface Database {
                     water_clarity?: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
                     water_current?: 'none' | 'light' | 'moderate' | 'strong' | null
                     wind_strength?: 'calm' | 'light' | 'moderate' | 'strong' | null
+                    wind_speed_kmh?: number | null
                     water_level?: 'low' | 'normal' | 'high' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null

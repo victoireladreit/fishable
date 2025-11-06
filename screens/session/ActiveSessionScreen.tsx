@@ -14,11 +14,19 @@ type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
 
 type Visibility = 'public' | 'region' | 'private';
+type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
 
 const visibilityOptions: { key: Visibility; label: string }[] = [
     { key: 'private', label: 'Privé' },
     { key: 'region', label: 'Région' },
     { key: 'public', label: 'Public' },
+];
+
+const windStrengthOptions: { key: WindStrength; label: string }[] = [
+    { key: 'calm', label: 'Calme' },
+    { key: 'light', label: 'Léger' },
+    { key: 'moderate', label: 'Modéré' },
+    { key: 'strong', label: 'Fort' },
 ];
 
 const visibilityInfo = `
@@ -90,9 +98,8 @@ export const ActiveSessionScreen = () => {
     useEffect(() => {
         if (location && mapViewRef.current && !userInteractingWithMap) {
             mapViewRef.current.animateCamera({ 
-                center: location.coords, 
-                heading: location.coords.heading ?? 0,
-                zoom: 18,
+                center: location.coords,
+                zoom: 16,
              });
         }
     }, [location, userInteractingWithMap]);
@@ -145,6 +152,29 @@ export const ActiveSessionScreen = () => {
         ]);
     };
 
+    const recenterMap = () => {
+        if (!mapViewRef.current) return;
+
+        if (route && route.length > 1) {
+            const latitudes = route.map(p => p.latitude);
+            const longitudes = route.map(p => p.longitude);
+            const minLat = Math.min(...latitudes);
+            const maxLat = Math.max(...latitudes);
+            const minLng = Math.min(...longitudes);
+            const maxLng = Math.max(...longitudes);
+
+            const region = {
+                latitude: (minLat + maxLat) / 2,
+                longitude: (minLng + maxLng) / 2,
+                latitudeDelta: (maxLat - minLat) * 1.5,
+                longitudeDelta: (maxLng - minLng) * 1.5,
+            };
+            mapViewRef.current.animateToRegion(region, 500);
+        } else if (location) {
+            mapViewRef.current.animateCamera({ center: location.coords, zoom: 16 });
+        }
+    };
+
     if (loading || !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
@@ -161,13 +191,27 @@ export const ActiveSessionScreen = () => {
         longitudeDelta: 0.01,
     } : undefined);
 
+    const windStrengthLabel = windStrengthOptions.find(opt => opt.key === session.wind_strength)?.label || '-';
+
     return (
         <ScrollView 
             style={styles.scrollContainer} 
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
         >
-            <View style={styles.timerContainer}><Text style={styles.timerText}>{formatTime(seconds)}</Text></View>
+            <View style={styles.timerContainer}>
+                <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+            </View>
+
+            <View style={styles.weatherContainer}>
+                <View style={styles.weatherRow}>
+                    <Text style={styles.weatherTemp}>{session.weather_temp ? `${Math.round(session.weather_temp)}°C` : '-'}</Text>
+                </View>
+                <Text style={styles.weatherConditions}>{`Temps ${session.weather_conditions}` || '-'}</Text>
+                <Text style={styles.windInfo}>
+                    Vent: {windStrengthLabel} ({session.wind_speed_kmh ? `${session.wind_speed_kmh.toFixed(1)} km/h` : '-'})
+                </Text>
+            </View>
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Nom du Spot</Text>
@@ -206,7 +250,6 @@ export const ActiveSessionScreen = () => {
                     initialRegion={initialMapRegion}
                     showsUserLocation
                     onPanDrag={() => setUserInteractingWithMap(true)}
-                    onRegionChangeComplete={() => setUserInteractingWithMap(true)} // For iOS drag
                 >
                     {route.length > 1 && (
                         <Polyline
@@ -216,6 +259,11 @@ export const ActiveSessionScreen = () => {
                         />
                     )}
                 </MapView>
+                {Platform.OS === 'ios' && (
+                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
+                        <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
@@ -239,21 +287,51 @@ const styles = StyleSheet.create({
     },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.default },
     timerContainer: {
-        width: 220,
-        height: 220,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingVertical: theme.spacing[4],
+        paddingHorizontal: theme.spacing[6],
         backgroundColor: theme.colors.primary[50],
-        borderRadius: theme.borderRadius.full,
-        borderWidth: 5,
+        borderRadius: theme.borderRadius.lg,
+        borderWidth: 1,
         borderColor: theme.colors.primary[200],
-        marginBottom: theme.spacing[8],
+        marginBottom: theme.spacing[4],
         alignSelf: 'center',
     },
     timerText: {
         fontFamily: theme.typography.fontFamily.bold,
         fontSize: theme.typography.fontSize['4xl'],
         color: theme.colors.primary[700],
+        textAlign: 'center',
+    },
+    weatherContainer: {
+        alignItems: 'center',
+        marginBottom: theme.spacing[8],
+        padding: theme.spacing[4],
+        backgroundColor: theme.colors.background.paper,
+        borderRadius: theme.borderRadius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+    },
+    weatherRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    weatherTemp: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['3xl'],
+        color: theme.colors.text.primary,
+        marginRight: theme.spacing[3],
+    },
+    weatherConditions: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.lg,
+        color: theme.colors.text.secondary,
+    },
+    windInfo: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+        marginTop: theme.spacing[2],
     },
     formGroup: { width: '100%', marginBottom: theme.spacing[5] },
     labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

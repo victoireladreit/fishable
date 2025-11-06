@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
@@ -220,8 +220,17 @@ export const SessionDetailScreen = () => {
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
             <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-                {/* Titre principal de la session (une seule fois) */}
-                <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
+                {isEditing ? (
+                    <TextInput
+                        style={styles.titleInput}
+                        value={locationName}
+                        onChangeText={setLocationName}
+                        placeholder="Nom du spot"
+                        placeholderTextColor={theme.colors.text.disabled}
+                    />
+                ) : (
+                    <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
+                )}
                 {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                 <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                 {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
@@ -235,25 +244,8 @@ export const SessionDetailScreen = () => {
                 {isEditing ? (
                     <>
                         <View style={styles.formGroup}>
-                            <Text style={styles.label}>Nom du Spot</Text>
-                            <TextInput style={styles.input} value={locationName} onChangeText={setLocationName} placeholder="Nom du spot" placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Région</Text>
-                            <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Région / Ville" placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-                        <View style={styles.formGroup}>
                             <Text style={styles.label}>Légende / Notes</Text>
                             <TextInput style={[styles.input, styles.textArea]} value={caption} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Température (°C)</Text>
-                            <TextInput style={styles.input} value={weatherTemp} onChangeText={setWeatherTemp} keyboardType="numeric" placeholder="Ex: 15" placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Conditions météo</Text>
-                            <TextInput style={styles.input} value={weatherConditions} onChangeText={setWeatherConditions} placeholder="Ex: Ensoleillé, Pluie fine" placeholderTextColor={theme.colors.text.disabled} />
                         </View>
 
                         {/* Sélecteur Clarté de l'eau */}
@@ -275,18 +267,6 @@ export const SessionDetailScreen = () => {
                                 {waterCurrentOptions.map(opt => (
                                     <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterCurrent === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterCurrent(opt.key)}>
                                         <Text style={[styles.selectorText, waterCurrent === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Sélecteur Force du vent */}
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Force du vent</Text>
-                            <View style={styles.selectorContainer}>
-                                {windStrengthOptions.map(opt => (
-                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, windStrength === opt.key && styles.selectorOptionSelected]} onPress={() => setWindStrength(opt.key)}>
-                                        <Text style={[styles.selectorText, windStrength === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -337,9 +317,9 @@ export const SessionDetailScreen = () => {
                         <View style={styles.infoCard}>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
@@ -402,12 +382,23 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background.default },
     scrollContentContainer: { padding: theme.layout.containerPadding, paddingBottom: theme.spacing[10] },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    sessionTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['3xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
+    infoTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
+    titleInput: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['2xl'],
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing[1],
+        backgroundColor: theme.colors.background.paper,
+        borderWidth: 1,
+        borderColor: theme.colors.border.main,
+        borderRadius: theme.borderRadius.base,
+        paddingHorizontal: theme.spacing[4],
+        paddingVertical: theme.spacing[2],
+    },
     regionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.secondary, marginBottom: theme.spacing[4] },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
     infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
-    infoTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
     infoText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, lineHeight: theme.typography.lineHeight.relaxed, marginBottom: theme.spacing[6] },
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: theme.spacing[2], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
     infoLabel: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary },
@@ -489,8 +480,8 @@ const styles = StyleSheet.create({
         borderTopWidth: 10,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: theme.colors.border.light, // Match bubble border color
+        borderTopColor: theme.colors.border.light,
         alignSelf: 'center',
-        marginTop: -1.5, // Overlap with bubble
+        marginTop: -1.5,
     },
 });

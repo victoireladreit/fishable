@@ -208,13 +208,11 @@ const styles = StyleSheet.create({
         marginLeft: theme.spacing[2],
     },
     deleteButton: {
-        backgroundColor: theme.colors.error.light,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
         borderRadius: theme.borderRadius.md,
-        borderWidth: 1,
         borderColor: theme.colors.error.main,
     },
 });
