@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -6,6 +6,7 @@ import { theme } from '../../theme';
 import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
+import MapView, { Polyline, Region, Marker } from 'react-native-maps';
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
@@ -69,10 +70,13 @@ export const SessionDetailScreen = () => {
     const route = useRoute<SessionDetailRouteProp>();
     const navigation = useNavigation();
     const { sessionId } = route.params;
+    const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
+
 
     // États pour les champs modifiables
     const [locationName, setLocationName] = useState('');
@@ -116,6 +120,43 @@ export const SessionDetailScreen = () => {
         loadSession();
     }, [loadSession]);
 
+    const sessionRoute = session?.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [];
+
+    useEffect(() => {
+        if (sessionRoute && sessionRoute.length > 1) {
+            const latitudes = sessionRoute.map(p => p.latitude);
+            const longitudes = sessionRoute.map(p => p.longitude);
+
+            const minLat = Math.min(...latitudes);
+            const maxLat = Math.max(...latitudes);
+            const minLng = Math.min(...longitudes);
+            const maxLng = Math.max(...longitudes);
+
+            const midLat = (minLat + maxLat) / 2;
+            const midLng = (minLng + maxLng) / 2;
+
+            const deltaLat = (maxLat - minLat) * 1.4; // Add padding
+            const deltaLng = (maxLng - minLng) * 1.4; // Add padding
+
+            setMapRegion({
+                latitude: midLat,
+                longitude: midLng,
+                latitudeDelta: deltaLat > 0 ? deltaLat : 0.02,
+                longitudeDelta: deltaLng > 0 ? deltaLng : 0.02,
+            });
+        } else if (session?.location_lat && session?.location_lng) {
+            setMapRegion({
+                latitude: session.location_lat,
+                longitude: session.location_lng,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+            });
+        } else {
+            setMapRegion(undefined);
+        }
+    }, [session, sessionRoute]);
+
+
     const handleSave = async () => {
         setLoading(true);
         const updates: FishingSessionUpdate = {
@@ -140,6 +181,12 @@ export const SessionDetailScreen = () => {
             Alert.alert("Erreur", "Impossible de sauvegarder les modifications.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const recenterMap = () => {
+        if (mapViewRef.current && mapRegion) {
+            mapViewRef.current.animateToRegion(mapRegion, 500);
         }
     };
 
@@ -171,13 +218,19 @@ export const SessionDetailScreen = () => {
     const formattedDuration = formatDuration(session.duration_minutes);
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
             <ScrollView contentContainerStyle={styles.scrollContentContainer}>
                 {/* Titre principal de la session (une seule fois) */}
                 <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
+                {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                 <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                 {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
-                {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
+                <View style={styles.statsContainer}>
+                    {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
+                    <Text style={styles.sessionDate}>
+                        Distance: {session.distance_km !== null ? `${session.distance_km.toFixed(2)} km` : '-'}
+                    </Text>
+                </View>
 
                 {isEditing ? (
                     <>
@@ -280,20 +333,64 @@ export const SessionDetailScreen = () => {
                         </View>
                     </>
                 ) : (
-                    <View style={styles.infoCard}>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Région</Text><Text style={styles.infoValue}>{session.region || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
+                    <>
+                        <View style={styles.infoCard}>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
 
-                        <Text style={styles.infoDate}>Créée le: {new Date(session.created_at!).toLocaleDateString('fr-FR')}</Text>
-                        {session.updated_at && <Text style={styles.infoDate}>Mise à jour le: {new Date(session.updated_at!).toLocaleDateString('fr-FR')}</Text>}
-                    </View>
+                            <Text style={styles.infoDate}>Créée le: {new Date(session.created_at!).toLocaleDateString('fr-FR')}</Text>
+                            {session.updated_at && <Text style={styles.infoDate}>Mise à jour le: {new Date(session.updated_at!).toLocaleDateString('fr-FR')}</Text>}
+                        </View>
+
+                        <View style={styles.mapContainer}>
+                            {mapRegion ? (
+                                <>
+                                    <MapView
+                                        ref={mapViewRef}
+                                        style={styles.map}
+                                        initialRegion={mapRegion}
+                                        showsCompass={true}
+                                        scrollEnabled={true}
+                                        zoomEnabled={true}
+                                    >
+                                        {sessionRoute && sessionRoute.length > 1 && (
+                                            <>
+                                                <Polyline
+                                                    coordinates={sessionRoute}
+                                                    strokeColor={theme.colors.primary[500]}
+                                                    strokeWidth={4}
+                                                />
+                                                <Marker coordinate={sessionRoute[0]} title="Départ" anchor={{ x: 0.5, y: 0.5 }}>
+                                                    <View style={styles.startMarker} />
+                                                </Marker>
+                                                <Marker coordinate={sessionRoute[sessionRoute.length - 1]} title="Arrivée" anchor={{ x: 0.5, y: 1 }}>
+                                                    <View style={styles.calloutContainer}>
+                                                        <View style={styles.calloutBubble}>
+                                                            <Text style={styles.calloutText}>🏁</Text>
+                                                        </View>
+                                                        <View style={styles.calloutPointer} />
+                                                    </View>
+                                                </Marker>
+                                            </>
+                                        )}
+                                    </MapView>
+                                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
+                                        <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <View style={styles.mapFallback}>
+                                    <Text style={styles.mapFallbackText}>Aucune donnée de parcours disponible.</Text>
+                                </View>
+                            )}
+                        </View>
+                    </>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -301,12 +398,14 @@ export const SessionDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: theme.colors.background.default, paddingTop: Platform.OS === 'android' ? theme.spacing[12] : 0 },
+    safeArea: { flex: 1, backgroundColor: theme.colors.background.default },
     container: { flex: 1, backgroundColor: theme.colors.background.default },
-    scrollContentContainer: { padding: theme.layout.containerPadding },
+    scrollContentContainer: { padding: theme.layout.containerPadding, paddingBottom: theme.spacing[10] },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     sessionTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['3xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
+    regionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.secondary, marginBottom: theme.spacing[4] },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
+    statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
     infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
     infoTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
     infoText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, lineHeight: theme.typography.lineHeight.relaxed, marginBottom: theme.spacing[6] },
@@ -325,4 +424,73 @@ const styles = StyleSheet.create({
     selectorText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, fontWeight: theme.typography.fontWeight.medium },
     selectorTextSelected: { color: theme.colors.primary[600] },
     switchGroup: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[5], paddingVertical: theme.spacing[2] },
+    mapContainer: {
+        position: 'relative',
+        height: 300,
+        borderRadius: theme.borderRadius.lg,
+        overflow: 'hidden',
+        marginTop: theme.spacing[6],
+        ...theme.shadows.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+    },
+    map: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    mapFallback: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.gray[100],
+    },
+    mapFallbackText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+    },
+    startMarker: {
+        height: 14,
+        width: 14,
+        borderRadius: 7,
+        backgroundColor: theme.colors.success.main,
+        borderColor: theme.colors.white,
+        borderWidth: 2,
+    },
+    recenterButton: {
+        position: 'absolute',
+        top: theme.spacing[2],
+        right: theme.spacing[2],
+        backgroundColor: theme.colors.white,
+        borderRadius: theme.borderRadius.full,
+        padding: theme.spacing[2],
+        ...theme.shadows.md,
+    },
+    calloutContainer: {
+        alignItems: 'center',
+    },
+    calloutBubble: {
+        padding: theme.spacing[2],
+        backgroundColor: theme.colors.white,
+        borderRadius: theme.borderRadius.md,
+        ...theme.shadows.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+    },
+    calloutText: {
+        fontSize: theme.typography.fontSize.xl,
+    },
+    calloutPointer: {
+        width: 0,
+        height: 0,
+        backgroundColor: 'transparent',
+        borderStyle: 'solid',
+        borderLeftWidth: 8,
+        borderRightWidth: 8,
+        borderTopWidth: 10,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: theme.colors.border.light, // Match bubble border color
+        alignSelf: 'center',
+        marginTop: -1.5, // Overlap with bubble
+    },
 });

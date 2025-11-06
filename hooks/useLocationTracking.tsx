@@ -39,7 +39,7 @@ export const LocationTrackingProvider = ({ children }: { children: ReactNode }) 
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
                     timeInterval: 5000,
-                    distanceInterval: 2,
+                    distanceInterval: 5,
                 },
                 (newLocation) => {
                     setLocation(newLocation);

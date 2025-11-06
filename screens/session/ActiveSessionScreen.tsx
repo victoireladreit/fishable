@@ -8,6 +8,7 @@ import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { useTimer, formatTime, useLocationTracking } from '../../hooks';
 import MapView, { Polyline } from "react-native-maps";
+import { calculateTotalDistance } from '../../lib/geolocation';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -125,6 +126,7 @@ export const ActiveSessionScreen = () => {
                     const startTime = new Date(session.started_at).getTime();
                     const endTime = Date.now();
                     const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
+                    const distanceKm = calculateTotalDistance(route);
 
                     try {
                         await FishingSessionsService.updateSession(sessionId, { 
@@ -132,6 +134,7 @@ export const ActiveSessionScreen = () => {
                             ended_at: new Date(endTime).toISOString(),
                             duration_minutes: durationMinutes,
                             route: route as any,
+                            distance_km: distanceKm,
                         });
                         navigation.popToTop();
                     } catch (error) {
