@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionInsert, FishingSessionsService } from '../../services';
 import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
-import { useLocation } from '../../hooks/useLocation';
+import { useLocation, useLocationTracking } from '../../hooks';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
 
@@ -18,6 +18,7 @@ export const NewSessionScreen = () => {
     const [locationName, setLocationName] = useState('');
     const [loading, setLoading] = useState(false);
     const { getLocation, getRegionFromCoords, loading: locationLoading } = useLocation();
+    const { startLocationTracking } = useLocationTracking();
 
     const handleStartSession = async () => {
         if (!user) {
@@ -54,6 +55,7 @@ export const NewSessionScreen = () => {
             const newSession = await FishingSessionsService.createSession(sessionData);
 
             if (newSession?.id) {
+                startLocationTracking();
                 navigation.replace('ActiveSession', { sessionId: newSession.id });
             } else {
                 Alert.alert('Erreur', 'Impossible de créer la session.');

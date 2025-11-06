@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
 import { theme } from '../theme';
+import { LocationTrackingProvider } from '../hooks';
 
 import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../screens/session';
 import { BottomTabNavigator } from './BottomTabNavigator';
@@ -58,7 +59,9 @@ const RootNavigator = () => {
 export const AppNavigator = () => {
     return (
         <NavigationContainer>
-            <RootNavigator />
+            <LocationTrackingProvider>
+                <RootNavigator />
+            </LocationTrackingProvider>
         </NavigationContainer>
     );
 };

@@ -14,6 +14,6 @@ export type RootStackParamList = {
     Home: NavigatorScreenParams<MainTabParamList>; // Onglets imbriqués
     NewSession: undefined;
     ActiveSession: { sessionId: string };
-    SessionDetail: { sessionId: string }; // Nouvel écran
+    SessionDetail: { sessionId: string };
     SessionSummary: { sessionId: string };
 };

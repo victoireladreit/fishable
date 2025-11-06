@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
 import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
-import { useTimer, formatTime } from '../../hooks';
+import { useTimer, formatTime, useLocationTracking } from '../../hooks';
+import MapView, { Polyline } from "react-native-maps";
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -29,18 +30,27 @@ const INPUT_HEIGHT = 50;
 
 export const ActiveSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
-    const route = useRoute<ActiveSessionRouteProp>();
-    const { sessionId } = route.params;
+    const routeParams = useRoute<ActiveSessionRouteProp>();
+    const { sessionId } = routeParams.params;
+    const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
 
     const [locationName, setLocationName] = useState('');
     const [region, setRegion] = useState('');
     const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
 
     const { seconds, start, stop } = useTimer();
+    const { route, stopLocationTracking, errorMsg, location } = useLocationTracking();
+
+    useEffect(() => {
+        if (errorMsg) {
+            Alert.alert('Erreur de localisation', errorMsg);
+        }
+    }, [errorMsg]);
 
     useEffect(() => {
         let isActive = true;
@@ -76,6 +86,16 @@ export const ActiveSessionScreen = () => {
         return () => stop();
     }, [session, start, stop]);
 
+    useEffect(() => {
+        if (location && mapViewRef.current && !userInteractingWithMap) {
+            mapViewRef.current.animateCamera({ 
+                center: location.coords, 
+                heading: location.coords.heading ?? 0,
+                zoom: 18,
+             });
+        }
+    }, [location, userInteractingWithMap]);
+
     const handleSaveChanges = async () => {
         setIsSaving(true);
         const updates: FishingSessionUpdate = { location_name: locationName, region, location_visibility: locationVisibility };
@@ -100,8 +120,8 @@ export const ActiveSessionScreen = () => {
                 style: 'destructive',
                 onPress: async () => {
                     stop();
+                    stopLocationTracking();
 
-                    // Calcul de la durée en minutes
                     const startTime = new Date(session.started_at).getTime();
                     const endTime = Date.now();
                     const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
@@ -111,6 +131,7 @@ export const ActiveSessionScreen = () => {
                             status: 'completed', 
                             ended_at: new Date(endTime).toISOString(),
                             duration_minutes: durationMinutes,
+                            route: route as any,
                         });
                         navigation.popToTop();
                     } catch (error) {
@@ -121,9 +142,32 @@ export const ActiveSessionScreen = () => {
         ]);
     };
 
+    const recenterMap = () => {
+        setUserInteractingWithMap(false);
+        if (location && mapViewRef.current) {
+            mapViewRef.current.animateCamera({ 
+                center: location.coords, 
+                heading: location.coords.heading ?? 0,
+                zoom: 18, // Adjust zoom level as needed
+            });
+        }
+    };
+
     if (loading || !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
+
+    const initialMapRegion = route.length > 0 ? {
+        latitude: route[route.length - 1].latitude,
+        longitude: route[route.length - 1].longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    } : (session?.location_lat && session?.location_lng ? {
+        latitude: session.location_lat,
+        longitude: session.location_lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    } : undefined);
 
     return (
         <ScrollView 
@@ -161,6 +205,31 @@ export const ActiveSessionScreen = () => {
                         </TouchableOpacity>
                     ))}
                 </View>
+            </View>
+            
+            <View style={styles.mapContainer}>
+                <MapView
+                    ref={mapViewRef}
+                    style={styles.map}
+                    initialRegion={initialMapRegion}
+                    showsUserLocation
+                    showsCompass
+                    onPanDrag={() => setUserInteractingWithMap(true)}
+                    onRegionChangeComplete={() => setUserInteractingWithMap(true)} // For iOS drag
+                >
+                    {route.length > 1 && (
+                        <Polyline
+                            coordinates={route}
+                            strokeColor={theme.colors.primary[500]}
+                            strokeWidth={4}
+                        />
+                    )}
+                </MapView>
+                {userInteractingWithMap && (
+                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
+                        <Ionicons name="locate" size={theme.iconSizes.sm} color={theme.colors.primary[600]} />
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
@@ -255,5 +324,25 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.inverse,
         fontWeight: theme.typography.fontWeight.bold,
+    },
+    mapContainer: {
+        position: 'relative',
+        width: '100%',
+        height: 300,
+        borderRadius: theme.borderRadius.lg,
+        marginVertical: theme.spacing[4],
+        overflow: 'hidden',
+    },
+    map: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    recenterButton: {
+        position: 'absolute',
+        top: theme.spacing[2],
+        right: theme.spacing[2],
+        backgroundColor: theme.colors.white,
+        borderRadius: theme.borderRadius.full,
+        padding: theme.spacing[2],
+        ...theme.shadows.md,
     },
 });

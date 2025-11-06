@@ -145,6 +145,7 @@ export interface Database {
                     is_published: boolean | null
                     created_at: string | null
                     updated_at: string | null
+                    route: Json | null
                 }
                 Insert: {
                     id?: string
@@ -169,6 +170,7 @@ export interface Database {
                     is_published?: boolean | null
                     created_at?: string | null
                     updated_at?: string | null
+                    route?: Json | null
                 }
                 Update: {
                     id?: string
@@ -193,6 +195,7 @@ export interface Database {
                     is_published?: boolean | null
                     created_at?: string | null
                     updated_at?: string | null
+                    route?: Json | null
                 }
             }
             likes: {
