@@ -69,7 +69,7 @@ const formatDuration = (totalMinutes: number | null) => {
 export const SessionDetailScreen = () => {
     const route = useRoute<SessionDetailRouteProp>();
     const navigation = useNavigation();
-    const { sessionId } = route.params;
+    const { sessionId, onGoBack } = route.params;
     const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
@@ -177,6 +177,7 @@ export const SessionDetailScreen = () => {
             await loadSession();
             setIsEditing(false);
             Alert.alert("Succès", "La session a été mise à jour.");
+            if (onGoBack) onGoBack(true); // Signaler la modification
         } catch (error) {
             Alert.alert("Erreur", "Impossible de sauvegarder les modifications.");
         } finally {
@@ -199,13 +200,17 @@ export const SessionDetailScreen = () => {
             ),
             headerLeft: () => (
                 isEditing ? (
-                    <TouchableOpacity onPress={() => { setIsEditing(false); loadSession(); }}>
+                    <TouchableOpacity onPress={() => { 
+                        setIsEditing(false); 
+                        loadSession();
+                        if (onGoBack) onGoBack(false); // Signaler qu'aucune modification n'a été enregistrée
+                    }}>
                         <Ionicons name={"close-outline"} size={theme.iconSizes.lg} color={theme.colors.error.main} />
                     </TouchableOpacity>
                 ) : undefined
             ),
         });
-    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterClarity, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, loadSession, handleSave]);
+    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterClarity, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, loadSession, handleSave, onGoBack]);
 
     if (loading) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;

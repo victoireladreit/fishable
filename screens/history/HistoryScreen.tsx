@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Animated, Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionsService, FishingSession } from '../../services';
@@ -65,6 +65,8 @@ export const HistoryScreen = () => {
     const [sessions, setSessions] = useState<FishingSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [shouldReload, setShouldReload] = useState(false);
+    const [hasLoadedInitial, setHasLoadedInitial] = useState(false); // Nouveau state
 
     const loadSessions = useCallback(async () => {
         if (!user) return;
@@ -77,10 +79,21 @@ export const HistoryScreen = () => {
         }
     }, [user]);
 
-    useEffect(() => {
-        setLoading(true);
-        loadSessions().finally(() => setLoading(false));
-    }, [loadSessions]);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchData = async () => {
+                setLoading(true);
+                await loadSessions();
+                setLoading(false);
+                setShouldReload(false); // Réinitialiser après le rechargement
+                setHasLoadedInitial(true); // Marquer comme chargé initialement
+            };
+
+            if (shouldReload || !hasLoadedInitial) {
+                fetchData();
+            }
+        }, [loadSessions, shouldReload, hasLoadedInitial])
+    );
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
@@ -111,7 +124,18 @@ export const HistoryScreen = () => {
         );
     };
 
-    if (loading) {
+    const handleNavigateToDetail = useCallback((sessionId: string) => {
+        navigation.navigate('SessionDetail', { 
+            sessionId: sessionId,
+            onGoBack: (modified: boolean) => {
+                if (modified) {
+                    setShouldReload(true);
+                }
+            },
+        });
+    }, [navigation]);
+
+    if (loading && !hasLoadedInitial) { // Afficher le loader uniquement lors du premier chargement
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
@@ -130,7 +154,7 @@ export const HistoryScreen = () => {
                             <SessionCard 
                                 session={item} 
                                 onDelete={() => handleDelete(item.id)} 
-                                onNavigate={() => navigation.navigate('SessionDetail', { sessionId: item.id })} 
+                                onNavigate={() => handleNavigateToDetail(item.id)} 
                             />
                         )}
                         keyExtractor={item => item.id}
