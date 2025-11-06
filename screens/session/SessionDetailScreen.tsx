@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, ScrollView, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';

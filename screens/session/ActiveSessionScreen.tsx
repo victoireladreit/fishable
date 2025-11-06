@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,17 +142,6 @@ export const ActiveSessionScreen = () => {
         ]);
     };
 
-    const recenterMap = () => {
-        setUserInteractingWithMap(false);
-        if (location && mapViewRef.current) {
-            mapViewRef.current.animateCamera({ 
-                center: location.coords, 
-                heading: location.coords.heading ?? 0,
-                zoom: 18, // Adjust zoom level as needed
-            });
-        }
-    };
-
     if (loading || !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
@@ -213,7 +202,6 @@ export const ActiveSessionScreen = () => {
                     style={styles.map}
                     initialRegion={initialMapRegion}
                     showsUserLocation
-                    showsCompass
                     onPanDrag={() => setUserInteractingWithMap(true)}
                     onRegionChangeComplete={() => setUserInteractingWithMap(true)} // For iOS drag
                 >
@@ -225,11 +213,6 @@ export const ActiveSessionScreen = () => {
                         />
                     )}
                 </MapView>
-                {userInteractingWithMap && (
-                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
-                        <Ionicons name="locate" size={theme.iconSizes.sm} color={theme.colors.primary[600]} />
-                    </TouchableOpacity>
-                )}
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
