@@ -1,22 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, ScrollView, Image,
-    Platform
+    Platform, Modal, Dimensions
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { theme } from '../../theme';
-import { ProfileService, Profile } from '../../services/profile.service';
+import { ProfileService, Profile } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const INPUT_HEIGHT = 50;
+const screenWidth = Dimensions.get('window').width;
 
 export const ProfileScreen = () => {
     const { user } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [showFullSizeAvatar, setShowFullSizeAvatar] = useState(false); // New state for full-size avatar
 
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
@@ -102,12 +104,12 @@ export const ProfileScreen = () => {
     const showAvatarOptions = () => {
         const options = ["Prendre une photo", "Choisir depuis la photothèque"];
         let destructiveButtonIndex: number | undefined = undefined;
-        
+
         if (avatarUrl) {
             options.push("Supprimer la photo");
             destructiveButtonIndex = options.length - 1;
         }
-        
+
         options.push("Annuler");
         const cancelButtonIndex = options.length - 1;
 
@@ -146,27 +148,36 @@ export const ProfileScreen = () => {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContentContainer} keyboardShouldPersistTaps="handled">
-                <View style={styles.avatarContainer}>
-                    <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatar} />
-                </View>
-
-                {isEditing && (
-                    <TouchableOpacity onPress={showAvatarOptions}>
-                        <Text style={styles.changePictureText}>Modifier la photo de profil</Text>
-                    </TouchableOpacity>
-                )}
-
                 {isEditing ? (
-                    <View style={{marginTop: theme.spacing[6]}}>
-                        <View style={styles.formGroup}><Text style={styles.label}>Nom complet</Text><TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Votre nom et prénom" /></View>
-                        <View style={styles.formGroup}><Text style={styles.label}>Biographie</Text><TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio} placeholder="Parlez un peu de vous..." multiline /></View>
-                    </View>
+                    <>
+                        <View style={styles.avatarContainerEditable}>
+                            <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatar} />                            
+                        </View>
+                        {/* Nouveau bouton de texte pour modifier la photo */}
+                        <TouchableOpacity onPress={showAvatarOptions} style={styles.changePhotoButton}>
+                            <Text style={styles.changePhotoButtonText}>Modifier la photo</Text>
+                        </TouchableOpacity>
+
+                        <View style={{marginTop: theme.spacing[6]}}>
+                            <View style={styles.formGroup}><Text style={styles.label}>Nom complet</Text><TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Votre nom et prénom" /></View>
+                            <View style={styles.formGroup}><Text style={styles.label}>Biographie</Text><TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio} placeholder="Parlez un peu de vous..." multiline /></View>
+                        </View>
+                    </>
                 ) : (
                     <View style={styles.infoCard}>
-                        <View style={styles.infoRow}><Text style={styles.label}>Nom d'utilisateur</Text><Text style={styles.info}>{profile?.username}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.label}>Nom complet</Text><Text style={styles.info}>{profile?.full_name || '-'}</Text></View>
-                        <View style={styles.infoRow}><Text style={styles.label}>Email</Text><Text style={styles.info}>{user?.email}</Text></View>
-                        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}><Text style={styles.label}>Bio</Text><Text style={styles.info}>{profile?.bio || '-'}</Text></View>
+                        <View style={styles.profileSummary}>
+                            <TouchableOpacity onPress={() => avatarUrl && setShowFullSizeAvatar(true)} style={styles.avatarContainerDisplay}>
+                                <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatarDisplay} />
+                            </TouchableOpacity>
+                            <View style={styles.profileTextContainer}>
+                                <Text style={styles.usernameText}>{profile?.username}</Text>
+                                {profile?.full_name && <Text style={styles.fullNameText}>{profile.full_name}</Text>}
+                            </View>
+                        </View>
+                        <View style={styles.bioContainer}>
+                            <Text style={styles.label}>Biographie</Text>
+                            <Text style={styles.info}>{profile?.bio || '-'}</Text>
+                        </View>
                     </View>
                 )}
             </ScrollView>
@@ -178,6 +189,28 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
                 </View>
             )}
+
+            {/* Full-size avatar modal */}
+            <Modal
+                visible={showFullSizeAvatar}
+                transparent={true}
+                animationType="fade"
+                statusBarTranslucent
+                navigationBarTranslucent
+                onRequestClose={() => setShowFullSizeAvatar(false)}
+            >
+                <TouchableOpacity
+                    style={styles.fullSizeAvatarOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowFullSizeAvatar(false)}
+                >
+                    {avatarUrl ? (
+                        <Image source={{ uri: avatarUrl }} style={styles.fullSizeAvatar} resizeMode="cover" />
+                    ) : (
+                        <Image source={require('../../assets/default-avatar.jpg')} style={styles.fullSizeAvatar} resizeMode="cover" />
+                    )}
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -199,13 +232,27 @@ const styles = StyleSheet.create({
         color: theme.colors.text.primary,
     },
     scrollContentContainer: { flexGrow: 1, paddingHorizontal: theme.layout.containerPadding },
-    avatarContainer: { alignSelf: 'center', marginBottom: theme.spacing[2] },
+    avatarContainerEditable: { alignSelf: 'center', marginBottom: theme.spacing[2], position: 'relative' },
     avatar: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: theme.colors.primary[200] },
-    changePictureText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.primary[500], textAlign: 'center', marginBottom: theme.spacing[6] },
-    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, paddingHorizontal: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
-    infoRow: { paddingVertical: theme.spacing[4], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
-    label: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
-    info: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.primary, fontWeight: theme.typography.fontWeight.medium },
+    changePhotoButton: {
+        alignSelf: 'center',
+    },
+    changePhotoButtonText: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.primary[500],
+        fontWeight: theme.typography.fontWeight.medium,
+    },
+    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
+    profileSummary: { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing[4] },
+    avatarContainerDisplay: { marginRight: theme.spacing[4] },
+    avatarDisplay: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: theme.colors.primary[200] },
+    profileTextContainer: { flex: 1 },
+    usernameText: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['xl'], color: theme.colors.text.primary },
+    fullNameText: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginTop: theme.spacing[1] },
+    bioContainer: { paddingTop: theme.spacing[4], borderTopWidth: 1, borderTopColor: theme.colors.border.light },
+    label: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[1] },
+    info: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontWeight: theme.typography.fontWeight.medium },
     formGroup: { marginBottom: theme.spacing[5] },
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
     textArea: { height: 100, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
@@ -214,4 +261,22 @@ const styles = StyleSheet.create({
     saveButton: { backgroundColor: theme.colors.primary[500] },
     buttonDisabled: { backgroundColor: theme.colors.gray[400], ...theme.shadows.none },
     buttonText: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize.base, color: theme.colors.text.inverse, fontWeight: theme.typography.fontWeight.bold },
+    // Styles for full-size avatar modal
+    fullSizeAvatarOverlay: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)', // Semi-transparent background for blur effect
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullSizeAvatar: {
+        width: screenWidth * 0.8, // 80% of screen width
+        height: screenWidth * 0.8, // Make it square
+        borderRadius: (screenWidth * 0.8) / 2, // Make it circular
+        borderWidth: 3,
+        borderColor: theme.colors.white,
+    },
 });

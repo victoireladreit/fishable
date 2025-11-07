@@ -19,7 +19,7 @@ type LocationVisibility = 'public' | 'region' | 'private';
 
 const waterClarityOptions: { key: WaterClarity; label: string }[] = [
     { key: 'clear', label: 'Clair' },
-    { key: 'slightly_murky', label: 'Légèrement trouble' },
+    { key: 'slightly_murky', label: 'Peu trouble' },
     { key: 'murky', label: 'Trouble' },
     { key: 'very_murky', label: 'Très trouble' },
 ];
@@ -76,6 +76,7 @@ export const SessionDetailScreen = () => {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
+    const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
 
     // États pour les champs modifiables
@@ -224,30 +225,20 @@ export const SessionDetailScreen = () => {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-            <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-                {isEditing ? (
-                    <TextInput
-                        style={styles.titleInput}
-                        value={locationName}
-                        onChangeText={setLocationName}
-                        placeholder="Nom du spot"
-                        placeholderTextColor={theme.colors.text.disabled}
-                    />
-                ) : (
-                    <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
-                )}
-                {session.region && <Text style={styles.regionText}>{session.region}</Text>}
-                <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
-                {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
-                <View style={styles.statsContainer}>
-                    {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
-                    <Text style={styles.sessionDate}>
-                        Distance: {session.distance_km !== null ? `${session.distance_km.toFixed(2)} km` : '-'}
-                    </Text>
-                </View>
-
+            <ScrollView 
+                contentContainerStyle={styles.scrollContentContainer}
+                scrollEnabled={!mapInteractionEnabled}
+            >
                 {isEditing ? (
                     <>
+                        <TextInput
+                            style={styles.titleInput}
+                            value={locationName}
+                            onChangeText={setLocationName}
+                            placeholder="Nom du spot"
+                            placeholderTextColor={theme.colors.text.disabled}
+                        />
+                        {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         <View style={styles.formGroup}>
                             <Text style={styles.label}>Légende / Notes</Text>
                             <TextInput style={[styles.input, styles.textArea]} value={caption} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
@@ -258,7 +249,7 @@ export const SessionDetailScreen = () => {
                             <Text style={styles.label}>Clarté de l'eau</Text>
                             <View style={styles.selectorContainer}>
                                 {waterClarityOptions.map(opt => (
-                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterClarity === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterClarity(opt.key)}>
+                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterClarity === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterClarity(prev => prev === opt.key ? null : opt.key)}>
                                         <Text style={[styles.selectorText, waterClarity === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -270,7 +261,7 @@ export const SessionDetailScreen = () => {
                             <Text style={styles.label}>Courant de l'eau</Text>
                             <View style={styles.selectorContainer}>
                                 {waterCurrentOptions.map(opt => (
-                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterCurrent === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterCurrent(opt.key)}>
+                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterCurrent === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterCurrent(prev => prev === opt.key ? null : opt.key)}>
                                         <Text style={[styles.selectorText, waterCurrent === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -282,7 +273,7 @@ export const SessionDetailScreen = () => {
                             <Text style={styles.label}>Niveau d'eau</Text>
                             <View style={styles.selectorContainer}>
                                 {waterLevelOptions.map(opt => (
-                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterLevel === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterLevel(opt.key)}>
+                                    <TouchableOpacity key={opt.key} style={[styles.selectorOption, waterLevel === opt.key && styles.selectorOptionSelected]} onPress={() => setWaterLevel(prev => prev === opt.key ? null : opt.key)}>
                                         <Text style={[styles.selectorText, waterLevel === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -319,6 +310,17 @@ export const SessionDetailScreen = () => {
                     </>
                 ) : (
                     <>
+                        <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
+                        {session.region && <Text style={styles.regionText}>{session.region}</Text>}
+                        <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
+                        {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
+                        <View style={styles.statsContainer}>
+                            {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
+                            <Text style={styles.sessionDate}>
+                                Distance: {session.distance_km !== null ? `${session.distance_km.toFixed(2)} km` : '-'}
+                            </Text>
+                        </View>
+
                         <View style={styles.infoCard}>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
@@ -341,8 +343,8 @@ export const SessionDetailScreen = () => {
                                         style={styles.map}
                                         initialRegion={mapRegion}
                                         showsCompass={true}
-                                        scrollEnabled={true}
-                                        zoomEnabled={true}
+                                        scrollEnabled={mapInteractionEnabled}
+                                        zoomEnabled={mapInteractionEnabled}
                                     >
                                         {sessionRoute && sessionRoute.length > 1 && (
                                             <>
@@ -365,10 +367,23 @@ export const SessionDetailScreen = () => {
                                             </>
                                         )}
                                     </MapView>
-                                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
-                                        <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
-                                    </TouchableOpacity>
-                                </>
+                                    <View style={styles.mapButtonsContainer}>
+                                        <TouchableOpacity 
+                                            style={styles.mapButton} 
+                                            onPress={() => {
+                                                if (mapInteractionEnabled) {
+                                                    recenterMap();
+                                                }
+                                                setMapInteractionEnabled(prev => !prev);
+                                            }}
+                                        >
+                                            <Ionicons name={mapInteractionEnabled ? "lock-open-outline" : "lock-closed-outline"} size={theme.iconSizes.xs} color={theme.colors.text.primary} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.mapButton} onPress={recenterMap}>
+                                            <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </> 
                             ) : (
                                 <View style={styles.mapFallback}>
                                     <Text style={styles.mapFallbackText}>Aucune donnée de parcours disponible.</Text>
@@ -452,14 +467,18 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.white,
         borderWidth: 2,
     },
-    recenterButton: {
+    mapButtonsContainer: {
         position: 'absolute',
         top: theme.spacing[2],
         right: theme.spacing[2],
+        flexDirection: 'row',
         backgroundColor: theme.colors.white,
         borderRadius: theme.borderRadius.full,
-        padding: theme.spacing[2],
         ...theme.shadows.md,
+        padding: theme.spacing[1],
+    },
+    mapButton: {
+        padding: theme.spacing[1],
     },
     calloutContainer: {
         alignItems: 'center',

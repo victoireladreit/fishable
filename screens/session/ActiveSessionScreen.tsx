@@ -5,16 +5,19 @@ import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
 import { theme } from '../../theme';
-import { RootStackParamList } from '../../navigation/types';
 import { useTimer, formatTime, useLocationTracking } from '../../hooks';
 import MapView, { Polyline } from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
+import {RootStackParamList} from "../../navigation/types";
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
 
 type Visibility = 'public' | 'region' | 'private';
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
+type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
+type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
+type WaterLevel = 'low' | 'normal' | 'high';
 
 const visibilityOptions: { key: Visibility; label: string }[] = [
     { key: 'private', label: 'Privé' },
@@ -27,6 +30,26 @@ const windStrengthOptions: { key: WindStrength; label: string }[] = [
     { key: 'light', label: 'Léger' },
     { key: 'moderate', label: 'Modéré' },
     { key: 'strong', label: 'Fort' },
+];
+
+const waterClarityOptions: { key: WaterClarity; label: string }[] = [
+    { key: 'clear', label: 'Clair' },
+    { key: 'slightly_murky', label: 'Peu trouble' },
+    { key: 'murky', label: 'Trouble' },
+    { key: 'very_murky', label: 'Très trouble' },
+];
+
+const waterCurrentOptions: { key: WaterCurrent; label: string }[] = [
+    { key: 'none', label: 'Nul' },
+    { key: 'light', label: 'Léger' },
+    { key: 'moderate', label: 'Modéré' },
+    { key: 'strong', label: 'Fort' },
+];
+
+const waterLevelOptions: { key: WaterLevel; label: string }[] = [
+    { key: 'low', label: 'Bas' },
+    { key: 'normal', label: 'Normal' },
+    { key: 'high', label: 'Haut' },
 ];
 
 const visibilityInfo = `
@@ -47,13 +70,24 @@ export const ActiveSessionScreen = () => {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
+    const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
+    // Editable fields
     const [locationName, setLocationName] = useState('');
     const [region, setRegion] = useState('');
     const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
+    const [waterClarity, setWaterClarity] = useState<WaterClarity | null>(null);
+    const [waterCurrent, setWaterCurrent] = useState<WaterCurrent | null>(null);
+    const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
 
     const { seconds, start, stop } = useTimer();
     const { route, stopLocationTracking, errorMsg, location } = useLocationTracking();
+
+    const hasUnsavedChanges = session?.location_name !== locationName ||
+        session?.location_visibility !== locationVisibility ||
+        session?.water_clarity !== waterClarity ||
+        session?.water_current !== waterCurrent ||
+        session?.water_level !== waterLevel;
 
     useEffect(() => {
         if (errorMsg) {
@@ -72,6 +106,9 @@ export const ActiveSessionScreen = () => {
                         setLocationName(fetchedSession.location_name || '');
                         setRegion(fetchedSession.region || '');
                         setLocationVisibility(fetchedSession.location_visibility || 'region');
+                        setWaterClarity(fetchedSession.water_clarity || null);
+                        setWaterCurrent(fetchedSession.water_current || null);
+                        setWaterLevel(fetchedSession.water_level || null);
                     } else {
                         Alert.alert('Erreur', 'Session invalide ou introuvable.');
                         navigation.goBack();
@@ -96,60 +133,99 @@ export const ActiveSessionScreen = () => {
     }, [session, start, stop]);
 
     useEffect(() => {
-        if (location && mapViewRef.current && !userInteractingWithMap) {
+        if (location && mapViewRef.current && !userInteractingWithMap && !mapInteractionEnabled) {
             mapViewRef.current.animateCamera({ 
                 center: location.coords,
                 zoom: 16,
              });
         }
-    }, [location, userInteractingWithMap]);
+    }, [location, userInteractingWithMap, mapInteractionEnabled]);
 
     const handleSaveChanges = async () => {
         setIsSaving(true);
-        const updates: FishingSessionUpdate = { location_name: locationName, region, location_visibility: locationVisibility };
+        const updates: FishingSessionUpdate = { 
+            location_name: locationName, 
+            location_visibility: locationVisibility,
+            water_clarity: waterClarity,
+            water_current: waterCurrent,
+            water_level: waterLevel,
+        };
         try {
             await FishingSessionsService.updateSession(sessionId, updates);
+            setSession(prev => prev ? { ...prev, ...updates } : null);
             Alert.alert('Succès', 'Les informations ont été mises à jour.');
+            return true;
         } catch (error) {
             console.error('Erreur sauvegarde session:', error);
             Alert.alert('Erreur', 'Impossible de sauvegarder.');
+            return false;
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleEndSession = () => {
+    const proceedToEndSession = async () => {
         if (!session?.started_at) return;
 
-        Alert.alert('Terminer la session', 'Êtes-vous sûr ?', [
-            { text: 'Annuler', style: 'cancel' },
-            {
-                text: 'Terminer',
-                style: 'destructive',
-                onPress: async () => {
-                    stop();
-                    stopLocationTracking();
+        stop();
+        stopLocationTracking();
 
-                    const startTime = new Date(session.started_at).getTime();
-                    const endTime = Date.now();
-                    const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
-                    const distanceKm = calculateTotalDistance(route);
+        const startTime = new Date(session.started_at).getTime();
+        const endTime = Date.now();
+        const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
+        const distanceKm = calculateTotalDistance(route);
 
-                    try {
-                        await FishingSessionsService.updateSession(sessionId, { 
-                            status: 'completed', 
-                            ended_at: new Date(endTime).toISOString(),
-                            duration_minutes: durationMinutes,
-                            route: route as any,
-                            distance_km: distanceKm,
-                        });
-                        navigation.popToTop();
-                    } catch (error) {
-                        console.error('Erreur fin de session:', error);
-                    }
+        try {
+            await FishingSessionsService.updateSession(sessionId, { 
+                status: 'completed', 
+                ended_at: new Date(endTime).toISOString(),
+                duration_minutes: durationMinutes,
+                route: route as any,
+                distance_km: distanceKm,
+            });
+            navigation.popToTop();
+        } catch (error) {
+            console.error('Erreur fin de session:', error);
+            Alert.alert('Erreur', 'Une erreur est survenue lors de la finalisation de la session.');
+        }
+    };
+
+    const handleEndSession = () => {
+        if (hasUnsavedChanges) {
+            Alert.alert(
+                'Changements non enregistrés',
+                'Voulez-vous enregistrer vos modifications avant de terminer ?',
+                [
+                    {
+                        text: 'Annuler',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Terminer sans enregistrer',
+                        style: 'destructive',
+                        onPress: proceedToEndSession,
+                    },
+                    {
+                        text: 'Enregistrer et Terminer',
+                        onPress: async () => {
+                            const success = await handleSaveChanges();
+                            if (success) {
+                                proceedToEndSession();
+                            }
+                        },
+                    },
+                ]
+            );
+        } else {
+            Alert.alert('Terminer la session', 'Êtes-vous sûr ?', [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Terminer',
+                    style: 'destructive',
+                    onPress: proceedToEndSession,
                 },
-            },
-        ]);
+            ]);
+        }
     };
 
     const recenterMap = () => {
@@ -192,35 +268,47 @@ export const ActiveSessionScreen = () => {
     } : undefined);
 
     const windStrengthLabel = windStrengthOptions.find(opt => opt.key === session.wind_strength)?.label || '-';
+    const currentDistance = calculateTotalDistance(route);
 
     return (
         <ScrollView 
             style={styles.scrollContainer} 
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={!mapInteractionEnabled}
         >
-            <View style={styles.timerContainer}>
-                <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+            <View style={styles.headerContainer}>
+                <TextInput
+                    style={styles.titleInput}
+                    value={locationName}
+                    onChangeText={setLocationName}
+                    placeholder="Nom du spot"
+                    placeholderTextColor={theme.colors.text.disabled}
+                />
+                {region ? <Text style={styles.regionText}>{region}</Text> : null}
             </View>
 
-            <View style={styles.weatherContainer}>
-                <View style={styles.weatherRow}>
-                    <Text style={styles.weatherTemp}>{session.weather_temp ? `${Math.round(session.weather_temp)}°C` : '-'}</Text>
+            <View style={styles.topStatsContainer}>
+                <View style={styles.timerAndDistanceContainer}>
+                    <View style={styles.timerContainer}>
+                        <Text style={styles.distanceLabel}>Temps</Text>
+                        <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+                    </View>
+                    <View style={styles.distanceContainer}>
+                        <Text style={styles.distanceLabel}>Distance</Text>
+                        <Text style={styles.distanceText}>{currentDistance.toFixed(2)} km</Text>
+                    </View>
                 </View>
-                <Text style={styles.weatherConditions}>{`Temps ${session.weather_conditions}` || '-'}</Text>
-                <Text style={styles.windInfo}>
-                    Vent: {windStrengthLabel} ({session.wind_speed_kmh ? `${session.wind_speed_kmh.toFixed(1)} km/h` : '-'})
-                </Text>
-            </View>
 
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Nom du Spot</Text>
-                <TextInput style={styles.input} value={locationName} onChangeText={setLocationName} placeholder="Ex: Ponton du lac" placeholderTextColor={theme.colors.text.disabled} />
-            </View>
-
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Région / Ville</Text>
-                <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Ex: Annecy, Haute-Savoie" placeholderTextColor={theme.colors.text.disabled} />
+                <View style={styles.weatherContainer}>
+                    <View style={styles.weatherRow}>
+                        <Text style={styles.weatherTemp}>{session.weather_temp ? `${Math.round(session.weather_temp)}°C` : '-'}</Text>
+                    </View>
+                    <Text style={styles.weatherConditions}>{`Temps ${session.weather_conditions}` || '-'}</Text>
+                    <Text style={styles.windInfo}>
+                        Vent: {windStrengthLabel} ({session.wind_speed_kmh ? `${session.wind_speed_kmh.toFixed(1)} km/h` : '-'})
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.formGroup}>
@@ -230,14 +318,14 @@ export const ActiveSessionScreen = () => {
                         <Ionicons name="information-circle-outline" size={theme.iconSizes.sm} color={theme.colors.primary[500]} />
                     </TouchableOpacity>
                 </View>
-                <View style={styles.visibilitySelector}>
+                <View style={styles.selectorContainer}>
                     {visibilityOptions.map(opt => (
                         <TouchableOpacity
                             key={opt.key}
-                            style={[styles.visibilityOption, locationVisibility === opt.key && styles.visibilityOptionSelected]}
+                            style={[styles.selectorOption, locationVisibility === opt.key && styles.selectorOptionSelected]}
                             onPress={() => setLocationVisibility(opt.key)}
                         >
-                            <Text style={[styles.visibilityText, locationVisibility === opt.key && styles.visibilityTextSelected]}>{opt.label}</Text>
+                            <Text style={[styles.selectorText, locationVisibility === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -250,6 +338,8 @@ export const ActiveSessionScreen = () => {
                     initialRegion={initialMapRegion}
                     showsUserLocation
                     onPanDrag={() => setUserInteractingWithMap(true)}
+                    scrollEnabled={mapInteractionEnabled}
+                    zoomEnabled={mapInteractionEnabled}
                 >
                     {route.length > 1 && (
                         <Polyline
@@ -259,16 +349,73 @@ export const ActiveSessionScreen = () => {
                         />
                     )}
                 </MapView>
-                {Platform.OS === 'ios' && (
-                    <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
+
+                <View style={styles.mapButtonsContainer}>
+                    <TouchableOpacity 
+                        style={styles.mapButton} 
+                        onPress={() => {
+                            if (mapInteractionEnabled) {
+                                recenterMap(); // Recenter map when locking it
+                            }
+                            setMapInteractionEnabled(prev => !prev);
+                        }}
+                    >
+                        <Ionicons name={mapInteractionEnabled ? "lock-open-outline" : "lock-closed-outline"} size={theme.iconSizes.xs} color={theme.colors.text.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.mapButton} onPress={recenterMap}>
                         <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
                     </TouchableOpacity>
-                )}
+                </View>
+            </View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Clarté de l'eau</Text>
+                <View style={styles.selectorContainer}>
+                    {waterClarityOptions.map(opt => (
+                        <TouchableOpacity
+                            key={opt.key}
+                            style={[styles.selectorOption, waterClarity === opt.key && styles.selectorOptionSelected]}
+                            onPress={() => setWaterClarity(prev => prev === opt.key ? null : opt.key)}
+                        >
+                            <Text style={[styles.selectorText, waterClarity === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Courant de l'eau</Text>
+                <View style={styles.selectorContainer}>
+                    {waterCurrentOptions.map(opt => (
+                        <TouchableOpacity
+                            key={opt.key}
+                            style={[styles.selectorOption, waterCurrent === opt.key && styles.selectorOptionSelected]}
+                            onPress={() => setWaterCurrent(prev => prev === opt.key ? null : opt.key)}
+                        >
+                            <Text style={[styles.selectorText, waterCurrent === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Niveau d'eau</Text>
+                <View style={styles.selectorContainer}>
+                    {waterLevelOptions.map(opt => (
+                        <TouchableOpacity
+                            key={opt.key}
+                            style={[styles.selectorOption, waterLevel === opt.key && styles.selectorOptionSelected]}
+                            onPress={() => setWaterLevel(prev => prev === opt.key ? null : opt.key)}
+                        >
+                            <Text style={[styles.selectorText, waterLevel === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
-                <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving}>
-                    {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer</Text>}
+                <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
+                    {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.button, styles.endButton]} onPress={handleEndSession}>
                     <Text style={styles.buttonText}>Terminer la session</Text>
@@ -282,34 +429,95 @@ const styles = StyleSheet.create({
     scrollContainer: { flex: 1, backgroundColor: theme.colors.background.default },
     container: { 
         flexGrow: 1, 
-        justifyContent: 'center', 
+        alignItems: 'center',
         padding: theme.layout.containerPadding 
     },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.default },
-    timerContainer: {
-        paddingVertical: theme.spacing[4],
-        paddingHorizontal: theme.spacing[6],
-        backgroundColor: theme.colors.primary[50],
+    headerContainer: {
+        width: '100%',
+        padding: theme.spacing[4],
+        backgroundColor: theme.colors.background.paper,
+        borderRadius: theme.borderRadius.lg,
+        marginBottom: theme.spacing[6],
+        ...theme.shadows.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+    },
+    titleInput: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['2xl'],
+        color: theme.colors.text.primary,
+        paddingBottom: theme.spacing[1],
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border.main,
+    },
+    regionText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.lg,
+        color: theme.colors.text.secondary,
+        marginTop: theme.spacing[2],
+    },
+    topStatsContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between',
+        alignItems: 'stretch',
+        marginBottom: theme.spacing[6],
+    },
+    timerAndDistanceContainer: {
+        flex: 2,
+        flexDirection: 'column',
         borderRadius: theme.borderRadius.lg,
         borderWidth: 1,
         borderColor: theme.colors.primary[200],
-        marginBottom: theme.spacing[4],
-        alignSelf: 'center',
+        marginRight: theme.spacing[2],
+        overflow: 'hidden',
+    },
+    timerContainer: {
+        flex: 1,
+        paddingVertical: theme.spacing[2],
+        paddingHorizontal: theme.spacing[2],
+        backgroundColor: theme.colors.primary[50],
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderBottomColor: theme.colors.primary[200],
     },
     timerText: {
         fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['4xl'],
+        fontSize: theme.typography.fontSize.lg,
+        color: theme.colors.primary[700],
+        textAlign: 'center',
+    },
+    distanceContainer: {
+        flex: 1,
+        paddingVertical: theme.spacing[2],
+        paddingHorizontal: theme.spacing[2],
+        backgroundColor: theme.colors.primary[50],
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    distanceLabel: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.primary[600],
+        marginBottom: theme.spacing[1],
+    },
+    distanceText: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.lg,
         color: theme.colors.primary[700],
         textAlign: 'center',
     },
     weatherContainer: {
+        flex: 2,
         alignItems: 'center',
-        marginBottom: theme.spacing[8],
         padding: theme.spacing[4],
         backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.md,
+        borderRadius: theme.borderRadius.lg,
         borderWidth: 1,
         borderColor: theme.colors.border.light,
+        marginLeft: theme.spacing[2],
+        justifyContent: 'center',
     },
     weatherRow: {
         flexDirection: 'row',
@@ -318,20 +526,21 @@ const styles = StyleSheet.create({
     },
     weatherTemp: {
         fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['3xl'],
+        fontSize: theme.typography.fontSize['2xl'],
         color: theme.colors.text.primary,
-        marginRight: theme.spacing[3],
     },
     weatherConditions: {
         fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.lg,
+        fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.secondary,
+        textAlign: 'center',
     },
     windInfo: {
         fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.base,
+        fontSize: theme.typography.fontSize.sm,
         color: theme.colors.text.secondary,
         marginTop: theme.spacing[2],
+        textAlign: 'center',
     },
     formGroup: { width: '100%', marginBottom: theme.spacing[5] },
     labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -352,25 +561,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing[4],
         fontSize: theme.typography.fontSize.base,
     },
-    visibilitySelector: {
+    selectorContainer: {
         flexDirection: 'row',
         width: '100%',
         backgroundColor: theme.colors.gray[100],
         borderRadius: theme.borderRadius.md,
         padding: theme.spacing[1],
     },
-    visibilityOption: { flex: 1, paddingVertical: theme.spacing[2], borderRadius: theme.borderRadius.base, alignItems: 'center' },
-    visibilityOptionSelected: {
+    selectorOption: { flex: 1, paddingVertical: theme.spacing[2], borderRadius: theme.borderRadius.base, alignItems: 'center' },
+    selectorOptionSelected: {
         backgroundColor: theme.colors.white,
         ...theme.shadows.sm,
     },
-    visibilityText: {
+    selectorText: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.sm,
         color: theme.colors.text.secondary,
         fontWeight: theme.typography.fontWeight.medium,
+        textAlign: 'center',
     },
-    visibilityTextSelected: { color: theme.colors.primary[600] },
+    selectorTextSelected: { color: theme.colors.primary[600] },
     button: {
         height: INPUT_HEIGHT,
         justifyContent: 'center',
@@ -396,17 +606,23 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.lg,
         marginVertical: theme.spacing[4],
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
     },
     map: {
         ...StyleSheet.absoluteFillObject,
     },
-    recenterButton: {
+    mapButtonsContainer: {
         position: 'absolute',
         top: theme.spacing[2],
         right: theme.spacing[2],
+        flexDirection: 'row',
         backgroundColor: theme.colors.white,
         borderRadius: theme.borderRadius.full,
-        padding: theme.spacing[2],
         ...theme.shadows.md,
+        padding: theme.spacing[1],
+    },
+    mapButton: {
+        padding: theme.spacing[1],
     },
 });
