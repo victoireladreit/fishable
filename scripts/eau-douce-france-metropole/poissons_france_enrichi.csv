@@ -1,0 +1,158 @@
+name,name_en,scientific_name,common_names,family,category,habitat_types,water_types,depth_range_min,depth_range_max,temperature_range_min,temperature_range_max,geographic_zones,countries,fao_zones,average_size_cm,max_size_cm,average_weight_kg,max_weight_kg,rarity,icon_url,photo_url,description,fishbase_id,gbif_id
+Lamproie de rivière,European river lamprey,Lampetra fluviatilis,,Pétromyzontidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Lampetra fluviatilis,,2421365
+Lamproie de Planer,Brook Lamprey,Lampetra planeri,,Pétromyzontidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Lampetra  planeri,,2421402
+Lamproie marine,Eel Sucker,Petromyzon marinus,,Pétromyzontidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Petromyzon marinus,,8236498
+Esturgeon sibérien,Siberian sturgeon,Acipenser baerii,,Acipenséridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Esturgeon de Sibérie,,4287131
+Esturgeon diamant,Danube sturgeon,Acipenser gueldenstaedtii,,Acipenséridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Osciètre, Esturgeon du Danube, Esturgeon diamant",,2402129
+Esturgeon noir d'Amérique,Atlantic sturgeon,Acipenser oxyrinchus,,Acipenséridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Acipenser oxyrinchus (en grec « riverain au nez pointu »), communément appelé Esturgeon noir d'Amérique (également Esturgeon atlantique, Esturgeon de mer, Esturgeon escargot ou Esturgeon guindé) est un esturgeon de la côte est nord-Américaine. Sa distribution va du golfe du Saint-Laurent (où la plus grande population existe) jusqu'à la Floride. Une population disjointe (presque disparue) existe aussi dans la mer Baltique en Europe. D'une taille record de plus de 4 mètres, c'est le plus grand poisson à fréquenter les eaux douces du Québec.",,4287132
+Esturgeon du Danube,Sterlet,Acipenser ruthenus,,Acipenséridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Sterlet, Esturgeon du Danube",,2402168
+Esturgeon d'Europe,Atlantic Sturgeon,Acipenser sturio,,Acipenséridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Acipenser sturio,,2402203
+Anguille d'Europe,,Anguilla anguilla,,Anguillidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Anguilla anguilla,,5212973
+Alose feinte méditerranéenne,Mediterranean Shad,Alosa agone,,Clupéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Alosa agone est un poisson d'eau de mer méditerranéen qui remonte le cours inférieur des cours d'eau au moment de la reproduction.,,2412712
+Grande alose,Alice shad,Alosa alosa,,Clupéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Alosa alosa · Alose vraie,,2412685
+Alose feinte,,Alosa fallax,,Clupéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"L'alose feinte (Alosa fallax) est un poisson de la famille des Clupeidae. On le trouve dans les îles Britanniques, l'Allemagne, la France (Atlantique et Méditerranée), le Portugal, l'Algérie et le Maroc.",,2412623
+Loche transalpine,Italian Spined Loach,Cobitis bilineata,,Cobitidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Cobitis bilineata, la loche italienne, est une espèce de poissons à nageoires rayonnées de la famille des Cobitidae, rencontrée en Croatie, Italie, Slovénie et Suisse.",,2368222
+Loche de rivière,Common Spined Loach,Cobitis taenia,,Cobitidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cobitis taenia,,2368185
+Loche baromètre,Amur mud loach,Misgurnus anguillicaudatus,,Cobitidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Misgurnus anguillicaudatus,,2367919
+Loche d'étang,European Weather Loach,Misgurnus fossilis,,Cobitidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Misgurnus fossilis,,2367936
+Loche franche,Bearded stone loach,Barbatula barbatula,,Nemacheilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,La Loche franche (Barbatula barbatula) est une espèce de poissons benthiques d'eau douce autochtone de l'Europe occidentale et centrale et du nord de l'Espagne jusqu'au sud de la Suède.,,5204862
+Loche du Roussillon,Leopard Stone Loach,Barbatula leoparda,,Nemacheilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Loche léopard,,10721940
+Loche du Languedoc,Lez Stone Loach,Barbatula quignardi,,Nemacheilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Loche du Languedoc,,2357565
+Bouvière,,Rhodeus amarus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"La Bouvière (Rhodeus sericeus amarus) est un poisson d'eau douce  tempérée appartenant à la sous-famille Acheilognathinae de la famille des Cyprinidae. Il est originaire d'Europe, allant du bassin du Rhône en France à la Neva en Russie.",,2360842
+Barbeau fluviatile,Barbel,Barbus barbus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Barbus barbus,,5739539
+Barbeau méridional,,Barbus meridionalis,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Barbus meridionalis,,5739559
+Poisson rouge,Carp,Carassius auratus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Carassius auratus, Carassius auratus auratus · Carassin doré, Cyprin doré",,4286942
+Carassin commun,,Carassius carassius,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Carassin commun (Carassius carassius) dit encore carassin, carpe à la lune, cyprin, carache, carouche, gibèle, meule, carreau, ou gardon carpé, est un poisson de la famille des cyprinidés, celle des carpes et des vairons. Ce carassin vit dans les lacs, les étangs et les rivières à faible courant d'Europe et d'Asie. Cette espèce est très proche du poisson rouge avec laquelle elle s'hybride facilement lorsque ces derniers sont relâchés dans la nature.",,2366645
+Carassin argenté,Gibel (Prussian) Carp,Carassius gibelio,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Carassius gibelio, communément appelé Carassin argenté, Carpe prussienne ou Carpe de Prusse, est une espèce de poissons de la famille des cyprinidés. Elle est proche de deux autres espèces du genre Carassius avec lesquelles elle est souvent confondue, Carassius carassius et Carassius auratus.",,2366634
+Carpe commune,Aischgrund Carp,Cyprinus carpio,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cyprinus carpio,,4286975
+Carpe de l'Amour,Koi,Cyprinus rubrofuscus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Cyprinus rubrofuscus est une espèce de poissons de la famille des cyprinidés. Elle est répandue en Asie de l'Est où elle se rencontre au Laos, au Viêt Nam et de la Chine, des bassins de l'Amour jusqu'au fleuve Rouge. Elle a également été introduite en dehors de son aire de répartition d'origine. C'est la forme sauvage de la carpe koï. Elle est connue pour sa saveur boueuse et son goût sucré, par conséquent, elle n'est généralement pas consommée par les habitants, sauf lorsqu'elle est cuite.",,2367196
+Goujon d'Auvergne,Auvergne Gudgeon,Gobio alverniae,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Gobio alverniae,,5207780
+Goujon,Common Gudgeon,Gobio gobio,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Gobio gobio,,4409628
+Goujon de l'Adour,Pyrenean Gudgeon,Gobio lozanoi,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Goujon de l'Adour, Goujon ibérique",,4409629
+Goujon du Languedoc,Languedoc Gudgeon,Gobio occitaniae,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Goujon occitan, Goujon du Languedoc",,5207765
+Goujon d'Ukraine,Northern Whitefin Gudgeon,Romanogobio belingi,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Romanogobio belingi,,2360795
+Goujon asiatique,Stone moroco,Pseudorasbora parva,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Pseudorasbora parva (parfois appelé improprement « goujon asiatique ») est un poisson du genre Pseudorasbora et de la famille des Cyprinidés. Là où il a été introduit hors de son aire naturelle de répartition, il peut devenir envahissant et être vecteur de maladie émergente.",,2362868
+Ablette,Bleak,Alburnus alburnus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Alburnus alburnus,,2362925
+Hotu,Common nase,Chondrostoma nasus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Chondrostoma nasus,,2360551
+Vandoise du Béarn,Bearn Beaked Dace,Leuciscus bearnensis,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Vandoise du Béarn, Vandoise de l'Adour",,4409644
+Vandoise rostrée,beaked dace,Leuciscus burdigalensis,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Leuciscus burdigalensis,,4409642
+Ide mélanote,,Leuciscus idus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Leuciscus idus,,4409643
+Vandoise,Common dace,Leuciscus leuciscus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Leuciscus leuciscus,,4409641
+Vandoise au long-museau,Long-Snouted Dace,Leuciscus oxyrrhis,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,La Vandoise au long-museau (Leuciscus oxyrrhis) est une espèce de poissons de la famille des Cyprinidae. On la trouve dans la Garonne en France.,,5205766
+Toxostome,French Nase,Parachondrostoma toxostoma,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Chondrostoma toxostoma,,2359289
+Vairon de l'Adour,Adour Minnow,Phoxinus bigerri,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Vairon basque, Vairon de l'Adour",,5207399
+Vairon du Danube,Danube Minnow,Phoxinus csikii,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Phoxinus csikii,,5207428
+Vairon de la Garonne,Garonne Minnow,Phoxinus dragarum,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Phoxinus dragarum,,10781502
+Vairon de la Loire,Loire Minnow,Phoxinus fayollarum,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Phoxinus fayollarum,,10842469
+Vairon,Channel Minnow,Phoxinus phoxinus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Phoxinus phoxinus,,4409653
+Vairon du Languedoc,Languedoc Minnow,Phoxinus septimaniae,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Phoxinus septimaniae · Vairon du Languedoc,,5207400
+Tête de boule,Black-head Minnow,Pimephales promelas,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le tête de boule, méné à tête de boule ou méné à grosse tête (fathead minnow pour les Anglophones), Pimephales promelas est une espèce de poissons d'eau douce des zones tempérées nord américaine, élevé pour l'aquariophilie et comme espèce modèle. Récemment introduit en Europe, il peut être localement considéré comme espèce invasive. 
+Il appartient au genre Pimephales et à la famille des Cyprinidés.",,2367742
+Chevaine commun,Chub,Squalius cephalus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Squalius cephalus · Chevaine commun,,2365685
+Chevaine catalan,Catalan chub,Squalius laietanus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Chevesne catalan,,2365752
+Chevaine italien,Italian chub,Squalius squalus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2365778
+Blageon,Vairone,Telestes souffia,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Telestes souffia,,2360687
+Amour blanc,Chinese Grass Carp,Ctenopharyngodon idella,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Carpe de roseau, Amour blanc",,2362030
+Tanche,Doctor Fish,Tinca tinca,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Tinca tinca,,2362524
+Carpe argentée,Silver Carp,Hypophthalmichthys molitrix,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Carpe argentée, Amour argenté",,2362473
+Carpe à grosse tête,Bighead carp,Hypophthalmichthys nobilis,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Hypophthalmichthys nobilis, carpe marbrée",,2362486
+Brème commune,,Abramis brama,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Abramis brama,,9809222
+Spirlin,Bleak,Alburnoides bipunctatus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Alburnoides bipunctatus,,2360305
+Aspe,Aral asp,Aspius aspius,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Leuciscus aspius,,2360181
+Brème du Danube,"White-eye bream, Danube bream",Ballerus sapa,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Ballerus sapa, la brème du Danube, est une espèce de poissons de la famille des Cyprinidae.",,2367024
+Brème bordelière,Bream Flat,Blicca bjoerkna,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Blicca bjoerkna,,2359471
+Able de Heckel,Belica,Leucaspius delineatus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,L’Able de Heckel (Leucaspius delineatus) est une espèce de petits poissons d'eau douce d'Europe et d'Asie. C'est la seule espèce du genre Leucaspius (monotypique).,,2362881
+Épirine lippue,Albanian Roach,Pachychilon pictum,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Épirine lippue, Cyprin lippu tacheté, Gardon d'Albanie",,2360041
+Gardon,Common Roach,Rutilus rutilus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Rutilus rutilus,,2359706
+Gardon du Danube,Danube roach,Rutilus virgo,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2359692
+Rotengle de Bosnie,Dalmatian rudd,Scardinius dergle,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2362650
+Rotengle,Eurasian Rudd,Scardinius erythrophthalmus,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Scardinius erythrophthalmus,,2362635
+Vimbe,,Vimba vimba,,Cyprinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Vimba vimba,,2360504
+Pacu noir,Cachama,Colossoma macropomum,,Serrasalmidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Colossoma macropomum est une espèce de poissons américains de la famille des Serrasalmidae communément appelée « pacu » (comme d'autres espèces), « cachama » ou encore « tambaqui » et qui vit dans le bassin de l'Orénoque. Ce poisson, à la chair appréciée et à la croissance rapide, est élevé en pisciculture. C'est la seule espèce de son genre Colossoma (monotypique).",,2353152
+Pacu à ventre rouge,,Piaractus brachypomus,,Serrasalmidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Piaractus brachypomus est une espèce amazonienne de poissons d'eau douce de la famille des Serrasalmidae (dont font également partie les piranhas).,,2353225
+Poisson-chat commun,Black Bullhead,Ameiurus melas,,Ictaluridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le poisson-chat commun (Ameiurus melas), appelé aussi chat ou greffier Barbicho, est une espèce de poissons-chats d'eau douce de la famille des Ictaluridés d'origine américaine, mais aujourd'hui répandu en Europe à la suite d'introductions.",,2340977
+Silure glane,Danube Catfish,Silurus glanis,,Siluridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Silurus glanis,,2337607
+Pléco méridional,Southern sailfin catfish,Pterygoplichthys anisitsi,,Loricariidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2339979
+Pléco léopard,,Pterygoplichthys gibbiceps,,Loricariidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Pterygoplichthys gibbiceps est une espèce de poissons-chats d'eau douce de la famille des Loricariidae.,,2339957
+Corégone blanc,European cisco,Coregonus albula,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Coregonus albula · Petite marène,,2351027
+Bézoule,Savoy Whitefish,Coregonus bezola,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Coregonus bezola,,2351227
+Corégone de lac,Common Whitefish,Coregonus clupeaformis,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Coregonus clupeaformis,,2351119
+Corégone clupéoïde,Scottish Whitefish,Coregonus clupeoides,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Le Corégone clupéoïde (Coregonus clupeoides) est une espèce de poissons d'eau douce appartenant à la famille des Salmonidés.,,2351049
+Féra du Léman,Geneva Whitefish,Coregonus fera,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Coregonus fera,,2351066
+Corégone gravenche,Geneva Winter Whitefish,Coregonus hiemalis,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Corégone gravenche (Coregonus hiemalis) ou Corégone du Léman ou Petite féra était un poisson, faisant partie de la famille des Salmonidés, anciennement présent dans le lac Léman. La sur-pêche, la compétition avec des poissons introduits et la dégradation de la qualité des eaux l'ont fait disparaitre au début du XXe siècle.",,2351198
+Corégone lavaret,Bourget Whitefish,Coregonus lavaretus,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Coregonus lavaretus,,2351211
+Corégone maraène,Maraena Whitefish,Coregonus maraena,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2351174
+Bondelle,Houting,Coregonus oxyrinchus,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Corégone oxyrhynque (ou « bondelle, » mais ce nom est aussi donné à d'autres corégones) ou  Coregonus oxyrinchus décrit par Linné en 1758 est une espèce de poissons démersale et migratrice de type « anadrome»  appartenant au genre Coregonus.
+Cependant dans les eaux intérieures, une partie de la population des eaux douces (lacs.. )  n'est pas migratrice.",,2351155
+Palée,Three Lakes Whitefish,Coregonus palaea,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2351147
+Corégone du lac de Constance,Wartmann's Whitefish,Coregonus wartmanni,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2350976
+Corégone du lac de Zoug,Zug Whitefish,Coregonus zugensis,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2350947
+Huchon,Danube,Hucho hucho,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Saumon du Danube de l'allemand Donaulachs,,2351413
+Saumon rose à bosse,Pink Salmon,Oncorhynchus gorbuscha,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Oncorhynchus gorbuscha,,5204037
+Saumon argenté,Coho Salmon,Oncorhynchus kisutch,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Oncorhynchus kisutch, le saumon argenté ou saumon coho, est une espèce de poissons de la famille des Salmonidés.",,5204034
+Truite arc-en-ciel,Baiser,Oncorhynchus mykiss,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Oncorhynchus mykiss,,5204019
+Saumon royal,Chinook,Oncorhynchus tshawytscha,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Saumon royal,,5204024
+Truite à grosses taches,Sicilian Trout,Salmo cettii,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"La truite à grosses taches (Salmo trutta macrostigma, syn. Salmo cettii) est une sous-espèce de la truite commune européenne (Salmo trutta) décrite en premier en Algérie.",,2351616
+Truite du Rhône,Rhône Trout,Salmo rhodanensis,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Salmo rhodanensis,,2351548
+Saumon atlantique,(Atlantic) Salmon,Salmo salar,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Salmo salar,,7595433
+Truite commune,Amu-darya Trout,Salmo trutta,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Truite commune européenne,,8215487
+Omble de fontaine,American Brook Charr,Salvelinus fontinalis,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Salvelinus fontinalis,,2351271
+Omble du Canada,American Lake Charr,Salvelinus namaycush,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le touladi (Salvelinus namaycush) est un poisson d'eau douce de la famille des ombles, typique des  grands plans d'eau oligotrophes de l'Amérique du Nord. Il est aussi communément appelé truite grise, truite de lac ou omble du Canada. Le touladi est une espèce prisée comme poisson-trophée ainsi que comme source d'alimentation.",,2351327
+Omble chevalier,Charr,Salvelinus umbla,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Salvelinus alpinus,,2351259
+Ombre de la Loire,Loire Grayling,Thymallus ligericus,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Ombre d'Auvergne, Ombre de la Loire",,10748883
+Ombre commun,European grayling,Thymallus thymallus,,Salmonidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Thymallus thymallus,,5203999
+Éperlan d'Europe,European smelt,Osmerus eperlanus,,Osméridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Éperlan d'Europe,,2410854
+Brochet aquitain,Aquitaine Pike,Esox aquitanicus,,Ésocidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Brochet aquitain,,7832748
+Brochet cisalpin,Cisalpine pike,Esox cisalpinus,,Ésocidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Esox cisalpinus, aussi appelé Brochet italien, Brochet cisalpin ou parfois Brochet du Sud, est une espèce de poissons d'eau douce que l'on trouve aujourd'hui exclusivement dans le centre et le Nord de l'Italie, ainsi que dans le Tessin en Suisse qui fait partie du bassin versant du Pô.",,6167926
+Grand brochet,American Pike,Esox lucius,,Ésocidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Esox lucius,,2346633
+Umbre pygmée,Eastern mudminnow,Umbra pygmaea,,Umbridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Umbra pygmaea,,5203111
+Poisson-chien,European Mud-minnow,Umbra krameri,,Umbridés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Umbra krameri,,5203115
+Lote,American Burbot,Lota lota,,Lotidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Lota lota,,2415460
+Mulet doré,Golden Grey Mullet,Chelon auratus,,Mugilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le mulet doré ou muge doré, Chelon auratus (anciennement Liza aurata), est une espèce de poissons marins de la famille des Mugilidae.",,9466310
+Mulet lippu,Lesser grey mullet,Chelon labrosus,,Mugilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Le mulet lippu (Chelon labrosus) est une espèce de poissons marins de la famille des Mugilidae. Il est aussi appelé mulet à grosses lèvres.,,2400863
+Mulet porc,Thinlip grey mullet,Chelon ramada,,Mugilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Mulet porc, Mulet capiton, Mulet calusse",,9234296
+Mulet sauteur,Leaping mullet,Chelon saliens,,Mugilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Mulet sauteur,,9420882
+Mulet à grosse tête,Black Mullet,Mugil cephalus,,Mugilidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Mulet/Muge à grosse tête, Mulet/Muge cabot, Muge céphale",,8189568
+Athérine,Big-eyed Sand-smelt,Atherina boyeri,,Athérinidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Atherina boyeri (le Joël ou Athérine) est une espèce de poissons de la famille des Atherinidae que l'on rencontre dans l'océan Atlantique (du large du Portugal jusqu'à hauteur de la Mauritanie), en Méditerranée, dans la mer Noire et dans la Caspienne.",,2411944
+Aphanius de Corse,Mediterranean Killifish,Aphanius fasciatus,,Cyprinodontidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Aphanius fasciatus,,2348104
+Aphanius d'Espagne,Spanish Toothcarp,Aphanius iberus,,Cyprinodontidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Aphanius iberus,,2348049
+Gambusie de l'Ouest,,Gambusia affinis,,Pœciliidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Gambusie, Guppy sauvage",,2350580
+Gambusie de l'Est,Eastern mosquitofish,Gambusia holbrooki,,Pœciliidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Gambusia holbrooki, aussi appelée gambusie de l'est, ou parfois « guppy sauvage » avec risque de confusion, est une espèce de poissons téléostéens, cyprinodontiformes de la famille des Poeciliidae et donc cousine d'une espèce plus connue le guppy. Elle a notamment été utilisée dans la lutte contre les moustiques (notamment en Corse, en Vendée, et dans le sud de la France) pour lutter contre le paludisme, mais elle peut elle-même pâtir des pulvérisations d'insecticides chimiques (ex : diflubenzuron) destinés à la démoustication, et - comme le Guppy - interférer négativement avec les écosystèmes locaux et les espèces autochtones: c'est pourquoi elle est classée parmi les espèces envahissantes les plus nuisibles au XXIe siècle.",,2350570
+Cyprinodonte de Valence,Spanish toothcarp,Valencia hispanica,,Valenciidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Valencia hispanica est une espèce de poissons osseux du genre Valencia de la famille des Valenciidae, endémique du sud de la Catalogne et de la Communauté valencienne en Espagne.",,5203914
+Épinoche à trois épines,Alaskan Stickleback,Gasterosteus aculeatus,,Gastérostéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Épinoche à trois épines,,4286327
+Épinochette à queue lisse,Smoothtail ninespine stickleback,Pungitius laevis,,Gastérostéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Épinochette lisse, Épinochette à queue lisse",,5739509
+Épinochette,Barnstickle,Pungitius pungitius,,Gastérostéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"L'Épinochette piquante (Pungitius pungitius) est un poisson d'eau douce à saumâtre de l'hémisphère nord, plutôt nordique (trouvé jusque dans les régions arctiques), d'Asie (tout le nord de la Russie, jusqu'en Chine, Corée et Japon), d'Amérique du Nord (États-Unis, Canada) et d'Europe. En France, on la trouve dans le nord du pays, ainsi qu'en Belgique, où elle cohabite avec une deuxième espèce endémique de France et de Belgique : l'Épinochette lisse.",,5739510
+Epinochette du Poitou,Poitevin Stickleback,Pungitius vulgaris,,Gastérostéidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Épinochette du Poitou,,10494494
+Syngnathe de rivière,Black-striped pipefish,Syngnathus abaster,,Syngnathidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Syngnathe de lagune ou Syngnathe de rivière (Syngnathus abaster) est une espèce de poissons de la famille des Syngnathidae. On la trouve dans l'est de l'Atlantique, du sud du Golfe de Gascogne à Gibraltar, aussi dans la Méditerranée et dans la mer Noire. Comme espèce introduite, elle est mentionnée dans la mer Caspienne et les eaux douces de son bassin.",,8056718
+Chabot du Béarn,Adour Sculpin,Cottus aturi,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Chabot du Béarn, Chabot de l'Adour",,2334100
+Chabot d'Auvergne,Dordogne Sculpin,Cottus duranii,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Chabot d'Auvergne, Chabot de Dordogne",,2334176
+Chabot commun,Bullhead,Cottus gobio,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cottus gobio,,7807208
+Chabot des Pyrénées,Pyrenean Sculpin,Cottus hispaniolensis,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Chabot des Pyrénées, Chabot pyrénéen",,2334173
+Chabot fluviatile,Common Bullhead,Cottus perifretum,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cottus perifretum est une espèce de poissons dulçaquicoles de la famille des Cottidae.,,2334088
+Chabot du Lez,Lez Sculpin,Cottus petiti,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cottus petiti,,2334155
+Chabot de Rhénanie,Rhine Sculpin,Cottus rhenanus,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Chabot de Rhénanie, Chabot du Rhin",,2334183
+Chabot de l'Hérault,Hérault Sculpin,Cottus rondeleti,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Chabot de l'Hérault (Cottus rondeleti)  est une espèce de poissons de la famille des Cottidae, endémique des bassins du département de l'Hérault en France. Son nom a été donné en l'honneur de Guillaume Rondelet, précurseur de l'ichtyologie européenne et d'un des tout premiers traités ichtyologiques.",,2334119
+Chabot savoyard,Savoie Sculpin,Cottus sabaudicus,,Cottidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Cottus sabaudicus,,2334125
+Blennie fluviatile,Freshwater blenny,Salaria fluviatilis,,Blenniidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Salaria fluviatilis,,4409525
+Gobie fluviatile,Monkey goby,Neogobius fluviatilis,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Gobie fluviatile,,2379105
+Gobie à tache noire,Black spotted goby,Neogobius melanostomus,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Neogobius melanostomus,,2379089
+Gobie de Kessler,"Bighead goby, Kessler's goby",Ponticola kessleri,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Neogobius kessleri · Gobie de Kessler, Gobie à grosse tête",,4285968
+Gobie demi-lune,Freshwater tubenose goby,Proterorhinus semilunaris,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Gobie demi-lune (Proterorhinus semilunaris), appelé aussi Gobie à nez tubulaire, est une espèce de poissons de l'ordre des Perciformes de la famille des Gobiidae.",,2379245
+Gobie tacheté,Common Goby,Pomatoschistus microps,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Pomatoschistus microps,,2379280
+Gobie buhotte,Common goby,Pomatoschistus minutus,,Gobiidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Pomatoschistus minutus, le Gobie des sables ou le Gobie buhotte, est une espèce de poissons marins appartenant à la grande famille des gobiidés.",,2379300
+Crapet de roche,Goggle Eye,Ambloplites rupestris,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Ambloplites rupestris,,2394514
+Œil de paon,Flier,Centrarchus macropterus,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2394521
+Crapet rouge,Redbreast,Lepomis auritus,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2394491
+Perche soleil,Common Sunfish,Lepomis gibbosus,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Crapet-soleil, Perche soleil",,2394486
+Crapet à longues oreilles,Longear Sunfish,Lepomis megalotis,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2394510
+Achigan à petite bouche,Bass,Micropterus dolomieu,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Achigan à petite bouche, black-bass à petite bouche",,5211250
+Achigan à grande bouche,American Black Bass,Micropterus salmoides,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"L'Achigan à grande bouche (Micropterus salmoides), aussi appelé black-bass et parfois perche truitée, perche truite, perche d'Amérique ou perche noire, est une espèce de poissons d'eau douce de la famille des Centrarchidae originaire d'Amérique du Nord et introduite en Europe à la fin du XIXe siècle. C'est une espèce très recherchée et élevée pour la pêche de loisir.",,2394563
+Marigane blanche,Calicos Bass,Pomoxis annularis,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,,,2394534
+Marigane noire,Black Crappie,Pomoxis nigromaculatus,,Centrarchidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Pomoxis nigromaculatus, ou Marigane noire, est une espèce de poissons de la famille des Centrarchidae.",,2394526
+Bar commun,Capemouth,Dicentrarchus labrax,,Moronidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Dicentrarchus labrax,,2394622
+Grémille,,Gymnocephalus cernuus,,Percidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Gymnocephalus cernua,,2382126
+Perche,,Perca fluviatilis,,Percidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Perca fluviatilis,,8140485
+Sandre,Eurasian Pikeperch,Sander lucioperca,,Percidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Sander lucioperca,,2382155
+Apron du Rhône,Apron,Zingel asper,,Percidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,Zingel asper,,2382117
+Flet commun,Butt,Platichthys flesus,,Pleuronectidés,,,"{""fresh""}",,,,,,"{""FR""}",,,,,,,,,"Le Flet commun ou flet d'Europe (Platichthys flesus) est une espèce de poissons de la famille des Pleuronectidae (certains poissons plats tels que limandes, plies, flets et flétans).
+D'autres espèces de poissons sont également appelées couramment flets.",,2409330
