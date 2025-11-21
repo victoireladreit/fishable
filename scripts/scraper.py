@@ -37,8 +37,6 @@ def get_fish_list(url):
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # --- CORRECTION MAJEURE : On cherche toutes les sections de famille ---
-    # On trouve tous les titres h4, qui correspondent aux familles
     family_headers = soup.find_all('h4')
 
     fish_list = []
@@ -52,32 +50,28 @@ def get_fish_list(url):
         if ':' in header_text:
             family = header_text.split(':')[1].strip()
 
-        # Le tableau est le prochain élément 'table' qui suit le titre h4
         table = header.find_next('table', class_='wikitable')
         if not table:
             continue
 
-        for row in table.find('tbody').find_all('tr')[1:]:  # [1:] pour sauter l'en-tête
+        for row in table.find('tbody').find_all('tr')[1:]:
             cells = row.find_all('td')
             if len(cells) < 1:
                 continue
 
             cell_one = cells[0]
 
-            # Nom vernaculaire (le premier texte trouvé directement dans la cellule)
             vernacular_name = cell_one.find(string=True, recursive=False)
             if vernacular_name:
                 vernacular_name = vernacular_name.strip()
             else:
                 vernacular_name = ""
 
-            # Nom scientifique (dans la balise <i>)
             scientific_name_tag = cell_one.find('i')
             if not scientific_name_tag:
                 continue
             scientific_name = scientific_name_tag.get_text(strip=True)
 
-            # URL de la page de détails (le premier lien dans la cellule)
             link_tag = cell_one.find('a')
             details_url = None
             if link_tag and 'href' in link_tag.attrs:
@@ -97,7 +91,6 @@ def get_fish_list(url):
     print(f"-> {len(fish_list)} poissons trouvés dans la liste.")
     return fish_list
 
-
 def get_fish_details(fish_data):
     """
     Visite la page détaillée d'un poisson pour scraper la description,
@@ -114,16 +107,20 @@ def get_fish_details(fish_data):
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    content_div = soup.find('div', id='mw-content-text')
+    # --- CORRECTION : Sélecteur plus robuste pour la description ---
+    parser_output = soup.find('div', class_='mw-parser-output')
     description = ""
-    if content_div:
-        first_p = content_div.find('p', recursive=False, string=lambda s: s and s.strip())
+    if parser_output:
+        first_p = parser_output.find('p', recursive=False)
+        while first_p and not first_p.get_text(strip=True):
+            first_p = first_p.find_next_sibling('p')
         if first_p:
             description = clean_text(first_p.get_text())
-
     fish_data['description'] = description
 
-    infobox = soup.find('table', class_='infobox_v2')
+    # --- CORRECTION : Sélecteur CSS plus flexible pour l'infobox ---
+    infobox = soup.select_one('table.infobox_v2.infobox-biologie')
+
     fish_data['photo_url'] = ''
     fish_data['max_size_cm'] = ''
     fish_data['max_weight_kg'] = ''
