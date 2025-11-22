@@ -11,8 +11,12 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export const useCatchManagement = (sessionId: string, setCatches: React.Dispatch<React.SetStateAction<Catch[]>>) => {
     const navigation = useNavigation<NavigationProp>();
 
-    const handleAddCatch = () => {
-        navigation.navigate('AddCatch', { sessionId });
+    const handleAddCatch = (currentLocation?: { latitude: number; longitude: number } | null) => {
+        navigation.navigate('AddCatch', { 
+            sessionId, 
+            catchLocationLat: currentLocation?.latitude,
+            catchLocationLng: currentLocation?.longitude,
+        });
     };
 
     const handleEditCatch = (catchId: string) => {

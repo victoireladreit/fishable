@@ -1,8 +1,10 @@
-CREATE OR REPLACE FUNCTION update_catch_and_pokedex(
+CREATE OR REPLACE FUNCTION public.update_catch_and_pokedex(
     p_catch_id uuid,
     p_updates jsonb
 )
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+AS $function$
 DECLARE
 v_old_catch catches%ROWTYPE;
     v_new_catch catches%ROWTYPE;
@@ -30,14 +32,14 @@ END IF;
     -- 3. Apply updates using COALESCE to preserve old values if new ones are not provided
     v_new_catch := v_old_catch;
     v_new_catch.species_name := COALESCE(p_updates->>'species_name', v_old_catch.species_name);
-    v_new_catch.size_cm := COALESCE((p_updates->>'size_cm')::real, v_old_catch.size_cm);
-    v_new_catch.weight_kg := COALESCE((p_updates->>'weight_kg')::real, v_old_catch.weight_kg);
+    v_new_catch.size_cm := COALESCE((p_updates->>'size_cm')::numeric, v_old_catch.size_cm);
+    v_new_catch.weight_kg := COALESCE((p_updates->>'weight_kg')::numeric, v_old_catch.weight_kg);
     v_new_catch.technique := COALESCE(p_updates->>'technique', v_old_catch.technique);
     v_new_catch.lure_name := COALESCE(p_updates->>'lure_name', v_old_catch.lure_name);
     v_new_catch.lure_color := COALESCE(p_updates->>'lure_color', v_old_catch.lure_color);
     v_new_catch.rod_type := COALESCE(p_updates->>'rod_type', v_old_catch.rod_type);
-    v_new_catch.line_strength_lb := COALESCE((p_updates->>'line_strength_lb')::real, v_old_catch.line_strength_lb);
-    v_new_catch.water_depth_m := COALESCE((p_updates->>'water_depth_m')::real, v_old_catch.water_depth_m);
+    v_new_catch.line_strength_lb := COALESCE((p_updates->>'line_strength_lb')::numeric, v_old_catch.line_strength_lb);
+    v_new_catch.water_depth_m := COALESCE((p_updates->>'water_depth_m')::numeric, v_old_catch.water_depth_m);
     v_new_catch.habitat_type := COALESCE(p_updates->>'habitat_type', v_old_catch.habitat_type);
     v_new_catch.water_type := COALESCE(p_updates->>'water_type', v_old_catch.water_type);
     v_new_catch.structure := COALESCE(p_updates->>'structure', v_old_catch.structure);
@@ -46,6 +48,8 @@ END IF;
     v_new_catch.notes := COALESCE(p_updates->>'notes', v_old_catch.notes);
     v_new_catch.photo_url := COALESCE(p_updates->>'photo_url', v_old_catch.photo_url);
     v_new_catch.caught_at := COALESCE((p_updates->>'caught_at')::timestamptz, v_old_catch.caught_at);
+    v_new_catch.catch_location_lat := COALESCE((p_updates->>'catch_location_lat')::real, v_old_catch.catch_location_lat); -- NOUVEAU
+    v_new_catch.catch_location_lng := COALESCE((p_updates->>'catch_location_lng')::real, v_old_catch.catch_location_lng); -- NOUVEAU
     v_new_catch.updated_at := NOW();
 
     -- 4. Get or create the new species ID
@@ -77,6 +81,8 @@ UPDATE catches SET
                    notes = v_new_catch.notes,
                    photo_url = v_new_catch.photo_url,
                    caught_at = v_new_catch.caught_at,
+                   catch_location_lat = v_new_catch.catch_location_lat, -- NOUVEAU
+                   catch_location_lng = v_new_catch.catch_location_lng, -- NOUVEAU
                    updated_at = v_new_catch.updated_at
 WHERE id = p_catch_id;
 
@@ -88,4 +94,4 @@ PERFORM public.recalculate_pokedex_for_species(v_user_id, v_old_catch.species_id
 END IF;
 
 END;
-$$ LANGUAGE plpgsql;
+$function$;

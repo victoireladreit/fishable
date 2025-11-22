@@ -24,7 +24,7 @@ const INPUT_HEIGHT = 50;
 export const AddCatchScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<AddCatchRouteProp>();
-    const { sessionId } = route.params;
+    const { sessionId, catchLocationLat, catchLocationLng } = route.params;
     const { image, takePhoto, pickImage, setImage } = useImagePicker();
 
     // Form states
@@ -193,6 +193,8 @@ export const AddCatchScreen = () => {
                 is_released: isReleased,
                 notes: notes || null,
                 photo_uri: image?.uri,
+                catch_location_lat: catchLocationLat || null,
+                catch_location_lng: catchLocationLng || null,
             });
             navigation.goBack();
         } catch (error) {

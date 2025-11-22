@@ -7,10 +7,14 @@ type Catch = Database['public']['Tables']['catches']['Row'];
 type CatchInsertPayload = Omit<Database['public']['Tables']['catches']['Insert'], 'species_id' | 'photo_url'> & { 
     species_name: string;
     photo_uri?: string | null;
+    catch_location_lat?: number | null;
+    catch_location_lng?: number | null;
 };
 type CatchUpdatePayload = Omit<Database['public']['Tables']['catches']['Update'], 'species_id' | 'photo_url'> & { 
     species_name?: string;
     photo_uri?: string | null;
+    catch_location_lat?: number | null;
+    catch_location_lng?: number | null;
 };
 
 const PHOTOS_BUCKET = 'fishable-catch-photos';
@@ -48,7 +52,7 @@ const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: 
 };
 
 const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
-    const { photo_uri, session_id, species_name, ...catchDetails } = catchData;
+    const { photo_uri, session_id, species_name, catch_location_lat, catch_location_lng, ...catchDetails } = catchData;
 
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id);
 
@@ -57,7 +61,9 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
         p_catch_data: {
             ...catchDetails,
             species_name,
-            photo_url: photoUrl
+            photo_url: photoUrl,
+            catch_location_lat,
+            catch_location_lng,
         }
     });
 
@@ -68,13 +74,15 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
 };
 
 const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<void> => {
-    const { photo_uri, session_id, ...catchDetails } = catchData;
+    const { photo_uri, session_id, catch_location_lat, catch_location_lng, ...catchDetails } = catchData;
     
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id!);
 
     const updates = {
         ...catchDetails,
         photo_url: photoUrl,
+        catch_location_lat,
+        catch_location_lng,
     };
 
     const { error } = await supabase.rpc('update_catch_and_pokedex', {

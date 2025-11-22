@@ -412,7 +412,7 @@ export const ActiveSessionScreen = () => {
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
-                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={handleAddCatch}>
+                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={() => handleAddCatch(location?.coords)}>
                     <Text style={styles.buttonText}>Ajouter une prise</Text>
                 </TouchableOpacity>
 
