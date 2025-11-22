@@ -9,12 +9,14 @@ type CatchInsertPayload = Omit<Database['public']['Tables']['catches']['Insert']
     photo_uri?: string | null;
     catch_location_lat?: number | null;
     catch_location_lng?: number | null;
+    catch_location_accuracy?: number | null; // AJOUTÉ
 };
 type CatchUpdatePayload = Omit<Database['public']['Tables']['catches']['Update'], 'species_id' | 'photo_url'> & { 
     species_name?: string;
     photo_uri?: string | null;
     catch_location_lat?: number | null;
     catch_location_lng?: number | null;
+    catch_location_accuracy?: number | null; // AJOUTÉ
 };
 
 const PHOTOS_BUCKET = 'fishable-catch-photos';
@@ -52,7 +54,7 @@ const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: 
 };
 
 const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
-    const { photo_uri, session_id, species_name, catch_location_lat, catch_location_lng, ...catchDetails } = catchData;
+    const { photo_uri, session_id, species_name, catch_location_lat, catch_location_lng, catch_location_accuracy, ...catchDetails } = catchData;
 
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id);
 
@@ -64,6 +66,7 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
             photo_url: photoUrl,
             catch_location_lat,
             catch_location_lng,
+            catch_location_accuracy, // AJOUTÉ
         }
     });
 
@@ -74,7 +77,7 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
 };
 
 const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<void> => {
-    const { photo_uri, session_id, catch_location_lat, catch_location_lng, ...catchDetails } = catchData;
+    const { photo_uri, session_id, catch_location_lat, catch_location_lng, catch_location_accuracy, ...catchDetails } = catchData;
     
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id!);
 
@@ -83,6 +86,7 @@ const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<v
         photo_url: photoUrl,
         catch_location_lat,
         catch_location_lng,
+        catch_location_accuracy, // AJOUTÉ
     };
 
     const { error } = await supabase.rpc('update_catch_and_pokedex', {

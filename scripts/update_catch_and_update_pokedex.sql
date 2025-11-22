@@ -48,8 +48,9 @@ END IF;
     v_new_catch.notes := COALESCE(p_updates->>'notes', v_old_catch.notes);
     v_new_catch.photo_url := COALESCE(p_updates->>'photo_url', v_old_catch.photo_url);
     v_new_catch.caught_at := COALESCE((p_updates->>'caught_at')::timestamptz, v_old_catch.caught_at);
-    v_new_catch.catch_location_lat := COALESCE((p_updates->>'catch_location_lat')::real, v_old_catch.catch_location_lat); -- NOUVEAU
-    v_new_catch.catch_location_lng := COALESCE((p_updates->>'catch_location_lng')::real, v_old_catch.catch_location_lng); -- NOUVEAU
+    v_new_catch.catch_location_lat := COALESCE((p_updates->>'catch_location_lat')::real, v_old_catch.catch_location_lat);
+    v_new_catch.catch_location_lng := COALESCE((p_updates->>'catch_location_lng')::real, v_old_catch.catch_location_lng);
+    v_new_catch.catch_location_accuracy := COALESCE((p_updates->>'catch_location_accuracy')::real, v_old_catch.catch_location_accuracy); -- NOUVEAU
     v_new_catch.updated_at := NOW();
 
     -- 4. Get or create the new species ID
@@ -81,8 +82,9 @@ UPDATE catches SET
                    notes = v_new_catch.notes,
                    photo_url = v_new_catch.photo_url,
                    caught_at = v_new_catch.caught_at,
-                   catch_location_lat = v_new_catch.catch_location_lat, -- NOUVEAU
-                   catch_location_lng = v_new_catch.catch_location_lng, -- NOUVEAU
+                   catch_location_lat = v_new_catch.catch_location_lat,
+                   catch_location_lng = v_new_catch.catch_location_lng,
+                   catch_location_accuracy = v_new_catch.catch_location_accuracy, -- NOUVEAU
                    updated_at = v_new_catch.updated_at
 WHERE id = p_catch_id;
 

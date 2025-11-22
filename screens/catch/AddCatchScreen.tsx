@@ -24,7 +24,7 @@ const INPUT_HEIGHT = 50;
 export const AddCatchScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<AddCatchRouteProp>();
-    const { sessionId, catchLocationLat, catchLocationLng } = route.params;
+    const { sessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params;
     const { image, takePhoto, pickImage, setImage } = useImagePicker();
 
     // Form states
@@ -195,6 +195,7 @@ export const AddCatchScreen = () => {
                 photo_uri: image?.uri,
                 catch_location_lat: catchLocationLat || null,
                 catch_location_lng: catchLocationLng || null,
+                catch_location_accuracy: catchLocationAccuracy || null,
             });
             navigation.goBack();
         } catch (error) {
@@ -348,6 +349,17 @@ export const AddCatchScreen = () => {
                 <TextInput style={[styles.input, styles.multilineInput]} value={notes} onChangeText={setNotes} placeholder="Attaque violente, poisson très combatif..." placeholderTextColor={theme.colors.text.disabled} multiline />
             </View>
             
+            {/* Location Accuracy Display (Optional, for user info) */}
+            {catchLocationLat && catchLocationLng && catchLocationAccuracy !== undefined && (
+                <View style={styles.formGroup}>
+                    <Text style={styles.label}>Précision de la localisation:</Text>
+                    <Text style={styles.locationAccuracyText}>{catchLocationAccuracy.toFixed(1)} mètres</Text>
+                    {catchLocationAccuracy > 50 && ( // Example threshold for warning
+                        <Text style={styles.locationWarningText}>La précision est faible. La position enregistrée pourrait être imprécise.</Text>
+                    )}
+                </View>
+            )}
+
             {/* Released Switch */}
             <View style={styles.switchContainer}>
                 <Text style={styles.label}>Relâché ?</Text>
@@ -529,5 +541,17 @@ const styles = StyleSheet.create({
         top: 50,
         right: 20,
         zIndex: 1,
+    },
+    locationAccuracyText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.primary,
+        marginTop: theme.spacing[1],
+    },
+    locationWarningText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.error.main,
+        marginTop: theme.spacing[1],
     },
 });

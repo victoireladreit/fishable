@@ -46,8 +46,9 @@ INSERT INTO catches (
     notes,
     photo_url,
     caught_at,
-    catch_location_lat, -- NOUVEAU
-    catch_location_lng  -- NOUVEAU
+    catch_location_lat,
+    catch_location_lng,
+    catch_location_accuracy -- NOUVEAU
 )
 VALUES (
            p_session_id,
@@ -69,8 +70,9 @@ VALUES (
            p_catch_data->>'notes',
            p_catch_data->>'photo_url',
            (p_catch_data->>'caught_at')::timestamptz,
-           (p_catch_data->>'catch_location_lat')::real, -- NOUVEAU
-           (p_catch_data->>'catch_location_lng')::real  -- NOUVEAU
+           (p_catch_data->>'catch_location_lat')::real,
+           (p_catch_data->>'catch_location_lng')::real,
+           (p_catch_data->>'catch_location_accuracy')::real -- NOUVEAU
        )
     RETURNING id INTO v_new_catch_id;
 
