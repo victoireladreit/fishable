@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { theme } from '../../theme';
-import { ProfileService, Profile } from '../../services';
+import {ProfileService, Profile, ProfileUpdate} from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
-import { useActionSheet } from '@expo/react-native-action-sheet';
+import { useActionSheet } from '@expo/react-native-action-sheet'; // Corrected import
 
 const INPUT_HEIGHT = 50;
 const screenWidth = Dimensions.get('window').width;
@@ -23,6 +23,10 @@ export const ProfileScreen = () => {
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [newUsername, setNewUsername] = useState(''); // New state for username input
+    const [debouncedUsername, setDebouncedUsername] = useState(''); // Debounced username for API call
+    const [isCheckingUsername, setIsCheckingUsername] = useState(false); // Loading state for username check
+    const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null); // Availability status
 
     const { pickImage, takePhoto } = useImagePicker();
     const { showActionSheetWithOptions } = useActionSheet();
@@ -36,6 +40,8 @@ export const ProfileScreen = () => {
                 setFullName(userProfile.full_name || '');
                 setBio(userProfile.bio || '');
                 setAvatarUrl(userProfile.avatar_url);
+                setNewUsername(userProfile.username || ''); // Initialize newUsername
+                setDebouncedUsername(userProfile.username || ''); // Initialize debouncedUsername
             }
         } catch (error) {
             console.error("Erreur chargement profil:", error);
@@ -48,11 +54,65 @@ export const ProfileScreen = () => {
         loadProfile();
     }, [loadProfile]);
 
+    // Debounce effect for username input
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedUsername(newUsername.trim()); // Trim here
+        }, 500); // 500ms debounce time
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [newUsername]);
+
+    // Effect to check username availability when debouncedUsername changes
+    useEffect(() => {
+        const checkAvailability = async () => {
+            if (!user || !profile || debouncedUsername === profile.username.trim() || debouncedUsername.trim() === '') { // Trim here
+                setIsUsernameAvailable(null); // Reset status if username is current or empty
+                return;
+            }
+
+            setIsCheckingUsername(true);
+            try {
+                const available = await ProfileService.checkUsernameAvailability(debouncedUsername);
+                setIsUsernameAvailable(available);
+            } catch (error) {
+                console.error("Erreur vérification nom d'utilisateur:", error);
+                setIsUsernameAvailable(false); // Assume not available on error
+            } finally {
+                setIsCheckingUsername(false);
+            }
+        };
+
+        checkAvailability();
+    }, [debouncedUsername, user, profile]);
+
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !profile) return;
+
+        // Prevent saving if username is being checked or is not available (and has changed)
+        if (isCheckingUsername) {
+            Alert.alert("Vérification en cours", "Veuillez attendre la vérification du nom d'utilisateur.");
+            return;
+        }
+        if (newUsername.trim() !== profile.username.trim() && isUsernameAvailable === false) { // Trim here
+            Alert.alert("Erreur", "Le nom d'utilisateur n'est pas disponible.");
+            return;
+        }
+        if (newUsername.trim() === '') {
+            Alert.alert("Erreur", "Le nom d'utilisateur ne peut pas être vide.");
+            return;
+        }
+
         setLoading(true);
         try {
-            await ProfileService.updateProfile(user.id, { full_name: fullName, bio });
+            const updates: ProfileUpdate = { full_name: fullName, bio };
+            if (newUsername.trim() !== profile.username.trim()) { // Trim here
+                updates.username = newUsername.trim(); // Trim before sending to service
+            }
+            
+            await ProfileService.updateProfile(user.id, updates);
             await loadProfile();
             setIsEditing(false);
             Alert.alert("Succès", "Votre profil a été mis à jour.");
@@ -138,6 +198,10 @@ export const ProfileScreen = () => {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
+    const isSaveButtonDisabled = loading || isCheckingUsername || (newUsername.trim() !== profile?.username?.trim() && isUsernameAvailable === false) || newUsername.trim() === ''; // Trim here
+
+    const isUsernameError = newUsername.trim() !== profile?.username?.trim() && isUsernameAvailable === false;
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -159,6 +223,28 @@ export const ProfileScreen = () => {
                         </TouchableOpacity>
 
                         <View style={{marginTop: theme.spacing[6]}}>
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Nom d'utilisateur</Text>
+                                <TextInput
+                                    style={[styles.input, isUsernameError && styles.inputError]} // Apply error style
+                                    value={newUsername}
+                                    onChangeText={setNewUsername}
+                                    placeholder="Votre nom d'utilisateur"
+                                    autoCapitalize="none"
+                                />
+                                {newUsername.trim() !== profile?.username?.trim() && newUsername.trim() !== '' && (
+                                    <View style={styles.usernameStatusContainer}>
+                                        {isUsernameAvailable === false && ( // Only show if explicitly unavailable
+                                            <Text style={[
+                                                styles.usernameStatusText,
+                                                styles.usernameUnavailable
+                                            ]}>
+                                                Non disponible
+                                            </Text>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
                             <View style={styles.formGroup}><Text style={styles.label}>Nom complet</Text><TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Votre nom et prénom" /></View>
                             <View style={styles.formGroup}><Text style={styles.label}>Biographie</Text><TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio} placeholder="Parlez un peu de vous..." multiline /></View>
                         </View>
@@ -184,7 +270,7 @@ export const ProfileScreen = () => {
 
             {isEditing && (
                 <View style={styles.footer}>
-                    <TouchableOpacity style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]} onPress={handleSave} disabled={loading}>
+                    <TouchableOpacity style={[styles.button, styles.saveButton, isSaveButtonDisabled && styles.buttonDisabled]} onPress={handleSave} disabled={isSaveButtonDisabled}>
                         {loading ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
                     </TouchableOpacity>
                 </View>
@@ -255,12 +341,29 @@ const styles = StyleSheet.create({
     info: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontWeight: theme.typography.fontWeight.medium },
     formGroup: { marginBottom: theme.spacing[5] },
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
+    inputError: {
+        borderColor: theme.colors.error.main, // Red border for error
+    },
     textArea: { height: 100, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
     footer: { padding: theme.layout.containerPadding },
     button: { height: INPUT_HEIGHT, justifyContent: 'center', alignItems: 'center', borderRadius: theme.borderRadius.base, width: '100%', ...theme.shadows.base },
     saveButton: { backgroundColor: theme.colors.primary[500] },
     buttonDisabled: { backgroundColor: theme.colors.gray[400], ...theme.shadows.none },
     buttonText: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize.base, color: theme.colors.text.inverse, fontWeight: theme.typography.fontWeight.bold },
+    usernameStatusContainer: {
+        marginTop: theme.spacing[2],
+        alignItems: 'flex-start',
+    },
+    usernameStatusText: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.sm,
+    },
+    usernameAvailable: {
+        color: theme.colors.success.main,
+    },
+    usernameUnavailable: {
+        color: theme.colors.error.main,
+    },
     // Styles for full-size avatar modal
     fullSizeAvatarOverlay: {
         position: 'absolute',

@@ -33,6 +33,19 @@ export const ProfileService = {
         return data;
     },
 
+    async checkUsernameAvailability(username: string): Promise<boolean> {
+        const { count, error } = await supabase
+            .from(TABLE)
+            .select('id', { count: 'exact' })
+            .eq('username', username);
+
+        if (error) {
+            console.error("Erreur lors de la vérification du nom d'utilisateur:", error);
+            throw error;
+        }
+        return count === 0;
+    },
+
     async uploadAvatar(userId: string, uri: string) {
         try {
             const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
