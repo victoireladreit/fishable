@@ -1,22 +1,27 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 
 export const useImagePicker = () => {
     const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie pour changer votre photo.');
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.status !== 'granted') {
+            Alert.alert(
+                'Permission requise',
+                'L\'accès à la galerie est nécessaire. Veuillez l\'activer dans les paramètres.',
+                [
+                    { text: 'Annuler', style: 'cancel' },
+                    { text: 'Ouvrir les paramètres', onPress: () => Linking.openSettings() }
+                ]
+            );
             return null;
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.5,
+            mediaTypes: 'Images' as any,
+            allowsEditing: false,
         });
 
         if (!result.canceled) {
@@ -27,16 +32,21 @@ export const useImagePicker = () => {
     };
 
     const takePhoto = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à l\'appareil photo.');
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (permission.status !== 'granted') {
+            Alert.alert(
+                'Permission requise',
+                'L\'accès à l\'appareil photo est nécessaire. Veuillez l\'activer dans les paramètres.',
+                [
+                    { text: 'Annuler', style: 'cancel' },
+                    { text: 'Ouvrir les paramètres', onPress: () => Linking.openSettings() }
+                ]
+            );
             return null;
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.5,
+            allowsEditing: false,
         });
 
         if (!result.canceled) {
@@ -46,5 +56,5 @@ export const useImagePicker = () => {
         return null;
     };
 
-    return { pickImage, takePhoto, image };
+    return { pickImage, takePhoto, image, setImage };
 };

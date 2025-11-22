@@ -8,6 +8,7 @@ import { theme } from '../theme';
 import { LocationTrackingProvider } from '../hooks';
 
 import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../screens/session';
+import { AddCatchScreen } from '../screens/catch';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
 
@@ -44,6 +45,7 @@ const RootNavigator = () => {
                     <Stack.Screen name="ActiveSession" component={ActiveSessionScreen} options={{ title: 'Session en cours' }} />
                     <Stack.Screen name="SessionDetail" component={SessionDetailScreen} options={{ title: 'Détails de la session' }} />
                     <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ title: 'Nouvelle session', presentation: 'modal' }} />
+                    <Stack.Screen name="AddCatch" component={AddCatchScreen} options={{ title: 'Nouvelle prise', presentation: 'modal' }} />
                 </>
             ) : (
                 <>

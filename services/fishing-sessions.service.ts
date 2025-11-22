@@ -53,8 +53,15 @@ export const FishingSessionsService = {
     },
 
     async deleteSession(id: string) {
-        const { error } = await supabase.from(TABLE).delete().eq('id', id)
-        if (error) throw error
+        const { error } = await supabase.rpc('delete_session_and_update_pokedex', {
+            p_session_id: id,
+        })
+
+        if (error) {
+            console.error("Error deleting session with RPC:", error)
+            throw error
+        }
+
         return true
     },
 }

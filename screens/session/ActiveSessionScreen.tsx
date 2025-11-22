@@ -1,18 +1,20 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal } from 'react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
+import { FishingSessionsService, FishingSession, FishingSessionUpdate, CatchesService } from '../../services';
 import { theme } from '../../theme';
 import { useTimer, formatTime, useLocationTracking } from '../../hooks';
 import MapView, { Polyline } from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
-import {RootStackParamList} from "../../navigation/types";
+import { RootStackParamList } from "../../navigation/types";
+import { Database } from '../../lib/types';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
 
+type Catch = Database['public']['Tables']['catches']['Row'];
 type Visibility = 'public' | 'region' | 'private';
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
 type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
@@ -67,10 +69,13 @@ export const ActiveSessionScreen = () => {
     const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
+    const [catches, setCatches] = useState<Catch[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Editable fields
     const [locationName, setLocationName] = useState('');
@@ -88,6 +93,20 @@ export const ActiveSessionScreen = () => {
         session?.water_clarity !== waterClarity ||
         session?.water_current !== waterCurrent ||
         session?.water_level !== waterLevel;
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchCatches = async () => {
+                try {
+                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
+                    setCatches(sessionCatches);
+                } catch (error) {
+                    console.error('Erreur récupération des prises:', error);
+                }
+            };
+            fetchCatches();
+        }, [sessionId])
+    );
 
     useEffect(() => {
         if (errorMsg) {
@@ -228,6 +247,15 @@ export const ActiveSessionScreen = () => {
         }
     };
 
+    const handleAddCatch = () => {
+        navigation.navigate('AddCatch', { sessionId });
+    };
+
+    const openImageModal = (imageUrl: string) => {
+        setSelectedImage(imageUrl);
+        setModalVisible(true);
+    };
+
     const recenterMap = () => {
         if (!mapViewRef.current) return;
 
@@ -250,6 +278,23 @@ export const ActiveSessionScreen = () => {
             mapViewRef.current.animateCamera({ center: location.coords, zoom: 16 });
         }
     };
+
+    const renderCatchItem = (item: Catch) => (
+        <View key={item.id} style={styles.catchItem}>
+            {item.photo_url && (
+                <TouchableOpacity onPress={() => openImageModal(item.photo_url!)}>
+                    <Image source={{ uri: item.photo_url }} style={styles.catchImage} />
+                </TouchableOpacity>
+            )}
+            <View style={styles.catchInfo}>
+                <Text style={styles.catchSpecies}>{item.species_name}</Text>
+                <View style={styles.catchDetails}>
+                    {item.size_cm && <Text style={styles.catchDetailText}>{item.size_cm} cm</Text>}
+                    {item.weight_kg && <Text style={styles.catchDetailText}>{item.weight_kg} kg</Text>}
+                </View>
+            </View>
+        </View>
+    );
 
     if (loading || !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
@@ -277,6 +322,20 @@ export const ActiveSessionScreen = () => {
             keyboardShouldPersistTaps="handled"
             scrollEnabled={!mapInteractionEnabled}
         >
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                        <Ionicons name="close" size={30} color={theme.colors.white} />
+                    </TouchableOpacity>
+                    <Image source={{ uri: selectedImage || '' }} style={styles.fullScreenImage} resizeMode="contain" />
+                </View>
+            </Modal>
+
             <View style={styles.headerContainer}>
                 <TextInput
                     style={styles.titleInput}
@@ -414,6 +473,21 @@ export const ActiveSessionScreen = () => {
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
+                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={handleAddCatch}>
+                    <Text style={styles.buttonText}>Ajouter une prise</Text>
+                </TouchableOpacity>
+
+                <View>
+                    {catches.length > 0 ? (
+                        <>
+                            <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
+                            {catches.map(item => renderCatchItem(item))}
+                        </>
+                    ) : (
+                        <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
+                    )}
+                </View>
+
                 <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
                     {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
                 </TouchableOpacity>
@@ -590,6 +664,9 @@ const styles = StyleSheet.create({
         marginBottom: theme.spacing[3],
         ...theme.shadows.base,
     },
+    addCatchButton: {
+        backgroundColor: theme.colors.secondary["500"],
+    },
     saveButton: { backgroundColor: theme.colors.primary[500] },
     endButton: { backgroundColor: theme.colors.error.main, ...theme.shadows.none },
     buttonDisabled: { backgroundColor: theme.colors.primary[300] },
@@ -624,5 +701,65 @@ const styles = StyleSheet.create({
     },
     mapButton: {
         padding: theme.spacing[1],
+    },
+    catchesTitle: {
+        fontSize: theme.typography.fontSize.lg,
+        fontFamily: theme.typography.fontFamily.bold,
+        color: theme.colors.text.primary,
+        marginTop: theme.spacing[6],
+        marginBottom: theme.spacing[3],
+    },
+    catchItem: {
+        backgroundColor: theme.colors.background.paper,
+        padding: theme.spacing[2],
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing[3],
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    catchImage: {
+        width: 60,
+        height: 60,
+        borderRadius: theme.borderRadius.sm,
+        marginRight: theme.spacing[4],
+    },
+    catchInfo: {
+        flex: 1,
+    },
+    catchSpecies: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.primary,
+    },
+    catchDetails: {
+        flexDirection: 'row',
+        marginTop: theme.spacing[1],
+    },
+    catchDetailText: {
+        marginRight: theme.spacing[4],
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
+    },
+    noCatchesText: {
+        textAlign: 'center',
+        color: theme.colors.text.secondary,
+        marginVertical: theme.spacing[4],
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullScreenImage: {
+        width: '100%',
+        height: '80%',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 1,
     },
 });

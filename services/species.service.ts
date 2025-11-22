@@ -3,11 +3,11 @@ import { Database } from '../lib/types'
 
 export type Species = Database['public']['Tables']['species_registry']['Row']
 
-const TABLE = 'species'
+const TABLE = 'species_registry'
 
 export const SpeciesService = {
     async getAllSpecies() {
-        const { data, error } = await supabase.from(TABLE).select('*').order('name', { ascending: true })
+        const { data, error } = await supabase.from(TABLE).select('id, name').order('name', { ascending: true })
         if (error) throw error
         return data
     },

@@ -16,4 +16,5 @@ export type RootStackParamList = {
     ActiveSession: { sessionId: string };
     SessionDetail: { sessionId: string; onGoBack?: (modified: boolean) => void };
     SessionSummary: { sessionId: string };
+    AddCatch: { sessionId: string };
 };
