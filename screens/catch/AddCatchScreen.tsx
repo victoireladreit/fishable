@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Platform, Modal } from 'react-native';
-import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation, usePreventRemove } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatchesService, SpeciesService } from '../../services';
 import { RootStackParamList } from '../../navigation/types';
@@ -49,6 +49,46 @@ export const AddCatchScreen = () => {
     const [loading, setLoading] = useState(false);
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
+
+    const hasUnsavedChanges =
+        speciesName !== '' ||
+        sizeCm !== '' ||
+        weightKg !== '' ||
+        technique !== '' ||
+        lureName !== '' ||
+        lureColor !== '' ||
+        rodType !== '' ||
+        lineStrengthLb !== '' ||
+        waterDepthM !== '' ||
+        habitatType !== '' ||
+        waterType !== null ||
+        structure !== '' ||
+        fightDurationMinutes !== '' ||
+        !isReleased ||
+        notes !== '' ||
+        image !== null;
+
+    usePreventRemove(
+        hasUnsavedChanges && !loading,
+        ({ data }) => {
+            Alert.alert(
+                'Modifications non enregistrées',
+                'Que voulez-vous faire ?',
+                [
+                    {
+                        text: 'Enregistrer et Quitter',
+                        onPress: handleSave,
+                    },
+                    {
+                        text: 'Quitter sans enregistrer',
+                        style: 'destructive',
+                        onPress: () => navigation.dispatch(data.action),
+                    },
+                    { text: "Rester", style: 'cancel', onPress: () => {} },
+                ]
+            );
+        }
+    );
 
     useEffect(() => {
         const fetchSpecies = async () => {
@@ -178,8 +218,6 @@ export const AddCatchScreen = () => {
                     <Image source={{ uri: image?.uri || '' }} style={styles.fullScreenImage} resizeMode="contain" />
                 </View>
             </Modal>
-
-            <Text style={styles.title}>Ajouter une prise</Text>
             
             {/* Photo */}
             <View style={styles.formGroup}>
@@ -335,12 +373,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         padding: theme.layout.containerPadding,
-    },
-    title: {
-        fontSize: theme.typography.fontSize.xl,
-        fontFamily: theme.typography.fontFamily.bold,
-        color: theme.colors.text.primary,
-        marginBottom: theme.spacing[6],
+        paddingBottom: theme.spacing[16], // Added padding
     },
     formGroup: {
         width: '100%',

@@ -72,7 +72,7 @@ const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dr
     return (
         <TouchableOpacity onPress={onPress} style={styles.deleteButtonContainer}>
             <Animated.View style={[styles.deleteButton, { transform: [{ translateX: trans }] }]}>
-                <Ionicons name="trash-outline" size={theme.iconSizes.md} color={theme.colors.error.main} />
+                <Ionicons name="trash-outline" size={theme.iconSizes.lg} color={theme.colors.error.main} />
             </Animated.View>
         </TouchableOpacity>
     );
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
         ...theme.shadows.base,
     },
     addCatchButton: {
-        backgroundColor: theme.colors.secondary["500"],
+        backgroundColor: theme.colors.success.main,
     },
     saveButton: { backgroundColor: theme.colors.primary[500] },
     endButton: { backgroundColor: theme.colors.error.main, ...theme.shadows.none },
@@ -817,13 +817,14 @@ const styles = StyleSheet.create({
         width: 80,
         alignItems: 'center',
         justifyContent: 'center',
+        marginLeft: theme.spacing[2],
     },
     deleteButton: {
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
-        backgroundColor: theme.colors.error.light,
         borderRadius: theme.borderRadius.md,
+        borderColor: theme.colors.error.main,
     },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Platform, Modal, ActivityIndicator } from 'react-native';
-import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation, usePreventRemove } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatchesService, SpeciesService } from '../../services';
 import { RootStackParamList } from '../../navigation/types';
@@ -12,6 +12,7 @@ import { useImagePicker } from '../../hooks/useImagePicker';
 type EditCatchRouteProp = RouteProp<RootStackParamList, 'EditCatch'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditCatch'>;
 type WaterType = Database['public']['Tables']['catches']['Row']['water_type'];
+type Catch = Database['public']['Tables']['catches']['Row'];
 
 const waterTypeOptions: { value: NonNullable<WaterType>; label: string }[] = [
     { value: 'fresh', label: 'Douce' },
@@ -28,6 +29,7 @@ export const EditCatchScreen = () => {
     const { image, takePhoto, pickImage, setImage } = useImagePicker();
 
     // Form states
+    const [initialCatch, setInitialCatch] = useState<Catch | null>(null);
     const [speciesName, setSpeciesName] = useState('');
     const [sizeCm, setSizeCm] = useState('');
     const [weightKg, setWeightKg] = useState('');
@@ -51,11 +53,52 @@ export const EditCatchScreen = () => {
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
 
+    const hasUnsavedChanges =
+        initialCatch?.species_name !== speciesName ||
+        (initialCatch?.size_cm?.toString() || '') !== sizeCm ||
+        (initialCatch?.weight_kg?.toString() || '') !== weightKg ||
+        (initialCatch?.technique || '') !== technique ||
+        (initialCatch?.lure_name || '') !== lureName ||
+        (initialCatch?.lure_color || '') !== lureColor ||
+        (initialCatch?.rod_type || '') !== rodType ||
+        (initialCatch?.line_strength_lb?.toString() || '') !== lineStrengthLb ||
+        (initialCatch?.water_depth_m?.toString() || '') !== waterDepthM ||
+        (initialCatch?.habitat_type || '') !== habitatType ||
+        (initialCatch?.water_type || null) !== waterType ||
+        (initialCatch?.structure || '') !== structure ||
+        (initialCatch?.fight_duration_minutes?.toString() || '') !== fightDurationMinutes ||
+        (initialCatch?.is_released ?? true) !== isReleased ||
+        (initialCatch?.notes || '') !== notes ||
+        (initialCatch?.photo_url || null) !== image?.uri;
+
+    usePreventRemove(
+        hasUnsavedChanges && !isSaving,
+        ({ data }) => {
+            Alert.alert(
+                'Modifications non enregistrées',
+                'Que voulez-vous faire ?',
+                [
+                    {
+                        text: 'Enregistrer et Quitter',
+                        onPress: handleSave,
+                    },
+                    {
+                        text: 'Quitter sans enregistrer',
+                        style: 'destructive',
+                        onPress: () => navigation.dispatch(data.action),
+                    },
+                    { text: "Rester", style: 'cancel', onPress: () => {} },
+                ]
+            );
+        }
+    );
+
     useEffect(() => {
         const fetchCatchData = async () => {
             try {
                 const catchData = await CatchesService.getCatchById(catchId);
                 if (catchData) {
+                    setInitialCatch(catchData);
                     setSpeciesName(catchData.species_name || '');
                     setSizeCm(catchData.size_cm?.toString() || '');
                     setWeightKg(catchData.weight_kg?.toString() || '');
@@ -185,8 +228,6 @@ export const EditCatchScreen = () => {
                 </View>
             </Modal>
 
-            <Text style={styles.title}>Modifier la prise</Text>
-            
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Photo</Text>
                 <View style={styles.imagePicker}>
@@ -319,8 +360,7 @@ export const EditCatchScreen = () => {
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scrollContainer: { flex: 1, backgroundColor: theme.colors.background.default },
-    container: { flexGrow: 1, alignItems: 'center', padding: theme.layout.containerPadding },
-    title: { fontSize: theme.typography.fontSize.xl, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.primary, marginBottom: theme.spacing[6] },
+    container: { flexGrow: 1, alignItems: 'center', padding: theme.layout.containerPadding, paddingBottom: theme.spacing[16] }, // Added padding
     formGroup: { width: '100%', marginBottom: theme.spacing[4] },
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
