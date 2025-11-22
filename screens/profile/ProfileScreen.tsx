@@ -1,38 +1,67 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, ScrollView, Image,
-    Platform, Modal, Dimensions
+    Platform, Modal, Dimensions, RefreshControl
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { theme } from '../../theme';
-import {ProfileService, Profile, ProfileUpdate} from '../../services';
+import {ProfileService, Profile, ProfileUpdate, ProfileStats} from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
-import { useActionSheet } from '@expo/react-native-action-sheet'; // Corrected import
+import { useActionSheet } from '@expo/react-native-action-sheet';
 
 const INPUT_HEIGHT = 50;
 const screenWidth = Dimensions.get('window').width;
 
+// Helper component for displaying a single stat item
+interface StatItemProps {
+    iconName: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: string | number; // Value is now strictly string or number, null handled by parent
+    unit?: string;
+}
+
+const StatItem: React.FC<StatItemProps> = ({ iconName, label, value, unit }) => {
+    // value is guaranteed to be string or number here
+    const displayValue = String(value);
+    const displayUnit = unit ? String(unit) : '';
+
+    return (
+        <View style={styles.statItemVisual}>
+            <Ionicons name={iconName} size={theme.iconSizes.sm} color={theme.colors.primary[500]} style={styles.statIcon} />
+            <View style={styles.statTextContainer}>
+                <Text style={styles.statLabelVisual}>{label}</Text>
+                <Text style={styles.statValueVisual}>{displayValue}{displayUnit}</Text>
+            </View>
+        </View>
+    );
+};
+
 export const ProfileScreen = () => {
     const { user } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [showFullSizeAvatar, setShowFullSizeAvatar] = useState(false); // New state for full-size avatar
+    const [showFullSizeAvatar, setShowFullSizeAvatar] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [newUsername, setNewUsername] = useState(''); // New state for username input
-    const [debouncedUsername, setDebouncedUsername] = useState(''); // Debounced username for API call
-    const [isCheckingUsername, setIsCheckingUsername] = useState(false); // Loading state for username check
-    const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null); // Availability status
+    const [newUsername, setNewUsername] = useState('');
+    const [debouncedUsername, setDebouncedUsername] = useState('');
+    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+    const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
 
     const { pickImage, takePhoto } = useImagePicker();
     const { showActionSheetWithOptions } = useActionSheet();
 
     const loadProfile = useCallback(async () => {
         if (!user) return;
+        if (!isRefreshing) {
+            setLoading(true);
+        }
         try {
             const userProfile = await ProfileService.getProfile(user.id);
             if (userProfile) {
@@ -40,36 +69,41 @@ export const ProfileScreen = () => {
                 setFullName(userProfile.full_name || '');
                 setBio(userProfile.bio || '');
                 setAvatarUrl(userProfile.avatar_url);
-                setNewUsername(userProfile.username || ''); // Initialize newUsername
-                setDebouncedUsername(userProfile.username || ''); // Initialize debouncedUsername
+                setNewUsername(userProfile.username || '');
+                setDebouncedUsername(userProfile.username || '');
             }
+
+            const stats = await ProfileService.getProfileStats(user.id);
+            setProfileStats(stats);
+
         } catch (error) {
-            console.error("Erreur chargement profil:", error);
+            console.error("Erreur chargement profil ou stats:", error);
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, isRefreshing]);
 
     useEffect(() => {
-        loadProfile();
+        const fetchProfileData = async () => {
+            await loadProfile();
+        };
+        fetchProfileData();
     }, [loadProfile]);
 
-    // Debounce effect for username input
     useEffect(() => {
         const handler = setTimeout(() => {
-            setDebouncedUsername(newUsername.trim()); // Trim here
-        }, 500); // 500ms debounce time
+            setDebouncedUsername(newUsername.trim());
+        }, 500);
 
         return () => {
             clearTimeout(handler);
         };
     }, [newUsername]);
 
-    // Effect to check username availability when debouncedUsername changes
     useEffect(() => {
         const checkAvailability = async () => {
-            if (!user || !profile || debouncedUsername === profile.username.trim() || debouncedUsername.trim() === '') { // Trim here
-                setIsUsernameAvailable(null); // Reset status if username is current or empty
+            if (!user || !profile || debouncedUsername === profile.username.trim() || debouncedUsername.trim() === '') {
+                setIsUsernameAvailable(null);
                 return;
             }
 
@@ -79,7 +113,7 @@ export const ProfileScreen = () => {
                 setIsUsernameAvailable(available);
             } catch (error) {
                 console.error("Erreur vérification nom d'utilisateur:", error);
-                setIsUsernameAvailable(false); // Assume not available on error
+                setIsUsernameAvailable(false);
             } finally {
                 setIsCheckingUsername(false);
             }
@@ -91,12 +125,11 @@ export const ProfileScreen = () => {
     const handleSave = async () => {
         if (!user || !profile) return;
 
-        // Prevent saving if username is being checked or is not available (and has changed)
         if (isCheckingUsername) {
             Alert.alert("Vérification en cours", "Veuillez attendre la vérification du nom d'utilisateur.");
             return;
         }
-        if (newUsername.trim() !== profile.username.trim() && isUsernameAvailable === false) { // Trim here
+        if (newUsername.trim() !== profile.username.trim() && isUsernameAvailable === false) {
             Alert.alert("Erreur", "Le nom d'utilisateur n'est pas disponible.");
             return;
         }
@@ -108,8 +141,8 @@ export const ProfileScreen = () => {
         setLoading(true);
         try {
             const updates: ProfileUpdate = { full_name: fullName, bio };
-            if (newUsername.trim() !== profile.username.trim()) { // Trim here
-                updates.username = newUsername.trim(); // Trim before sending to service
+            if (newUsername.trim() !== profile.username.trim()) {
+                updates.username = newUsername.trim();
             }
             
             await ProfileService.updateProfile(user.id, updates);
@@ -183,10 +216,10 @@ export const ProfileScreen = () => {
             async (buttonIndex) => {
                 if (buttonIndex === 0) {
                     const photo = await takePhoto();
-                    handleAvatarChange(photo);
+                    await handleAvatarChange(photo);
                 } else if (buttonIndex === 1) {
                     const image = await pickImage();
-                    handleAvatarChange(image);
+                    await handleAvatarChange(image);
                 } else if (buttonIndex === destructiveButtonIndex) {
                     handleDeleteAvatar();
                 }
@@ -194,11 +227,17 @@ export const ProfileScreen = () => {
         );
     };
 
-    if (loading && !profile) {
+    const handleRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        await loadProfile();
+        setIsRefreshing(false);
+    }, [loadProfile]);
+
+    if (loading && (!profile || !profileStats)) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
-    const isSaveButtonDisabled = loading || isCheckingUsername || (newUsername.trim() !== profile?.username?.trim() && isUsernameAvailable === false) || newUsername.trim() === ''; // Trim here
+    const isSaveButtonDisabled = loading || isCheckingUsername || (newUsername.trim() !== profile?.username?.trim() && isUsernameAvailable === false) || newUsername.trim() === '';
 
     const isUsernameError = newUsername.trim() !== profile?.username?.trim() && isUsernameAvailable === false;
 
@@ -211,13 +250,22 @@ export const ProfileScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContentContainer} keyboardShouldPersistTaps="handled">
+            <ScrollView
+                contentContainerStyle={styles.scrollContentContainer}
+                keyboardShouldPersistTaps="handled"
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={theme.colors.primary[500]}
+                    />
+                }
+            >
                 {isEditing ? (
                     <>
                         <View style={styles.avatarContainerEditable}>
                             <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatar} />                            
                         </View>
-                        {/* Nouveau bouton de texte pour modifier la photo */}
                         <TouchableOpacity onPress={showAvatarOptions} style={styles.changePhotoButton}>
                             <Text style={styles.changePhotoButtonText}>Modifier la photo</Text>
                         </TouchableOpacity>
@@ -226,7 +274,7 @@ export const ProfileScreen = () => {
                             <View style={styles.formGroup}>
                                 <Text style={styles.label}>Nom d'utilisateur</Text>
                                 <TextInput
-                                    style={[styles.input, isUsernameError && styles.inputError]} // Apply error style
+                                    style={[styles.input, isUsernameError && styles.inputError]}
                                     value={newUsername}
                                     onChangeText={setNewUsername}
                                     placeholder="Votre nom d'utilisateur"
@@ -234,7 +282,7 @@ export const ProfileScreen = () => {
                                 />
                                 {newUsername.trim() !== profile?.username?.trim() && newUsername.trim() !== '' && (
                                     <View style={styles.usernameStatusContainer}>
-                                        {isUsernameAvailable === false && ( // Only show if explicitly unavailable
+                                        {isUsernameAvailable === false && (
                                             <Text style={[
                                                 styles.usernameStatusText,
                                                 styles.usernameUnavailable
@@ -264,6 +312,23 @@ export const ProfileScreen = () => {
                             <Text style={styles.label}>Biographie</Text>
                             <Text style={styles.info}>{profile?.bio || '-'}</Text>
                         </View>
+
+                        {/* Profile Stats Section */}
+                        {profileStats && (
+                            <View style={styles.statsContainer}>
+                                <Text style={styles.statsTitle}>Statistiques de pêche</Text>
+                                <View style={styles.statsGrid}>
+                                    {profileStats.totalCaught !== null && <StatItem iconName="fish-outline" label="Prises" value={profileStats.totalCaught} />}
+                                    {profileStats.uniqueSpeciesCount !== null && <StatItem iconName="leaf-outline" label="Esp. uniques" value={profileStats.uniqueSpeciesCount} />}
+                                    {profileStats.biggestWeightKg !== null && <StatItem iconName="scale-outline" label="Max poids" value={profileStats.biggestWeightKg} unit=" kg" />}
+                                    {profileStats.biggestSizeCm !== null && <StatItem iconName="resize-outline" label="Max taille" value={profileStats.biggestSizeCm} unit=" cm" />}
+                                    {profileStats.releaseRate !== null && <StatItem iconName="arrow-undo-outline" label="Relâché %" value={profileStats.releaseRate.toFixed(0)} unit="%" />}
+                                    {profileStats.mostCaughtSpecies !== null && <StatItem iconName="trophy-outline" label="Esp. la + pêchée" value={profileStats.mostCaughtSpecies} />}
+                                    {profileStats.favoriteTechnique !== null && <StatItem iconName="hammer-outline" label="Technique fav." value={profileStats.favoriteTechnique} />}
+                                    {profileStats.totalSessions !== null && <StatItem iconName="calendar-outline" label="Sessions" value={profileStats.totalSessions} />}
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
             </ScrollView>
@@ -329,7 +394,15 @@ const styles = StyleSheet.create({
         color: theme.colors.primary[500],
         fontWeight: theme.typography.fontWeight.medium,
     },
-    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
+    infoCard: {
+        backgroundColor: theme.colors.background.paper,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing[4], // Reduced from 5 to 4
+        ...theme.shadows.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+        marginTop: theme.spacing[4]
+    },
     profileSummary: { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing[4] },
     avatarContainerDisplay: { marginRight: theme.spacing[4] },
     avatarDisplay: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: theme.colors.primary[200] },
@@ -339,10 +412,10 @@ const styles = StyleSheet.create({
     bioContainer: { paddingTop: theme.spacing[4], borderTopWidth: 1, borderTopColor: theme.colors.border.light },
     label: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[1] },
     info: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontWeight: theme.typography.fontWeight.medium },
-    formGroup: { marginBottom: theme.spacing[5] },
+    formGroup: { marginBottom: theme.spacing[4] }, // Reduced from 5 to 4
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
     inputError: {
-        borderColor: theme.colors.error.main, // Red border for error
+        borderColor: theme.colors.error.main,
     },
     textArea: { height: 100, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
     footer: { padding: theme.layout.containerPadding },
@@ -364,6 +437,53 @@ const styles = StyleSheet.create({
     usernameUnavailable: {
         color: theme.colors.error.main,
     },
+    statsContainer: {
+        marginTop: theme.spacing[4],
+        paddingTop: theme.spacing[4],
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.border.light,
+    },
+    statsTitle: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.lg,
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing[3],
+        textAlign: 'center',
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    statItemVisual: {
+        width: '48%',
+        backgroundColor: theme.colors.background.default,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing[2],
+        marginBottom: theme.spacing[2],
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+    },
+    statIcon: {
+        marginBottom: theme.spacing[0],
+    },
+    statTextContainer: {
+        alignItems: 'center',
+    },
+    statLabelVisual: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
+        textAlign: 'center',
+    },
+    statValueVisual: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.primary,
+        fontWeight: theme.typography.fontWeight.bold,
+        textAlign: 'center',
+    },
     // Styles for full-size avatar modal
     fullSizeAvatarOverlay: {
         position: 'absolute',
@@ -371,14 +491,14 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)', // Semi-transparent background for blur effect
+        backgroundColor: 'rgba(0,0,0,0.8)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     fullSizeAvatar: {
-        width: screenWidth * 0.8, // 80% of screen width
-        height: screenWidth * 0.8, // Make it square
-        borderRadius: (screenWidth * 0.8) / 2, // Make it circular
+        width: screenWidth * 0.8,
+        height: screenWidth * 0.8,
+        borderRadius: (screenWidth * 0.8) / 2,
         borderWidth: 3,
         borderColor: theme.colors.white,
     },
