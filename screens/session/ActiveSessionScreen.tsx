@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,8 @@ import MapView, { Polyline } from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
 import { RootStackParamList } from "../../navigation/types";
 import { Database } from '../../lib/types';
-import { Swipeable } from 'react-native-gesture-handler';
+import { CatchListItem } from '../../components/CatchListItem';
+import { useCatchManagement } from '../../hooks/useCatchManagement'; // Import the new hook
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -63,21 +64,6 @@ const visibilityInfo = `
 
 const INPUT_HEIGHT = 50;
 
-const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, onPress: () => void) => {
-    const trans = dragX.interpolate({
-        inputRange: [-80, 0],
-        outputRange: [0, 80],
-        extrapolate: 'clamp',
-    });
-    return (
-        <TouchableOpacity onPress={onPress} style={styles.deleteButtonContainer}>
-            <Animated.View style={[styles.deleteButton, { transform: [{ translateX: trans }] }]}>
-                <Ionicons name="trash-outline" size={theme.iconSizes.lg} color={theme.colors.error.main} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
-
 export const ActiveSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const routeParams = useRoute<ActiveSessionRouteProp>();
@@ -103,6 +89,9 @@ export const ActiveSessionScreen = () => {
 
     const { seconds, start, stop } = useTimer();
     const { route, stopLocationTracking, errorMsg, location } = useLocationTracking();
+
+    // Use the custom hook for catch management
+    const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
 
     const hasUnsavedChanges = session?.location_name !== locationName ||
         session?.location_visibility !== locationVisibility ||
@@ -263,37 +252,6 @@ export const ActiveSessionScreen = () => {
         }
     };
 
-    const handleAddCatch = () => {
-        navigation.navigate('AddCatch', { sessionId });
-    };
-
-    const handleEditCatch = (catchId: string) => {
-        navigation.navigate('EditCatch', { catchId });
-    };
-
-    const handleDeleteCatch = (catchId: string) => {
-        Alert.alert(
-            "Supprimer la prise",
-            "Êtes-vous sûr de vouloir supprimer cette prise ?",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Supprimer",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await CatchesService.deleteCatch(catchId);
-                            setCatches(prevCatches => prevCatches.filter(c => c.id !== catchId));
-                        } catch (error) {
-                            console.error("Erreur suppression de la prise:", error);
-                            Alert.alert("Erreur", "Impossible de supprimer la prise.");
-                        }
-                    },
-                },
-            ]
-        );
-    };
-
     const openImageModal = (imageUrl: string) => {
         setSelectedImage(imageUrl);
         setModalVisible(true);
@@ -321,29 +279,6 @@ export const ActiveSessionScreen = () => {
             mapViewRef.current.animateCamera({ center: location.coords, zoom: 16 });
         }
     };
-
-    const renderCatchItem = (item: Catch) => (
-        <View key={item.id} style={styles.catchItemWrapper}>
-            <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, () => handleDeleteCatch(item.id))}>
-                <TouchableOpacity onPress={() => handleEditCatch(item.id)}>
-                    <View style={styles.catchItem}>
-                        {item.photo_url && (
-                            <TouchableOpacity onPress={() => openImageModal(item.photo_url!)}>
-                                <Image source={{ uri: item.photo_url }} style={styles.catchImage} />
-                            </TouchableOpacity>
-                        )}
-                        <View style={styles.catchInfo}>
-                            <Text style={styles.catchSpecies}>{item.species_name}</Text>
-                            <View style={styles.catchDetails}>
-                                {item.size_cm && <Text style={styles.catchDetailText}>{item.size_cm} cm</Text>}
-                                {item.weight_kg && <Text style={styles.catchDetailText}>{item.weight_kg} kg</Text>}
-                            </View>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Swipeable>
-        </View>
-    );
 
     if (loading || !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
@@ -476,6 +411,31 @@ export const ActiveSessionScreen = () => {
                 </View>
             </View>
 
+            <View style={{width: '100%', marginTop: theme.spacing[4]}}>
+                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={handleAddCatch}>
+                    <Text style={styles.buttonText}>Ajouter une prise</Text>
+                </TouchableOpacity>
+
+                <View>
+                    {catches.length > 0 ? (
+                        <>
+                            <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
+                            {catches.map(item => (
+                                <CatchListItem
+                                    key={item.id}
+                                    item={item}
+                                    onEdit={handleEditCatch}
+                                    onDelete={handleDeleteCatch}
+                                    onPressImage={openImageModal}
+                                />
+                            ))}
+                        </>
+                    ) : (
+                        <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
+                    )}
+                </View>
+            </View>
+
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Clarté de l'eau</Text>
                 <View style={styles.selectorContainer}>
@@ -522,21 +482,6 @@ export const ActiveSessionScreen = () => {
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
-                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={handleAddCatch}>
-                    <Text style={styles.buttonText}>Ajouter une prise</Text>
-                </TouchableOpacity>
-
-                <View>
-                    {catches.length > 0 ? (
-                        <>
-                            <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
-                            {catches.map(item => renderCatchItem(item))}
-                        </>
-                    ) : (
-                        <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
-                    )}
-                </View>
-
                 <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
                     {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
                 </TouchableOpacity>
@@ -758,40 +703,6 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing[6],
         marginBottom: theme.spacing[3],
     },
-    catchItemWrapper: {
-        marginBottom: theme.spacing[3],
-    },
-    catchItem: {
-        backgroundColor: theme.colors.background.paper,
-        padding: theme.spacing[2],
-        borderRadius: theme.borderRadius.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    catchImage: {
-        width: 60,
-        height: 60,
-        borderRadius: theme.borderRadius.sm,
-        marginRight: theme.spacing[4],
-    },
-    catchInfo: {
-        flex: 1,
-    },
-    catchSpecies: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.primary,
-    },
-    catchDetails: {
-        flexDirection: 'row',
-        marginTop: theme.spacing[1],
-    },
-    catchDetailText: {
-        marginRight: theme.spacing[4],
-        fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.sm,
-        color: theme.colors.text.secondary,
-    },
     noCatchesText: {
         textAlign: 'center',
         color: theme.colors.text.secondary,
@@ -812,19 +723,5 @@ const styles = StyleSheet.create({
         top: 50,
         right: 20,
         zIndex: 1,
-    },
-    deleteButtonContainer: {
-        width: 80,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: theme.spacing[2],
-    },
-    deleteButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: theme.borderRadius.md,
-        borderColor: theme.colors.error.main,
     },
 });

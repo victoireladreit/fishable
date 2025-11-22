@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../theme';
-import { FishingSessionsService, FishingSession, FishingSessionUpdate } from '../../services';
+import { FishingSessionsService, FishingSession, FishingSessionUpdate, CatchesService } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import MapView, { Polyline, Region, Marker } from 'react-native-maps';
+import { Database } from '../../lib/types';
+import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
+import { CatchListItem } from '../../components/CatchListItem';
+import { useCatchManagement } from '../../hooks/useCatchManagement'; // Import the new hook
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
+type Catch = Database['public']['Tables']['catches']['Row'];
 
 type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
 type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
@@ -68,15 +74,18 @@ const formatDuration = (totalMinutes: number | null) => {
 
 export const SessionDetailScreen = () => {
     const route = useRoute<SessionDetailRouteProp>();
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const { sessionId, onGoBack } = route.params;
     const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
+    const [catches, setCatches] = useState<Catch[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
 
     // États pour les champs modifiables
@@ -92,8 +101,12 @@ export const SessionDetailScreen = () => {
     const [isPublished, setIsPublished] = useState(false);
     const [locationVisibility, setLocationVisibility] = useState<LocationVisibility>('private');
 
-    const loadSession = useCallback(async () => {
+    // Use the custom hook for catch management
+    const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
+
+    const loadSession = useCallback(async (loadCatches = true) => {
         try {
+            setLoading(true);
             const fetchedSession = await FishingSessionsService.getSessionById(sessionId);
             if (fetchedSession) {
                 setSession(fetchedSession);
@@ -108,6 +121,11 @@ export const SessionDetailScreen = () => {
                 setWaterLevel(fetchedSession.water_level || null);
                 setIsPublished(fetchedSession.is_published || false);
                 setLocationVisibility(fetchedSession.location_visibility || 'private');
+
+                if (loadCatches) {
+                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
+                    setCatches(sessionCatches);
+                }
             }
         } catch (error) {
             console.error("Erreur chargement session:", error);
@@ -120,6 +138,20 @@ export const SessionDetailScreen = () => {
     useEffect(() => {
         loadSession();
     }, [loadSession]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchCatches = async () => {
+                try {
+                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
+                    setCatches(sessionCatches);
+                } catch (error) {
+                    console.error('Erreur récupération des prises:', error);
+                }
+            };
+            fetchCatches();
+        }, [sessionId])
+    );
 
     const sessionRoute = session?.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [];
 
@@ -175,7 +207,7 @@ export const SessionDetailScreen = () => {
         };
         try {
             await FishingSessionsService.updateSession(sessionId, updates);
-            await loadSession();
+            await loadSession(false); // Re-fetch session data, but not catches
             setIsEditing(false);
             Alert.alert("Succès", "La session a été mise à jour.");
             if (onGoBack) onGoBack(true); // Signaler la modification
@@ -190,6 +222,11 @@ export const SessionDetailScreen = () => {
         if (mapViewRef.current && mapRegion) {
             mapViewRef.current.animateToRegion(mapRegion, 500);
         }
+    };
+
+    const openImageModal = (imageUrl: string) => {
+        setSelectedImage(imageUrl);
+        setModalVisible(true);
     };
 
     useEffect(() => {
@@ -229,6 +266,20 @@ export const SessionDetailScreen = () => {
                 contentContainerStyle={styles.scrollContentContainer}
                 scrollEnabled={!mapInteractionEnabled}
             >
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                            <Ionicons name="close" size={30} color={theme.colors.white} />
+                        </TouchableOpacity>
+                        <Image source={{ uri: selectedImage || '' }} style={styles.fullScreenImage} resizeMode="contain" />
+                    </View>
+                </Modal>
+
                 {isEditing ? (
                     <>
                         <TextInput
@@ -321,20 +372,6 @@ export const SessionDetailScreen = () => {
                             </Text>
                         </View>
 
-                        <View style={styles.infoCard}>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
-
-                            <Text style={styles.infoDate}>Créée le: {new Date(session.created_at!).toLocaleDateString('fr-FR')}</Text>
-                            {session.updated_at && <Text style={styles.infoDate}>Mise à jour le: {new Date(session.updated_at!).toLocaleDateString('fr-FR')}</Text>}
-                        </View>
-
                         <View style={styles.mapContainer}>
                             {mapRegion ? (
                                 <>
@@ -390,6 +427,43 @@ export const SessionDetailScreen = () => {
                                 </View>
                             )}
                         </View>
+
+                        <View style={{width: '100%', marginTop: theme.spacing[4]}}>
+                            <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={handleAddCatch}>
+                                <Text style={styles.buttonText}>Ajouter une prise</Text>
+                            </TouchableOpacity>
+
+                            {catches.length > 0 ? (
+                                <>
+                                    <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
+                                    {catches.map(item => (
+                                        <CatchListItem
+                                            key={item.id}
+                                            item={item}
+                                            onEdit={handleEditCatch}
+                                            onDelete={handleDeleteCatch}
+                                            onPressImage={openImageModal}
+                                        />
+                                    ))}
+                                </>
+                            ) : (
+                                <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.infoCard}>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
+
+                            <Text style={styles.infoDate}>Créée le: {new Date(session.created_at!).toLocaleDateString('fr-FR')}</Text>
+                            {session.updated_at && <Text style={styles.infoDate}>Mise à jour le: {new Date(session.updated_at!).toLocaleDateString('fr-FR')}</Text>}
+                        </View>
                     </>
                 )}
             </ScrollView>
@@ -423,7 +497,7 @@ const styles = StyleSheet.create({
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: theme.spacing[2], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
     infoLabel: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary },
     infoValue: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary },
-    infoDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.xs, color: theme.colors.text.disabled, marginTop: theme.spacing[2], textAlign: 'right' },
+    infoDate: { fontFamily: 'Inter-Regular', fontSize: 10, color: '#a0aec0', marginTop: 8, textAlign: 'right' },
     formGroup: { marginBottom: theme.spacing[5] },
     labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[3] },
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[3] },
@@ -507,5 +581,51 @@ const styles = StyleSheet.create({
         borderTopColor: theme.colors.border.light,
         alignSelf: 'center',
         marginTop: -1.5,
+    },
+    catchesTitle: {
+        fontSize: theme.typography.fontSize.lg,
+        fontFamily: theme.typography.fontFamily.bold,
+        color: theme.colors.text.primary,
+        marginTop: theme.spacing[6],
+        marginBottom: theme.spacing[3],
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullScreenImage: {
+        width: '100%',
+        height: '80%',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 1,
+    },
+    button: {
+        height: INPUT_HEIGHT,
+        justifyContent: 'center',
+        borderRadius: theme.borderRadius.base,
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: theme.spacing[3],
+        ...theme.shadows.base,
+    },
+    addCatchButton: {
+        backgroundColor: theme.colors.success.main,
+    },
+    buttonText: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.inverse,
+        fontWeight: theme.typography.fontWeight.bold,
+    },
+    noCatchesText: {
+        textAlign: 'center',
+        color: theme.colors.text.secondary,
+        marginVertical: theme.spacing[4],
     },
 });

@@ -100,14 +100,15 @@ export const EditCatchScreen = () => {
                 if (catchData) {
                     setInitialCatch(catchData);
                     setSpeciesName(catchData.species_name || '');
-                    setSizeCm(catchData.size_cm?.toString() || '');
-                    setWeightKg(catchData.weight_kg?.toString() || '');
+                    // Ensure initial values are displayed correctly, replacing dot with comma if needed for display
+                    setSizeCm(catchData.size_cm?.toString().replace('.', ',') || '');
+                    setWeightKg(catchData.weight_kg?.toString().replace('.', ',') || '');
                     setTechnique(catchData.technique || '');
                     setLureName(catchData.lure_name || '');
                     setLureColor(catchData.lure_color || '');
                     setRodType(catchData.rod_type || '');
-                    setLineStrengthLb(catchData.line_strength_lb?.toString() || '');
-                    setWaterDepthM(catchData.water_depth_m?.toString() || '');
+                    setLineStrengthLb(catchData.line_strength_lb?.toString().replace('.', ',') || '');
+                    setWaterDepthM(catchData.water_depth_m?.toString().replace('.', ',') || '');
                     setHabitatType(catchData.habitat_type || '');
                     setWaterType(catchData.water_type || null);
                     setStructure(catchData.structure || '');
@@ -183,14 +184,14 @@ export const EditCatchScreen = () => {
         try {
             await CatchesService.updateCatch(catchId, {
                 species_name: speciesName,
-                size_cm: sizeCm ? parseFloat(sizeCm) : null,
-                weight_kg: weightKg ? parseFloat(weightKg) : null,
+                size_cm: sizeCm ? parseFloat(sizeCm.replace(',', '.')) : null,
+                weight_kg: weightKg ? parseFloat(weightKg.replace(',', '.')) : null,
                 technique: technique || null,
                 lure_name: lureName || null,
                 lure_color: lureColor || null,
                 rod_type: rodType || null,
-                line_strength_lb: lineStrengthLb ? parseFloat(lineStrengthLb) : null,
-                water_depth_m: waterDepthM ? parseFloat(waterDepthM) : null,
+                line_strength_lb: lineStrengthLb ? parseFloat(lineStrengthLb.replace(',', '.')) : null,
+                water_depth_m: waterDepthM ? parseFloat(waterDepthM.replace(',', '.')) : null,
                 habitat_type: habitatType || null,
                 water_type: waterType,
                 structure: structure || null,
