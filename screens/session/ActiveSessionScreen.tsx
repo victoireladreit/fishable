@@ -251,6 +251,10 @@ export const ActiveSessionScreen = () => {
         navigation.navigate('AddCatch', { sessionId });
     };
 
+    const handleEditCatch = (catchId: string) => {
+        navigation.navigate('EditCatch', { catchId });
+    };
+
     const openImageModal = (imageUrl: string) => {
         setSelectedImage(imageUrl);
         setModalVisible(true);
@@ -280,7 +284,7 @@ export const ActiveSessionScreen = () => {
     };
 
     const renderCatchItem = (item: Catch) => (
-        <View key={item.id} style={styles.catchItem}>
+        <TouchableOpacity key={item.id} style={styles.catchItem} onPress={() => handleEditCatch(item.id)}>
             {item.photo_url && (
                 <TouchableOpacity onPress={() => openImageModal(item.photo_url!)}>
                     <Image source={{ uri: item.photo_url }} style={styles.catchImage} />
@@ -293,7 +297,7 @@ export const ActiveSessionScreen = () => {
                     {item.weight_kg && <Text style={styles.catchDetailText}>{item.weight_kg} kg</Text>}
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     if (loading || !session) {

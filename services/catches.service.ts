@@ -8,40 +8,24 @@ type CatchInsertPayload = Omit<Database['public']['Tables']['catches']['Insert']
     species_name: string;
     photo_uri?: string | null;
 };
+type CatchUpdatePayload = Omit<Database['public']['Tables']['catches']['Update'], 'species_id' | 'photo_url'> & { 
+    species_name?: string;
+    photo_uri?: string | null;
+};
 
 const PHOTOS_BUCKET = 'fishable-catch-photos';
 
-const getOrCreateSpecies = async (speciesName: string): Promise<string> => {
-    const { data: existingSpecies, error: selectError } = await supabase
-        .from('species_registry')
-        .select('id')
-        .ilike('name', speciesName)
-        .single();
-
-    if (selectError && selectError.code !== 'PGRST116') {
-        throw selectError;
-    }
-
-    if (existingSpecies) {
-        return existingSpecies.id;
-    }
-
-    const { data: newSpecies, error: insertError } = await supabase
-        .from('species_registry')
-        .insert({ name: speciesName, scientific_name: 'Unknown' })
-        .select('id')
-        .single();
-
-    if (insertError) {
-        throw insertError;
-    }
-
-    return newSpecies.id;
-};
-
 const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: string): Promise<string | null> => {
-    if (!photoUri) return null;
+    if (!photoUri) {
+        return null;
+    }
 
+    // If the URI is already a remote URL, it's an existing photo. Return it directly.
+    if (photoUri.startsWith('http')) {
+        return photoUri;
+    }
+
+    // Otherwise, it's a new local file URI that needs to be uploaded.
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Utilisateur non authentifié.");
@@ -66,27 +50,45 @@ const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: 
 };
 
 const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
-    const { photo_uri, session_id, ...catchDetails } = catchData;
+    const { photo_uri, session_id, species_name, ...catchDetails } = catchData;
 
-    const speciesId = await getOrCreateSpecies(catchDetails.species_name);
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id);
 
-    const { data, error } = await supabase
-        .from('catches')
-        .insert({ 
+    const { data, error } = await supabase.rpc('add_catch_and_update_pokedex', {
+        p_session_id: session_id,
+        p_catch_data: {
             ...catchDetails,
-            session_id,
-            species_id: speciesId,
-            photo_url: photoUrl,
-        })
-        .select()
-        .single();
+            species_name,
+            photo_url: photoUrl
+        }
+    });
 
     if (error) {
         throw error;
     }
     return data;
 };
+
+const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<void> => {
+    const { photo_uri, session_id, ...catchDetails } = catchData;
+    
+    const photoUrl = await uploadCatchPhoto(photo_uri, session_id!);
+
+    const updates = {
+        ...catchDetails,
+        photo_url: photoUrl,
+    };
+
+    const { error } = await supabase.rpc('update_catch_and_pokedex', {
+        p_catch_id: id,
+        p_updates: updates,
+    });
+
+    if (error) {
+        throw error;
+    }
+};
+
 
 const getCatchesBySession = async (sessionId: string): Promise<Catch[]> => {
     const { data, error } = await supabase
@@ -101,7 +103,22 @@ const getCatchesBySession = async (sessionId: string): Promise<Catch[]> => {
     return data;
 };
 
+const getCatchById = async (id: string): Promise<Catch | null> => {
+    const { data, error } = await supabase
+        .from('catches')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
 export const CatchesService = {
     addCatch,
+    updateCatch,
     getCatchesBySession,
+    getCatchById,
 };
