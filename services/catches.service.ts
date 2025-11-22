@@ -20,12 +20,10 @@ const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: 
         return null;
     }
 
-    // If the URI is already a remote URL, it's an existing photo. Return it directly.
     if (photoUri.startsWith('http')) {
         return photoUri;
     }
 
-    // Otherwise, it's a new local file URI that needs to be uploaded.
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Utilisateur non authentifié.");
@@ -89,6 +87,15 @@ const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<v
     }
 };
 
+const deleteCatch = async (catchId: string): Promise<void> => {
+    const { error } = await supabase.rpc('delete_catch_and_update_pokedex', {
+        p_catch_id: catchId,
+    });
+
+    if (error) {
+        throw error;
+    }
+};
 
 const getCatchesBySession = async (sessionId: string): Promise<Catch[]> => {
     const { data, error } = await supabase
@@ -119,6 +126,7 @@ const getCatchById = async (id: string): Promise<Catch | null> => {
 export const CatchesService = {
     addCatch,
     updateCatch,
+    deleteCatch,
     getCatchesBySession,
     getCatchById,
 };

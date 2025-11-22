@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import MapView, { Polyline } from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
 import { RootStackParamList } from "../../navigation/types";
 import { Database } from '../../lib/types';
+import { Swipeable } from 'react-native-gesture-handler';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -61,6 +62,21 @@ const visibilityInfo = `
 `;
 
 const INPUT_HEIGHT = 50;
+
+const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, onPress: () => void) => {
+    const trans = dragX.interpolate({
+        inputRange: [-80, 0],
+        outputRange: [0, 80],
+        extrapolate: 'clamp',
+    });
+    return (
+        <TouchableOpacity onPress={onPress} style={styles.deleteButtonContainer}>
+            <Animated.View style={[styles.deleteButton, { transform: [{ translateX: trans }] }]}>
+                <Ionicons name="trash-outline" size={theme.iconSizes.md} color={theme.colors.error.main} />
+            </Animated.View>
+        </TouchableOpacity>
+    );
+};
 
 export const ActiveSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
@@ -255,6 +271,29 @@ export const ActiveSessionScreen = () => {
         navigation.navigate('EditCatch', { catchId });
     };
 
+    const handleDeleteCatch = (catchId: string) => {
+        Alert.alert(
+            "Supprimer la prise",
+            "Êtes-vous sûr de vouloir supprimer cette prise ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await CatchesService.deleteCatch(catchId);
+                            setCatches(prevCatches => prevCatches.filter(c => c.id !== catchId));
+                        } catch (error) {
+                            console.error("Erreur suppression de la prise:", error);
+                            Alert.alert("Erreur", "Impossible de supprimer la prise.");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const openImageModal = (imageUrl: string) => {
         setSelectedImage(imageUrl);
         setModalVisible(true);
@@ -284,20 +323,26 @@ export const ActiveSessionScreen = () => {
     };
 
     const renderCatchItem = (item: Catch) => (
-        <TouchableOpacity key={item.id} style={styles.catchItem} onPress={() => handleEditCatch(item.id)}>
-            {item.photo_url && (
-                <TouchableOpacity onPress={() => openImageModal(item.photo_url!)}>
-                    <Image source={{ uri: item.photo_url }} style={styles.catchImage} />
+        <View key={item.id} style={styles.catchItemWrapper}>
+            <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, () => handleDeleteCatch(item.id))}>
+                <TouchableOpacity onPress={() => handleEditCatch(item.id)}>
+                    <View style={styles.catchItem}>
+                        {item.photo_url && (
+                            <TouchableOpacity onPress={() => openImageModal(item.photo_url!)}>
+                                <Image source={{ uri: item.photo_url }} style={styles.catchImage} />
+                            </TouchableOpacity>
+                        )}
+                        <View style={styles.catchInfo}>
+                            <Text style={styles.catchSpecies}>{item.species_name}</Text>
+                            <View style={styles.catchDetails}>
+                                {item.size_cm && <Text style={styles.catchDetailText}>{item.size_cm} cm</Text>}
+                                {item.weight_kg && <Text style={styles.catchDetailText}>{item.weight_kg} kg</Text>}
+                            </View>
+                        </View>
+                    </View>
                 </TouchableOpacity>
-            )}
-            <View style={styles.catchInfo}>
-                <Text style={styles.catchSpecies}>{item.species_name}</Text>
-                <View style={styles.catchDetails}>
-                    {item.size_cm && <Text style={styles.catchDetailText}>{item.size_cm} cm</Text>}
-                    {item.weight_kg && <Text style={styles.catchDetailText}>{item.weight_kg} kg</Text>}
-                </View>
-            </View>
-        </TouchableOpacity>
+            </Swipeable>
+        </View>
     );
 
     if (loading || !session) {
@@ -713,11 +758,13 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing[6],
         marginBottom: theme.spacing[3],
     },
+    catchItemWrapper: {
+        marginBottom: theme.spacing[3],
+    },
     catchItem: {
         backgroundColor: theme.colors.background.paper,
         padding: theme.spacing[2],
         borderRadius: theme.borderRadius.md,
-        marginBottom: theme.spacing[3],
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -765,5 +812,18 @@ const styles = StyleSheet.create({
         top: 50,
         right: 20,
         zIndex: 1,
+    },
+    deleteButtonContainer: {
+        width: 80,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    deleteButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        backgroundColor: theme.colors.error.light,
+        borderRadius: theme.borderRadius.md,
     },
 });
