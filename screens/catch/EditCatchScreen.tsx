@@ -54,15 +54,15 @@ export const EditCatchScreen = () => {
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
 
     const hasUnsavedChanges =
-        initialCatch?.species_name !== speciesName ||
-        (initialCatch?.size_cm?.toString() || '') !== sizeCm ||
-        (initialCatch?.weight_kg?.toString() || '') !== weightKg ||
+        (initialCatch?.species_name || '') !== speciesName ||
+        (initialCatch?.size_cm?.toString().replace('.', ',') || '') !== sizeCm ||
+        (initialCatch?.weight_kg?.toString().replace('.', ',') || '') !== weightKg ||
         (initialCatch?.technique || '') !== technique ||
         (initialCatch?.lure_name || '') !== lureName ||
         (initialCatch?.lure_color || '') !== lureColor ||
         (initialCatch?.rod_type || '') !== rodType ||
-        (initialCatch?.line_strength_lb?.toString() || '') !== lineStrengthLb ||
-        (initialCatch?.water_depth_m?.toString() || '') !== waterDepthM ||
+        (initialCatch?.line_strength_lb?.toString().replace('.', ',') || '') !== lineStrengthLb ||
+        (initialCatch?.water_depth_m?.toString().replace('.', ',') || '') !== waterDepthM ||
         (initialCatch?.habitat_type || '') !== habitatType ||
         (initialCatch?.water_type || null) !== waterType ||
         (initialCatch?.structure || '') !== structure ||
@@ -100,7 +100,6 @@ export const EditCatchScreen = () => {
                 if (catchData) {
                     setInitialCatch(catchData);
                     setSpeciesName(catchData.species_name || '');
-                    // Ensure initial values are displayed correctly, replacing dot with comma if needed for display
                     setSizeCm(catchData.size_cm?.toString().replace('.', ',') || '');
                     setWeightKg(catchData.weight_kg?.toString().replace('.', ',') || '');
                     setTechnique(catchData.technique || '');
