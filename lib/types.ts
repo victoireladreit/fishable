@@ -21,7 +21,6 @@ export interface Database {
                     lure_name: string | null
                     lure_color: string | null
                     rod_type: string | null
-                    line_strength_lb: number | null
                     catch_location_lat: number | null
                     catch_location_lng: number | null
                     water_depth_m: number | null
@@ -49,7 +48,6 @@ export interface Database {
                     lure_name?: string | null
                     lure_color?: string | null
                     rod_type?: string | null
-                    line_strength_lb?: number | null
                     catch_location_lat?: number | null
                     catch_location_lng?: number | null
                     water_depth_m?: number | null
@@ -77,7 +75,6 @@ export interface Database {
                     lure_name?: string | null
                     lure_color?: string | null
                     rod_type?: string | null
-                    line_strength_lb?: number | null
                     catch_location_lat?: number | null
                     catch_location_lng?: number | null
                     water_depth_m?: number | null

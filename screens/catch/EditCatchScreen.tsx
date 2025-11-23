@@ -37,7 +37,6 @@ export const EditCatchScreen = () => {
     const [lureName, setLureName] = useState('');
     const [lureColor, setLureColor] = useState('');
     const [rodType, setRodType] = useState('');
-    const [lineStrengthLb, setLineStrengthLb] = useState('');
     const [waterDepthM, setWaterDepthM] = useState('');
     const [habitatType, setHabitatType] = useState('');
     const [waterType, setWaterType] = useState<WaterType>(null);
@@ -61,7 +60,6 @@ export const EditCatchScreen = () => {
         (initialCatch?.lure_name || '') !== lureName ||
         (initialCatch?.lure_color || '') !== lureColor ||
         (initialCatch?.rod_type || '') !== rodType ||
-        (initialCatch?.line_strength_lb?.toString().replace('.', ',') || '') !== lineStrengthLb ||
         (initialCatch?.water_depth_m?.toString().replace('.', ',') || '') !== waterDepthM ||
         (initialCatch?.habitat_type || '') !== habitatType ||
         (initialCatch?.water_type || null) !== waterType ||
@@ -106,7 +104,6 @@ export const EditCatchScreen = () => {
                     setLureName(catchData.lure_name || '');
                     setLureColor(catchData.lure_color || '');
                     setRodType(catchData.rod_type || '');
-                    setLineStrengthLb(catchData.line_strength_lb?.toString().replace('.', ',') || '');
                     setWaterDepthM(catchData.water_depth_m?.toString().replace('.', ',') || '');
                     setHabitatType(catchData.habitat_type || '');
                     setWaterType(catchData.water_type || null);
@@ -189,7 +186,6 @@ export const EditCatchScreen = () => {
                 lure_name: lureName || null,
                 lure_color: lureColor || null,
                 rod_type: rodType || null,
-                line_strength_lb: lineStrengthLb ? parseFloat(lineStrengthLb.replace(',', '.')) : null,
                 water_depth_m: waterDepthM ? parseFloat(waterDepthM.replace(',', '.')) : null,
                 habitat_type: habitatType || null,
                 water_type: waterType,
@@ -290,15 +286,9 @@ export const EditCatchScreen = () => {
                 </View>
             </View>
 
-            <View style={styles.row}>
-                <View style={[styles.formGroup, styles.halfWidth]}>
-                    <Text style={styles.label}>Canne</Text>
-                    <TextInput style={styles.input} value={rodType} onChangeText={setRodType} placeholder="Ex: Spinning 7' M" placeholderTextColor={theme.colors.text.disabled} />
-                </View>
-                <View style={[styles.formGroup, styles.halfWidth]}>
-                    <Text style={styles.label}>Ligne (lb)</Text>
-                    <TextInput style={styles.input} value={lineStrengthLb} onChangeText={setLineStrengthLb} placeholder="Ex: 20" placeholderTextColor={theme.colors.text.disabled} keyboardType="numeric" />
-                </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Canne</Text>
+                <TextInput style={styles.input} value={rodType} onChangeText={setRodType} placeholder="Ex: Spinning 7' M" placeholderTextColor={theme.colors.text.disabled} />
             </View>
 
             <View style={styles.formGroup}>

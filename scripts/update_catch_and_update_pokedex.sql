@@ -38,7 +38,6 @@ END IF;
     v_new_catch.lure_name := COALESCE(p_updates->>'lure_name', v_old_catch.lure_name);
     v_new_catch.lure_color := COALESCE(p_updates->>'lure_color', v_old_catch.lure_color);
     v_new_catch.rod_type := COALESCE(p_updates->>'rod_type', v_old_catch.rod_type);
-    v_new_catch.line_strength_lb := COALESCE((p_updates->>'line_strength_lb')::numeric, v_old_catch.line_strength_lb);
     v_new_catch.water_depth_m := COALESCE((p_updates->>'water_depth_m')::numeric, v_old_catch.water_depth_m);
     v_new_catch.habitat_type := COALESCE(p_updates->>'habitat_type', v_old_catch.habitat_type);
     v_new_catch.water_type := COALESCE(p_updates->>'water_type', v_old_catch.water_type);
@@ -72,7 +71,6 @@ UPDATE catches SET
                    lure_name = v_new_catch.lure_name,
                    lure_color = v_new_catch.lure_color,
                    rod_type = v_new_catch.rod_type,
-                   line_strength_lb = v_new_catch.line_strength_lb,
                    water_depth_m = v_new_catch.water_depth_m,
                    habitat_type = v_new_catch.habitat_type,
                    water_type = v_new_catch.water_type,

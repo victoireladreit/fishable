@@ -7,7 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useImagePicker } from '../../hooks/useImagePicker';
+import { useImagePicker } from '../../hooks';
 
 type AddCatchRouteProp = RouteProp<RootStackParamList, 'AddCatch'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddCatch'>;
@@ -35,7 +35,6 @@ export const AddCatchScreen = () => {
     const [lureName, setLureName] = useState('');
     const [lureColor, setLureColor] = useState('');
     const [rodType, setRodType] = useState('');
-    const [lineStrengthLb, setLineStrengthLb] = useState('');
     const [waterDepthM, setWaterDepthM] = useState('');
     const [habitatType, setHabitatType] = useState('');
     const [waterType, setWaterType] = useState<WaterType>(null);
@@ -58,7 +57,6 @@ export const AddCatchScreen = () => {
         lureName !== '' ||
         lureColor !== '' ||
         rodType !== '' ||
-        lineStrengthLb !== '' ||
         waterDepthM !== '' ||
         habitatType !== '' ||
         waterType !== null ||
@@ -184,7 +182,6 @@ export const AddCatchScreen = () => {
                 lure_name: lureName || null,
                 lure_color: lureColor || null,
                 rod_type: rodType || null,
-                line_strength_lb: lineStrengthLb ? parseFloat(lineStrengthLb.replace(',', '.')) : null,
                 water_depth_m: waterDepthM ? parseFloat(waterDepthM.replace(',', '.')) : null,
                 habitat_type: habitatType || null,
                 water_type: waterType,
@@ -296,15 +293,9 @@ export const AddCatchScreen = () => {
             </View>
 
             {/* Equipment */}
-            <View style={styles.row}>
-                <View style={[styles.formGroup, styles.halfWidth]}>
-                    <Text style={styles.label}>Canne</Text>
-                    <TextInput style={styles.input} value={rodType} onChangeText={setRodType} placeholder="Ex: Spinning 7' M" placeholderTextColor={theme.colors.text.disabled} />
-                </View>
-                <View style={[styles.formGroup, styles.halfWidth]}>
-                    <Text style={styles.label}>Ligne (lb)</Text>
-                    <TextInput style={styles.input} value={lineStrengthLb} onChangeText={setLineStrengthLb} placeholder="Ex: 20" placeholderTextColor={theme.colors.text.disabled} keyboardType="numeric" />
-                </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Canne</Text>
+                <TextInput style={styles.input} value={rodType} onChangeText={setRodType} placeholder="Ex: Spinning 7' M" placeholderTextColor={theme.colors.text.disabled} />
             </View>
 
             {/* Environment */}
