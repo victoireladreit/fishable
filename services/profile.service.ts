@@ -70,15 +70,14 @@ export const ProfileService = {
     },
 
     async getProfileStats(userId: string): Promise<ProfileStats> {
-        // 1. Get user_pokedex entries
-        const { data: pokedexEntries, error: pokedexError } = await supabase
+        const { data: fishLogEntries, error: fishLogError } = await supabase
             .from('user_pokedex')
             .select('species_id, total_caught, total_released, biggest_size_cm, biggest_weight_kg, techniques_used')
             .eq('user_id', userId);
 
-        if (pokedexError) {
-            console.error("Error fetching user pokedex:", pokedexError);
-            throw pokedexError;
+        if (fishLogError) {
+            console.error("Error fetching user fish-log:", fishLogError);
+            throw fishLogError;
         }
 
         let totalCaught = 0;
@@ -89,8 +88,8 @@ export const ProfileService = {
         const techniqueCounts: { [key: string]: number } = {};
         const speciesCaughtCounts: { [speciesId: string]: number } = {}; // To count total_caught per species
 
-        if (pokedexEntries) {
-            pokedexEntries.forEach(entry => {
+        if (fishLogEntries) {
+            fishLogEntries.forEach(entry => {
                 if (entry.total_caught) {
                     totalCaught += entry.total_caught;
                     if (entry.species_id) {

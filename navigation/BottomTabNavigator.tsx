@@ -1,19 +1,33 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { SessionScreen } from '../screens/history/SessionScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { theme } from '../theme';
-import { MainTabParamList } from './types';
-import {HomeScreen} from "../screens/home/HomeScreen";
+import { MainTabParamList, FishLogStackParamList } from './types';
+import { HomeScreen } from "../screens/home/HomeScreen";
+import { FishLogScreen } from '../screens/fish-log/FishLogScreen';
+import { FishLogDetailScreen } from '../screens/fish-log/FishLogDetailScreen';
+import { SessionScreen } from "../screens/session/SessionScreen";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+const FishLogStack = createStackNavigator<FishLogStackParamList>();
+
+const FishLogNavigator = () => {
+    return (
+        <FishLogStack.Navigator screenOptions={{ headerShown: false }}>
+            <FishLogStack.Screen name="FishLogList" component={FishLogScreen} />
+            <FishLogStack.Screen name="FishLogDetail" component={FishLogDetailScreen} />
+        </FishLogStack.Navigator>
+    );
+};
 
 export const BottomTabNavigator = () => {
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
+            screenOptions={({ route }: BottomTabScreenProps<MainTabParamList>) => ({
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName: React.ComponentProps<typeof Ionicons>['name'] = 'alert-circle';
@@ -22,6 +36,8 @@ export const BottomTabNavigator = () => {
                         iconName = focused ? 'home' : 'home-outline';
                     } else if (route.name === 'Sessions') {
                         iconName = focused ? 'boat' : 'boat-outline';
+                    } else if (route.name === 'FishLog') {
+                        iconName = focused ? 'fish' : 'fish-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     } else if (route.name === 'Settings') {
@@ -44,6 +60,7 @@ export const BottomTabNavigator = () => {
         >
             <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Accueil' }} />
             <Tab.Screen name="Sessions" component={SessionScreen} options={{ title: 'Sessions' }} />
+            <Tab.Screen name="FishLog" component={FishLogNavigator} options={{ title: 'FishLog' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
             <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
         </Tab.Navigator>

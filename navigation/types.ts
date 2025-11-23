@@ -1,8 +1,15 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
+// Paramètres pour le StackNavigator du FishLog
+export type FishLogStackParamList = {
+    FishLogList: undefined; // L'écran de liste du FishLog (renommé)
+    FishLogDetail: { speciesId: string }; // L'écran de détail d'une espèce
+};
+
 export type MainTabParamList = {
     HomeTab: undefined;
     Sessions: undefined;
+    FishLog: NavigatorScreenParams<FishLogStackParamList>; // Le FishLog est maintenant un StackNavigator
     Profile: undefined;
     Settings: undefined;
 };
