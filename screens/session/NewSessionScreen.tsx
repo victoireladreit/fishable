@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionInsert, FishingSessionsService, WeatherService } from '../../services';
@@ -10,12 +10,14 @@ import { useLocation, useLocationTracking } from '../../hooks';
 import { getWindStrengthCategory } from '../../lib/weather';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
+type NewSessionRouteProp = RouteProp<RootStackParamList, 'NewSession'>;
 
 const INPUT_HEIGHT = 50;
 
 export const NewSessionScreen = () => {
     const { user } = useAuth();
     const navigation = useNavigation<NavigationProp>();
+    const route = useRoute<NewSessionRouteProp>();
     const [locationName, setLocationName] = useState('');
     const [loading, setLoading] = useState(false);
     const { getLocation, getRegionFromCoords, loading: locationLoading } = useLocation();
@@ -65,6 +67,10 @@ export const NewSessionScreen = () => {
 
             if (newSession?.id) {
                 startLocationTracking();
+                
+                // Call the callback before navigating away
+                route.params?.onGoBack();
+
                 navigation.replace('ActiveSession', { sessionId: newSession.id });
             } else {
                 Alert.alert('Erreur', 'Impossible de créer la session.');

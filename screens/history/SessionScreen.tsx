@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Animated, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Animated, Alert, Platform, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { FishingSessionsService, FishingSession } from '../../services';
-import { theme } from '../../theme';
+import { theme, colors } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { RootStackParamList } from '../../navigation/types';
 
-type HistoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionSummary'>;
+type SessionNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession' | 'ActiveSession'>;
 
 const formatDuration = (totalMinutes: number | null) => {
     if (totalMinutes === null || totalMinutes < 0) return null;
@@ -59,47 +60,59 @@ const SessionCard = ({ session, onDelete, onNavigate }: { session: FishingSessio
     );
 };
 
-export const HistoryScreen = () => {
-    const { user } = useAuth();
-    const navigation = useNavigation<HistoryNavigationProp>();
-    const [sessions, setSessions] = useState<FishingSession[]>([]);
+export const SessionScreen = () => {
+    const { user, refreshUser } = useAuth();
+    const navigation = useNavigation<SessionNavigationProp>();
+    const [history, setHistory] = useState<FishingSession[]>([]);
+    const [activeSession, setActiveSession] = useState<FishingSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [shouldReload, setShouldReload] = useState(false);
-    const [hasLoadedInitial, setHasLoadedInitial] = useState(false); // Nouveau state
+    const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
 
-    const loadSessions = useCallback(async () => {
+    const loadData = useCallback(async (isRefreshCall: boolean = false) => {
         if (!user) return;
+        if (!isRefreshCall) setLoading(true);
+
         try {
-            const userSessions = await FishingSessionsService.getSessions({userId: user.id});
+            const userSessions = await FishingSessionsService.getSessions({ userId: user.id });
+            
+            if (isRefreshCall) {
+                await refreshUser();
+            }
+            
             const completedSessions = userSessions?.filter(s => s.status === 'completed') || [];
-            setSessions(completedSessions);
+            const currentSession = userSessions?.find(s => s.status === 'active') || null;
+
+            setHistory(completedSessions);
+            setActiveSession(currentSession);
+
         } catch (error) {
-            console.error("Erreur lors du chargement de l'historique:", error);
+            console.error("Erreur lors du chargement des sessions:", error);
+        } finally {
+            if (!isRefreshCall) setLoading(false);
         }
-    }, [user]);
+    }, [user, refreshUser]);
 
     useFocusEffect(
         useCallback(() => {
             const fetchData = async () => {
-                setLoading(true);
-                await loadSessions();
-                setLoading(false);
-                setShouldReload(false); // Réinitialiser après le rechargement
-                setHasLoadedInitial(true); // Marquer comme chargé initialement
+                await loadData();
+                setShouldReload(false);
+                setHasLoadedInitial(true);
             };
 
             if (shouldReload || !hasLoadedInitial) {
                 fetchData();
             }
-        }, [loadSessions, shouldReload, hasLoadedInitial])
+        }, [loadData, shouldReload, hasLoadedInitial])
     );
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
-        await loadSessions();
+        await loadData(true);
         setIsRefreshing(false);
-    }, [loadSessions]);
+    }, [loadData]);
 
     const handleDelete = (sessionId: string) => {
         Alert.alert(
@@ -113,7 +126,7 @@ export const HistoryScreen = () => {
                     onPress: async () => {
                         try {
                             await FishingSessionsService.deleteSession(sessionId);
-                            setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
+                            setHistory(prevSessions => prevSessions.filter(s => s.id !== sessionId));
                         } catch (error) {
                             console.error("Erreur lors de la suppression:", error);
                             Alert.alert("Erreur", "Impossible de supprimer la session.");
@@ -135,35 +148,75 @@ export const HistoryScreen = () => {
         });
     }, [navigation]);
 
-    if (loading && !hasLoadedInitial) { // Afficher le loader uniquement lors du premier chargement
+    const handleNavigateToNewSession = useCallback(() => {
+        navigation.navigate('NewSession', {
+            onGoBack: () => {
+                setShouldReload(true);
+            },
+        });
+    }, [navigation]);
+
+    const handleNavigateToActiveSession = useCallback(() => {
+        if (activeSession) {
+            navigation.navigate('ActiveSession', {
+                sessionId: activeSession.id,
+                onGoBack: () => {
+                    setShouldReload(true);
+                },
+            });
+        }
+    }, [navigation, activeSession]);
+
+    const renderHeader = () => (
+        <>
+            <Text style={styles.title}>Mes Sessions</Text>
+            <View style={styles.headerButtons}>
+                {activeSession ? (
+                    <TouchableOpacity style={styles.buttonResume} onPress={handleNavigateToActiveSession}>
+                        <Text style={styles.buttonText}>Reprendre la session en cours</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.buttonPrimary} onPress={handleNavigateToNewSession}>
+                        <Text style={styles.buttonText}>🚀 Nouvelle session</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+            <Text style={styles.subtitle}>Historique</Text>
+        </>
+    );
+
+    if (loading && !hasLoadedInitial) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.title}>Historique</Text>
-            {
-                sessions.length === 0 ? (
+            <FlatList
+                data={history}
+                ListHeaderComponent={renderHeader}
+                renderItem={({ item }) => (
+                    <SessionCard 
+                        session={item} 
+                        onDelete={() => handleDelete(item.id)} 
+                        onNavigate={() => handleNavigateToDetail(item.id)} 
+                    />
+                )}
+                keyExtractor={item => item.id}
+                contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
+                ListEmptyComponent={() => (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>Aucun historique de session pour le moment.</Text>
                     </View>
-                ) : (
-                    <FlatList
-                        data={sessions}
-                        renderItem={({ item }) => (
-                            <SessionCard 
-                                session={item} 
-                                onDelete={() => handleDelete(item.id)} 
-                                onNavigate={() => handleNavigateToDetail(item.id)} 
-                            />
-                        )}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
-                        onRefresh={handleRefresh}
+                )}
+                refreshControl={
+                    <RefreshControl
                         refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        colors={[colors.primary['500']]}
+                        tintColor={colors.primary['500']}
                     />
-                )
-            }
+                }
+            />
         </SafeAreaView>
     );
 };
@@ -172,7 +225,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background.default,
-        paddingTop: Platform.OS === 'android' ? theme.spacing[12] : 0,
     },
     center: {
         flex: 1,
@@ -184,13 +236,26 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.bold,
         fontSize: theme.typography.fontSize['4xl'],
         color: theme.colors.text.primary,
-        marginVertical: theme.spacing[4],
+        marginTop: theme.spacing[4],
         paddingHorizontal: theme.layout.screenPadding,
+    },
+    subtitle: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['2xl'],
+        color: theme.colors.text.primary,
+        marginTop: theme.spacing[6],
+        marginBottom: theme.spacing[4],
+        paddingHorizontal: theme.layout.screenPadding,
+    },
+    headerButtons: {
+        paddingHorizontal: theme.layout.screenPadding,
+        marginTop: theme.spacing[4],
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: theme.spacing[8],
     },
     emptyText: {
         fontFamily: theme.typography.fontFamily.regular,
@@ -238,5 +303,21 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: theme.borderRadius.md,
         borderColor: theme.colors.error.main,
+    },
+    buttonPrimary: {
+        backgroundColor: colors.primary["500"],
+        padding: 15,
+        borderRadius: 8,
+    },
+    buttonResume: {
+        backgroundColor: colors.success.main,
+        padding: 15,
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

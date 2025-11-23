@@ -66,8 +66,8 @@ const INPUT_HEIGHT = 50;
 
 export const ActiveSessionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
-    const routeParams = useRoute<ActiveSessionRouteProp>();
-    const { sessionId } = routeParams.params;
+    const route = useRoute<ActiveSessionRouteProp>();
+    const { sessionId } = route.params;
     const mapViewRef = useRef<MapView>(null);
 
     const [session, setSession] = useState<FishingSession | null>(null);
@@ -88,7 +88,7 @@ export const ActiveSessionScreen = () => {
     const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
 
     const { seconds, start, stop } = useTimer();
-    const { route, stopLocationTracking, errorMsg, location } = useLocationTracking();
+    const { route: locationRoute, stopLocationTracking, errorMsg, location } = useLocationTracking();
 
     // Use the custom hook for catch management
     const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
@@ -197,16 +197,19 @@ export const ActiveSessionScreen = () => {
         const startTime = new Date(session.started_at).getTime();
         const endTime = Date.now();
         const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
-        const distanceKm = calculateTotalDistance(route);
+        const distanceKm = calculateTotalDistance(locationRoute);
 
         try {
             await FishingSessionsService.updateSession(sessionId, { 
                 status: 'completed', 
                 ended_at: new Date(endTime).toISOString(),
                 duration_minutes: durationMinutes,
-                route: route as any,
+                route: locationRoute as any,
                 distance_km: distanceKm,
             });
+            
+            route.params?.onGoBack();
+            
             navigation.popToTop();
         } catch (error) {
             console.error('Erreur fin de session:', error);
@@ -260,9 +263,9 @@ export const ActiveSessionScreen = () => {
     const recenterMap = () => {
         if (!mapViewRef.current) return;
 
-        if (route && route.length > 1) {
-            const latitudes = route.map(p => p.latitude);
-            const longitudes = route.map(p => p.longitude);
+        if (locationRoute && locationRoute.length > 1) {
+            const latitudes = locationRoute.map(p => p.latitude);
+            const longitudes = locationRoute.map(p => p.longitude);
             const minLat = Math.min(...latitudes);
             const maxLat = Math.max(...latitudes);
             const minLng = Math.min(...longitudes);
@@ -284,9 +287,9 @@ export const ActiveSessionScreen = () => {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
-    const initialMapRegion = route.length > 0 ? {
-        latitude: route[route.length - 1].latitude,
-        longitude: route[route.length - 1].longitude,
+    const initialMapRegion = locationRoute.length > 0 ? {
+        latitude: locationRoute[locationRoute.length - 1].latitude,
+        longitude: locationRoute[locationRoute.length - 1].longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
     } : (session?.location_lat && session?.location_lng ? {
@@ -297,7 +300,7 @@ export const ActiveSessionScreen = () => {
     } : undefined);
 
     const windStrengthLabel = windStrengthOptions.find(opt => opt.key === session.wind_strength)?.label || '-';
-    const currentDistance = calculateTotalDistance(route);
+    const currentDistance = calculateTotalDistance(locationRoute);
 
     return (
         <ScrollView 
@@ -384,9 +387,9 @@ export const ActiveSessionScreen = () => {
                     scrollEnabled={mapInteractionEnabled}
                     zoomEnabled={mapInteractionEnabled}
                 >
-                    {route.length > 1 && (
+                    {locationRoute.length > 1 && (
                         <Polyline
-                            coordinates={route}
+                            coordinates={locationRoute}
                             strokeColor={theme.colors.primary[500]}
                             strokeWidth={4}
                         />

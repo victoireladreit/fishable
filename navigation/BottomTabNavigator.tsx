@@ -1,12 +1,12 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { HistoryScreen } from '../screens/history/HistoryScreen';
+import { SessionScreen } from '../screens/history/SessionScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { theme } from '../theme';
 import { MainTabParamList } from './types';
-import {HomeScreen} from "../screens/home/HomeScreen"; // Importer le type depuis le fichier central
+import {HomeScreen} from "../screens/home/HomeScreen";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -20,8 +20,8 @@ export const BottomTabNavigator = () => {
 
                     if (route.name === 'HomeTab') {
                         iconName = focused ? 'home' : 'home-outline';
-                    } else if (route.name === 'History') {
-                        iconName = focused ? 'time' : 'time-outline';
+                    } else if (route.name === 'Sessions') {
+                        iconName = focused ? 'boat' : 'boat-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     } else if (route.name === 'Settings') {
@@ -43,7 +43,7 @@ export const BottomTabNavigator = () => {
             })}
         >
             <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Accueil' }} />
-            <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'Historique' }} />
+            <Tab.Screen name="Sessions" component={SessionScreen} options={{ title: 'Sessions' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
             <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
         </Tab.Navigator>
