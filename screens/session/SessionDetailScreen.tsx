@@ -3,7 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator,
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../theme';
-import { FishingSessionsService, FishingSession, FishingSessionUpdate, CatchesService } from '../../services';
+import {
+    FishingSessionsService,
+    FishingSession,
+    FishingSessionUpdate,
+    CatchesService,
+    TargetSpeciesService
+} from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import MapView, { Polyline, Region, Marker } from 'react-native-maps';
@@ -60,6 +66,7 @@ export const SessionDetailScreen = () => {
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [catches, setCatches] = useState<Catch[]>([]);
+    const [targetSpecies, setTargetSpecies] = useState<string[]>([]); // New state for target species
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
@@ -98,6 +105,9 @@ export const SessionDetailScreen = () => {
                 setWaterLevel(fetchedSession.water_level || null);
                 setIsPublished(fetchedSession.is_published || false);
                 setLocationVisibility(fetchedSession.location_visibility || 'private');
+
+                const fetchedTargetSpecies = await TargetSpeciesService.getTargetSpeciesBySessionId(sessionId);
+                setTargetSpecies(fetchedTargetSpecies);
 
                 if (loadCatches) {
                     const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
@@ -203,11 +213,13 @@ export const SessionDetailScreen = () => {
 
     useEffect(() => {
         navigation.setOptions({
+            // @ts-ignore
             headerRight: () => (
                 <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading}>
                     <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
                 </TouchableOpacity>
             ),
+            // @ts-ignore
             headerLeft: () => (
                 isEditing ? (
                     <TouchableOpacity onPress={async () => { 
@@ -280,6 +292,19 @@ export const SessionDetailScreen = () => {
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         
+                        {targetSpecies.length > 0 && (
+                            <View style={styles.targetSpeciesContainer}>
+                                <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
+                                <View style={styles.targetSpeciesList}>
+                                    {targetSpecies.map((species, index) => (
+                                        <View key={index} style={styles.speciesTag}>
+                                            <Text style={styles.speciesTagText}>{species}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
                         <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                         {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
                         <View style={styles.statsContainer}>
@@ -500,5 +525,38 @@ const styles = StyleSheet.create({
     },
     notesCardLabel: {
         marginBottom: theme.spacing[2], // Add spacing below the label
-    }
+    },
+    targetSpeciesContainer: {
+        width: '100%',
+        backgroundColor: theme.colors.background.paper,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing[4],
+        marginBottom: theme.spacing[6],
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+        ...theme.shadows.sm,
+    },
+    targetSpeciesLabel: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing[2],
+    },
+    targetSpeciesList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    speciesTag: {
+        backgroundColor: theme.colors.primary[100],
+        borderRadius: theme.borderRadius.full,
+        paddingVertical: theme.spacing[2],
+        paddingHorizontal: theme.spacing[3],
+        marginRight: theme.spacing[2],
+        marginBottom: theme.spacing[2],
+    },
+    speciesTagText: {
+        color: theme.colors.primary[700],
+        fontSize: theme.typography.fontSize.sm,
+        fontFamily: theme.typography.fontFamily.medium,
+    },
 });

@@ -3,7 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Tex
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FishingSessionsService, FishingSession, FishingSessionUpdate, CatchesService } from '../../services';
+import {
+    FishingSessionsService,
+    FishingSession,
+    FishingSessionUpdate,
+    CatchesService,
+    TargetSpeciesService
+} from '../../services';
 import { theme } from '../../theme';
 import { useTimer, formatTime, useLocationTracking } from '../../hooks';
 import MapView, { Polyline } from "react-native-maps";
@@ -39,6 +45,7 @@ export const ActiveSessionScreen = () => {
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [catches, setCatches] = useState<Catch[]>([]);
+    const [targetSpecies, setTargetSpecies] = useState<string[]>([]); // New state for target species
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
@@ -68,15 +75,18 @@ export const ActiveSessionScreen = () => {
 
     useFocusEffect(
         useCallback(() => {
-            const fetchCatches = async () => {
+            const fetchCatchesAndTargetSpecies = async () => {
                 try {
                     const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
                     setCatches(sessionCatches);
+
+                    const fetchedTargetSpecies = await TargetSpeciesService.getTargetSpeciesBySessionId(sessionId);
+                    setTargetSpecies(fetchedTargetSpecies);
                 } catch (error) {
-                    console.error('Erreur récupération des prises:', error);
+                    console.error('Erreur récupération des prises ou espèces cibles:', error);
                 }
             };
-            fetchCatches();
+            fetchCatchesAndTargetSpecies();
         }, [sessionId])
     );
 
@@ -293,6 +303,19 @@ export const ActiveSessionScreen = () => {
                 {region ? <Text style={styles.regionText}>{region}</Text> : null}
             </View>
 
+            {targetSpecies.length > 0 && (
+                <View style={styles.targetSpeciesContainer}>
+                    <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
+                    <View style={styles.targetSpeciesList}>
+                        {targetSpecies.map((species, index) => (
+                            <View key={index} style={styles.speciesTag}>
+                                <Text style={styles.speciesTagText}>{species}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            )}
+
             <View style={styles.topStatsContainer}>
                 <View style={styles.timerAndDistanceContainer}>
                     <View style={styles.timerContainer}>
@@ -427,6 +450,39 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.lg,
         color: theme.colors.text.secondary,
         marginTop: theme.spacing[2],
+    },
+    targetSpeciesContainer: {
+        width: '100%',
+        backgroundColor: theme.colors.background.paper,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing[4],
+        marginBottom: theme.spacing[6],
+        borderWidth: 1,
+        borderColor: theme.colors.border.light,
+        ...theme.shadows.sm,
+    },
+    targetSpeciesLabel: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing[2],
+    },
+    targetSpeciesList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    speciesTag: {
+        backgroundColor: theme.colors.primary[100],
+        borderRadius: theme.borderRadius.full,
+        paddingVertical: theme.spacing[2],
+        paddingHorizontal: theme.spacing[3],
+        marginRight: theme.spacing[2],
+        marginBottom: theme.spacing[2],
+    },
+    speciesTagText: {
+        color: theme.colors.primary[700],
+        fontSize: theme.typography.fontSize.sm,
+        fontFamily: theme.typography.fontFamily.medium,
     },
     topStatsContainer: {
         flexDirection: 'row',
