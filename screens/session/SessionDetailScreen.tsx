@@ -12,6 +12,7 @@ import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useCatchManagement } from '../../hooks/useCatchManagement';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
+import { Card } from '../../components/common'; // Import Card component
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
@@ -248,7 +249,7 @@ export const SessionDetailScreen = () => {
                         />
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         <View style={styles.formGroup}>
-                            <Text style={styles.label}>Légende / Notes</Text>
+                            <Text style={styles.label}>Notes de session</Text>
                             <TextInput style={[styles.input, styles.textArea]} value={caption} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
                         </View>
 
@@ -278,7 +279,7 @@ export const SessionDetailScreen = () => {
                     <>
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
-                        {session.caption && <Text style={styles.captionText}>{session.caption}</Text>}
+                        
                         <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                         {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
                         <View style={styles.statsContainer}>
@@ -351,6 +352,16 @@ export const SessionDetailScreen = () => {
                             onDeleteCatch={handleDeleteCatch}
                         />
 
+                        {/* Separate Card for Notes/Caption */}
+                        <Card style={styles.notesCard}>
+                            <Text style={[styles.infoLabel, styles.notesCardLabel]}>Notes de session</Text>
+                            {session.caption ? (
+                                <Text style={styles.captionText}>{session.caption}</Text>
+                            ) : (
+                                <Text style={styles.noCaptionText}>Pas de notes pour cette session.</Text>
+                            )}
+                        </Card>
+
                         <View style={styles.infoCard}>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
@@ -390,7 +401,8 @@ const styles = StyleSheet.create({
         paddingVertical: theme.spacing[2],
     },
     regionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.secondary, marginBottom: theme.spacing[4] },
-    captionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[4], fontStyle: 'italic' },
+    captionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontStyle: 'italic' },
+    noCaptionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontStyle: 'italic' },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
     infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
@@ -476,4 +488,17 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginTop: -1.5,
     },
+    infoSection: { // New style for grouping label and value in infoCard
+        paddingBottom: theme.spacing[2],
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border.light,
+    },
+    notesCard: {
+        marginTop: theme.spacing[4],
+        marginBottom: theme.spacing[4], // Add margin to separate from infoCard
+        paddingBottom: theme.spacing[2], // Reduce padding at the bottom of the card content
+    },
+    notesCardLabel: {
+        marginBottom: theme.spacing[2], // Add spacing below the label
+    }
 });

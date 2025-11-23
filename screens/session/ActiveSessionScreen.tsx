@@ -47,6 +47,7 @@ export const ActiveSessionScreen = () => {
     // Editable fields
     const [locationName, setLocationName] = useState('');
     const [region, setRegion] = useState('');
+    const [caption, setCaption] = useState(''); // New state for notes
     const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
     const [waterColor, setWaterColor] = useState<string | null>(null);
     const [waterCurrent, setWaterCurrent] = useState<string | null>(null);
@@ -62,7 +63,8 @@ export const ActiveSessionScreen = () => {
         session?.location_visibility !== locationVisibility ||
         session?.water_color !== waterColor ||
         session?.water_current !== waterCurrent ||
-        session?.water_level !== waterLevel;
+        session?.water_level !== waterLevel ||
+        session?.caption !== caption; // Include caption in unsaved changes
 
     useFocusEffect(
         useCallback(() => {
@@ -94,6 +96,7 @@ export const ActiveSessionScreen = () => {
                         setSession(fetchedSession);
                         setLocationName(fetchedSession.location_name || '');
                         setRegion(fetchedSession.region || '');
+                        setCaption(fetchedSession.caption || ''); // Initialize caption
                         setLocationVisibility(fetchedSession.location_visibility || 'region');
                         setWaterColor(fetchedSession.water_color || null);
                         setWaterCurrent(fetchedSession.water_current || null);
@@ -138,6 +141,7 @@ export const ActiveSessionScreen = () => {
             water_color: waterColor,
             water_current: waterCurrent,
             water_level: waterLevel,
+            caption: caption, // Include caption in updates
         };
         try {
             await FishingSessionsService.updateSession(sessionId, updates);
@@ -367,6 +371,19 @@ export const ActiveSessionScreen = () => {
                 setLocationVisibility={setLocationVisibility}
             />
 
+            {/* Notes/Caption Input */}
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Notes de session</Text>
+                <TextInput
+                    style={[styles.input, styles.multilineInput]}
+                    value={caption}
+                    onChangeText={setCaption}
+                    placeholder="Ajoutez des notes sur votre session..."
+                    placeholderTextColor={theme.colors.text.disabled}
+                    multiline
+                />
+            </View>
+
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
                 <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
                     {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
@@ -539,5 +556,30 @@ const styles = StyleSheet.create({
     },
     mapButton: {
         padding: theme.spacing[1],
+    },
+    formGroup: {
+        width: '100%',
+        marginBottom: theme.spacing[4],
+    },
+    label: {
+        fontFamily: theme.typography.fontFamily.medium,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing[2],
+    },
+    input: {
+        backgroundColor: theme.colors.background.paper,
+        color: theme.colors.text.primary,
+        height: INPUT_HEIGHT,
+        borderWidth: 1,
+        borderColor: theme.colors.border.main,
+        borderRadius: theme.borderRadius.base,
+        paddingHorizontal: theme.spacing[4],
+        fontSize: theme.typography.fontSize.base,
+    },
+    multilineInput: {
+        height: 100,
+        textAlignVertical: 'top',
+        paddingTop: theme.spacing[3],
     },
 });
