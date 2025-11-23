@@ -18,10 +18,8 @@ type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
 type Catch = Database['public']['Tables']['catches']['Row'];
 
-type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
-type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
-type WaterLevel = 'low' | 'normal' | 'high';
+type WaterLevel = 'normal' | 'high' | 'flood';
 type LocationVisibility = 'public' | 'region' | 'private';
 
 const windStrengthOptions: { key: WindStrength; label: string }[] = [
@@ -37,24 +35,10 @@ const locationVisibilityOptions: { key: LocationVisibility; label: string }[] = 
     { key: 'public', label: 'Public' },
 ];
 
-const waterClarityOptions: { key: WaterClarity; label: string }[] = [
-    { key: 'clear', label: 'Clair' },
-    { key: 'slightly_murky', label: 'Peu trouble' },
-    { key: 'murky', label: 'Trouble' },
-    { key: 'very_murky', label: 'Très trouble' },
-];
-
-const waterCurrentOptions: { key: WaterCurrent; label: string }[] = [
-    { key: 'none', label: 'Nul' },
-    { key: 'light', label: 'Léger' },
-    { key: 'moderate', label: 'Modéré' },
-    { key: 'strong', label: 'Fort' },
-];
-
 const waterLevelOptions: { key: WaterLevel; label: string }[] = [
-    { key: 'low', label: 'Bas' },
     { key: 'normal', label: 'Normal' },
     { key: 'high', label: 'Haut' },
+    { key: 'flood', label: 'Crue' },
 ];
 
 const formatDuration = (totalMinutes: number | null) => {
@@ -86,8 +70,8 @@ export const SessionDetailScreen = () => {
     const [caption, setCaption] = useState('');
     const [weatherTemp, setWeatherTemp] = useState<string>(''); // Stocké en string pour TextInput
     const [weatherConditions, setWeatherConditions] = useState('');
-    const [waterClarity, setWaterClarity] = useState<WaterClarity | null>(null);
-    const [waterCurrent, setWaterCurrent] = useState<WaterCurrent | null>(null);
+    const [waterColor, setWaterColor] = useState<string | null>(null);
+    const [waterCurrent, setWaterCurrent] = useState<string | null>(null);
     const [windStrength, setWindStrength] = useState<WindStrength | null>(null);
     const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
     const [isPublished, setIsPublished] = useState(false);
@@ -107,7 +91,7 @@ export const SessionDetailScreen = () => {
                 setCaption(fetchedSession.caption || '');
                 setWeatherTemp(fetchedSession.weather_temp?.toString() || '');
                 setWeatherConditions(fetchedSession.weather_conditions || '');
-                setWaterClarity(fetchedSession.water_clarity || null);
+                setWaterColor(fetchedSession.water_color || null);
                 setWaterCurrent(fetchedSession.water_current || null);
                 setWindStrength(fetchedSession.wind_strength || null);
                 setWaterLevel(fetchedSession.water_level || null);
@@ -190,7 +174,7 @@ export const SessionDetailScreen = () => {
             caption: caption,
             weather_temp: weatherTemp ? parseFloat(weatherTemp) : null,
             weather_conditions: weatherConditions,
-            water_clarity: waterClarity,
+            water_color: waterColor,
             water_current: waterCurrent,
             wind_strength: windStrength,
             water_level: waterLevel,
@@ -235,7 +219,7 @@ export const SessionDetailScreen = () => {
                 ) : undefined
             ),
         });
-    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterClarity, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, loadSession, handleSave, onGoBack]);
+    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterColor, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, loadSession, handleSave, onGoBack]);
 
     if (loading) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
@@ -269,8 +253,8 @@ export const SessionDetailScreen = () => {
                         </View>
 
                         <SessionForm
-                            waterClarity={waterClarity}
-                            setWaterClarity={setWaterClarity}
+                            waterColor={waterColor}
+                            setWaterColor={setWaterColor}
                             waterCurrent={waterCurrent}
                             setWaterCurrent={setWaterCurrent}
                             waterLevel={waterLevel}
@@ -294,6 +278,7 @@ export const SessionDetailScreen = () => {
                     <>
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
+                        {session.caption && <Text style={styles.captionText}>{session.caption}</Text>}
                         <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                         {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
                         <View style={styles.statsContainer}>
@@ -370,8 +355,8 @@ export const SessionDetailScreen = () => {
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Clarté de l'eau</Text><Text style={styles.infoValue}>{waterClarityOptions.find(o => o.key === session.water_clarity)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{waterCurrentOptions.find(o => o.key === session.water_current)?.label || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Couleur de l'eau</Text><Text style={styles.infoValue}>{session.water_color || '-'}</Text></View>
+                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{session.water_current || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
@@ -405,6 +390,7 @@ const styles = StyleSheet.create({
         paddingVertical: theme.spacing[2],
     },
     regionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.secondary, marginBottom: theme.spacing[4] },
+    captionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[4], fontStyle: 'italic' },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
     infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },

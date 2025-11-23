@@ -133,11 +133,11 @@ export interface Database {
                     distance_km: number | null
                     weather_temp: number | null
                     weather_conditions: string | null
-                    water_clarity: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
-                    water_current: 'none' | 'light' | 'moderate' | 'strong' | null
+                    water_color: string | null
+                    water_current: string | null
                     wind_strength: 'calm' | 'light' | 'moderate' | 'strong' | null
                     wind_speed_kmh: number | null
-                    water_level: 'low' | 'normal' | 'high' | null
+                    water_level: 'normal' | 'high' | 'flood' | null
                     status: 'active' | 'completed' | 'draft' | null
                     caption: string | null
                     is_published: boolean | null
@@ -159,11 +159,11 @@ export interface Database {
                     distance_km?: number | null
                     weather_temp?: number | null
                     weather_conditions?: string | null
-                    water_clarity?: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
-                    water_current?: 'none' | 'light' | 'moderate' | 'strong' | null
+                    water_color?: string | null
+                    water_current?: string | null
                     wind_strength?: 'calm' | 'light' | 'moderate' | 'strong' | null
                     wind_speed_kmh?: number | null
-                    water_level?: 'low' | 'normal' | 'high' | null
+                    water_level?: 'normal' | 'high' | 'flood' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null
                     is_published?: boolean | null
@@ -185,11 +185,11 @@ export interface Database {
                     distance_km?: number | null
                     weather_temp?: number | null
                     weather_conditions?: string | null
-                    water_clarity?: 'clear' | 'slightly_murky' | 'murky' | 'very_murky' | null
-                    water_current?: 'none' | 'light' | 'moderate' | 'strong' | null
+                    water_color?: string | null
+                    water_current?: string | null
                     wind_strength?: 'calm' | 'light' | 'moderate' | 'strong' | null
                     wind_speed_kmh?: number | null
-                    water_level?: 'low' | 'normal' | 'high' | null
+                    water_level?: 'normal' | 'high' | 'flood' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null
                     is_published?: boolean | null

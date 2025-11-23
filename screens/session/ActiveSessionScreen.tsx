@@ -20,9 +20,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSessi
 type Catch = Database['public']['Tables']['catches']['Row'];
 type Visibility = 'public' | 'region' | 'private';
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
-type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
-type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
-type WaterLevel = 'low' | 'normal' | 'high';
+type WaterLevel = 'normal' | 'high' | 'flood';
 
 const windStrengthOptions: { key: WindStrength; label: string }[] = [
     { key: 'calm', label: 'Calme' },
@@ -50,8 +48,8 @@ export const ActiveSessionScreen = () => {
     const [locationName, setLocationName] = useState('');
     const [region, setRegion] = useState('');
     const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
-    const [waterClarity, setWaterClarity] = useState<WaterClarity | null>(null);
-    const [waterCurrent, setWaterCurrent] = useState<WaterCurrent | null>(null);
+    const [waterColor, setWaterColor] = useState<string | null>(null);
+    const [waterCurrent, setWaterCurrent] = useState<string | null>(null);
     const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
 
     const { seconds, start, stop } = useTimer();
@@ -62,7 +60,7 @@ export const ActiveSessionScreen = () => {
 
     const hasUnsavedChanges = session?.location_name !== locationName ||
         session?.location_visibility !== locationVisibility ||
-        session?.water_clarity !== waterClarity ||
+        session?.water_color !== waterColor ||
         session?.water_current !== waterCurrent ||
         session?.water_level !== waterLevel;
 
@@ -97,7 +95,7 @@ export const ActiveSessionScreen = () => {
                         setLocationName(fetchedSession.location_name || '');
                         setRegion(fetchedSession.region || '');
                         setLocationVisibility(fetchedSession.location_visibility || 'region');
-                        setWaterClarity(fetchedSession.water_clarity || null);
+                        setWaterColor(fetchedSession.water_color || null);
                         setWaterCurrent(fetchedSession.water_current || null);
                         setWaterLevel(fetchedSession.water_level || null);
                     } else {
@@ -137,7 +135,7 @@ export const ActiveSessionScreen = () => {
         const updates: FishingSessionUpdate = { 
             location_name: locationName, 
             location_visibility: locationVisibility,
-            water_clarity: waterClarity,
+            water_color: waterColor,
             water_current: waterCurrent,
             water_level: waterLevel,
         };
@@ -359,8 +357,8 @@ export const ActiveSessionScreen = () => {
             />
 
             <SessionForm
-                waterClarity={waterClarity}
-                setWaterClarity={setWaterClarity}
+                waterColor={waterColor}
+                setWaterColor={setWaterColor}
                 waterCurrent={waterCurrent}
                 setWaterCurrent={setWaterCurrent}
                 waterLevel={waterLevel}

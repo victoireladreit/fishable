@@ -1,31 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 
-type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
-type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
-type WaterLevel = 'low' | 'normal' | 'high';
+type WaterLevel = 'normal' | 'high' | 'flood';
 type LocationVisibility = 'public' | 'region' | 'private';
 
-const waterClarityOptions: { key: WaterClarity; label: string }[] = [
-    { key: 'clear', label: 'Clair' },
-    { key: 'slightly_murky', label: 'Peu trouble' },
-    { key: 'murky', label: 'Trouble' },
-    { key: 'very_murky', label: 'Très trouble' },
-];
-
-const waterCurrentOptions: { key: WaterCurrent; label: string }[] = [
-    { key: 'none', label: 'Nul' },
-    { key: 'light', label: 'Léger' },
-    { key: 'moderate', label: 'Modéré' },
-    { key: 'strong', label: 'Fort' },
-];
-
 const waterLevelOptions: { key: WaterLevel; label: string }[] = [
-    { key: 'low', label: 'Bas' },
     { key: 'normal', label: 'Normal' },
     { key: 'high', label: 'Haut' },
+    { key: 'flood', label: 'Crue' },
 ];
 
 const locationVisibilityOptions: { key: LocationVisibility; label: string }[] = [
@@ -74,11 +58,33 @@ const Selector = <T extends string>({ label, options, selectedValue, onSelect, i
     );
 };
 
+interface FreeTextInputProps {
+    label: string;
+    value: string | null;
+    onChange: (value: string | null) => void;
+    placeholder?: string;
+}
+
+const FreeTextInput: React.FC<FreeTextInputProps> = ({ label, value, onChange, placeholder }) => {
+    return (
+        <View style={styles.formGroup}>
+            <Text style={styles.label}>{label}</Text>
+            <TextInput
+                style={styles.input}
+                value={value || ''}
+                onChangeText={onChange}
+                placeholder={placeholder}
+                placeholderTextColor={theme.colors.text.disabled}
+            />
+        </View>
+    );
+}
+
 interface SessionFormProps {
-    waterClarity: WaterClarity | null;
-    setWaterClarity: (value: WaterClarity | null) => void;
-    waterCurrent: WaterCurrent | null;
-    setWaterCurrent: (value: WaterCurrent | null) => void;
+    waterColor: string | null;
+    setWaterColor: (value: string | null) => void;
+    waterCurrent: string | null;
+    setWaterCurrent: (value: string | null) => void;
     waterLevel: WaterLevel | null;
     setWaterLevel: (value: WaterLevel | null) => void;
     locationVisibility: LocationVisibility;
@@ -86,8 +92,8 @@ interface SessionFormProps {
 }
 
 export const SessionForm: React.FC<SessionFormProps> = ({
-    waterClarity,
-    setWaterClarity,
+    waterColor,
+    setWaterColor,
     waterCurrent,
     setWaterCurrent,
     waterLevel,
@@ -97,17 +103,17 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 }) => {
     return (
         <>
-            <Selector
-                label="Clarté de l'eau"
-                options={waterClarityOptions}
-                selectedValue={waterClarity}
-                onSelect={setWaterClarity}
+            <FreeTextInput
+                label="Couleur de l'eau"
+                value={waterColor}
+                onChange={setWaterColor}
+                placeholder="Ex: Claire, boueuse, etc."
             />
-            <Selector
-                label="Courant de l'eau"
-                options={waterCurrentOptions}
-                selectedValue={waterCurrent}
-                onSelect={setWaterCurrent}
+            <FreeTextInput
+                label="Courant"
+                value={waterCurrent}
+                onChange={setWaterCurrent}
+                placeholder="Ex: Nul, léger, fort, etc."
             />
             <Selector
                 label="Niveau d'eau"
@@ -127,13 +133,23 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 };
 
 const styles = StyleSheet.create({
-    formGroup: { width: '100%', marginBottom: theme.spacing[5] },
-    labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[3] },
+    formGroup: { width: '100%', marginBottom: theme.spacing[4] },
+    labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[2] },
     label: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.secondary,
-        fontWeight: theme.typography.fontWeight.medium,
+        marginBottom: theme.spacing[2],
+    },
+    input: {
+        backgroundColor: theme.colors.background.paper,
+        color: theme.colors.text.primary,
+        height: 50, // INPUT_HEIGHT from AddCatchScreen
+        borderWidth: 1,
+        borderColor: theme.colors.border.main,
+        borderRadius: theme.borderRadius.base,
+        paddingHorizontal: theme.spacing[4],
+        fontSize: theme.typography.fontSize.base,
     },
     selectorContainer: {
         flexDirection: 'row',
