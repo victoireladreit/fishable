@@ -68,10 +68,10 @@ export const NewSessionScreen = () => {
             if (newSession?.id) {
                 startLocationTracking();
                 
-                // Call the callback before navigating away
-                route.params?.onGoBack();
-
-                navigation.replace('ActiveSession', { sessionId: newSession.id });
+                navigation.replace('ActiveSession', { 
+                    sessionId: newSession.id,
+                    onGoBack: route.params.onGoBack,
+                });
             } else {
                 Alert.alert('Erreur', 'Impossible de créer la session.');
             }

@@ -67,12 +67,15 @@ export const SessionScreen = () => {
     const [activeSession, setActiveSession] = useState<FishingSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [shouldReload, setShouldReload] = useState(false);
     const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
 
     const loadData = useCallback(async (isRefreshCall: boolean = false) => {
         if (!user) return;
-        if (!isRefreshCall) setLoading(true);
+        
+        // Only show the full-screen loader on the very first load
+        if (!isRefreshCall && !hasLoadedInitial) {
+            setLoading(true);
+        }
 
         try {
             const userSessions = await FishingSessionsService.getSessions({ userId: user.id });
@@ -90,22 +93,17 @@ export const SessionScreen = () => {
         } catch (error) {
             console.error("Erreur lors du chargement des sessions:", error);
         } finally {
-            if (!isRefreshCall) setLoading(false);
+            if (!isRefreshCall && !hasLoadedInitial) {
+                setLoading(false);
+                setHasLoadedInitial(true);
+            }
         }
-    }, [user, refreshUser]);
+    }, [user, refreshUser, hasLoadedInitial]);
 
     useFocusEffect(
         useCallback(() => {
-            const fetchData = async () => {
-                await loadData();
-                setShouldReload(false);
-                setHasLoadedInitial(true);
-            };
-
-            if (shouldReload || !hasLoadedInitial) {
-                fetchData();
-            }
-        }, [loadData, shouldReload, hasLoadedInitial])
+            loadData();
+        }, [loadData])
     );
 
     const handleRefresh = useCallback(async () => {
@@ -142,30 +140,30 @@ export const SessionScreen = () => {
             sessionId: sessionId,
             onGoBack: (modified: boolean) => {
                 if (modified) {
-                    setShouldReload(true);
+                    loadData(true); // Silently refresh data
                 }
             },
         });
-    }, [navigation]);
+    }, [navigation, loadData]);
 
     const handleNavigateToNewSession = useCallback(() => {
         navigation.navigate('NewSession', {
             onGoBack: () => {
-                setShouldReload(true);
+                loadData(true); // Silently refresh data
             },
         });
-    }, [navigation]);
+    }, [navigation, loadData]);
 
     const handleNavigateToActiveSession = useCallback(() => {
         if (activeSession) {
             navigation.navigate('ActiveSession', {
                 sessionId: activeSession.id,
                 onGoBack: () => {
-                    setShouldReload(true);
+                    loadData(true); // Silently refresh data
                 },
             });
         }
-    }, [navigation, activeSession]);
+    }, [navigation, activeSession, loadData]);
 
     const renderHeader = () => (
         <>
@@ -204,9 +202,11 @@ export const SessionScreen = () => {
                 keyExtractor={item => item.id}
                 contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
                 ListEmptyComponent={() => (
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Aucun historique de session pour le moment.</Text>
-                    </View>
+                    !loading && (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>Aucun historique de session pour le moment.</Text>
+                        </View>
+                    )
                 )}
                 refreshControl={
                     <RefreshControl

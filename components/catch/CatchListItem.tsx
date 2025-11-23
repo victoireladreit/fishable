@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../theme';
-import { Database } from '../lib/types';
+import { theme } from '../../theme';
+import { Database } from '../../lib/types';
 
 type Catch = Database['public']['Tables']['catches']['Row'];
 

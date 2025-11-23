@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Platform, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,9 @@ import MapView, { Polyline } from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
 import { RootStackParamList } from "../../navigation/types";
 import { Database } from '../../lib/types';
-import { CatchListItem } from '../../components/CatchListItem';
-import { useCatchManagement } from '../../hooks/useCatchManagement'; // Import the new hook
+import { useCatchManagement } from '../../hooks/useCatchManagement';
+import { SessionForm } from '../../components/session/SessionForm';
+import { CatchList } from '../../components/catch/CatchList';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -23,44 +24,12 @@ type WaterClarity = 'clear' | 'slightly_murky' | 'murky' | 'very_murky';
 type WaterCurrent = 'none' | 'light' | 'moderate' | 'strong';
 type WaterLevel = 'low' | 'normal' | 'high';
 
-const visibilityOptions: { key: Visibility; label: string }[] = [
-    { key: 'private', label: 'Privé' },
-    { key: 'region', label: 'Région' },
-    { key: 'public', label: 'Public' },
-];
-
 const windStrengthOptions: { key: WindStrength; label: string }[] = [
     { key: 'calm', label: 'Calme' },
     { key: 'light', label: 'Léger' },
     { key: 'moderate', label: 'Modéré' },
     { key: 'strong', label: 'Fort' },
 ];
-
-const waterClarityOptions: { key: WaterClarity; label: string }[] = [
-    { key: 'clear', label: 'Clair' },
-    { key: 'slightly_murky', label: 'Peu trouble' },
-    { key: 'murky', label: 'Trouble' },
-    { key: 'very_murky', label: 'Très trouble' },
-];
-
-const waterCurrentOptions: { key: WaterCurrent; label: string }[] = [
-    { key: 'none', label: 'Nul' },
-    { key: 'light', label: 'Léger' },
-    { key: 'moderate', label: 'Modéré' },
-    { key: 'strong', label: 'Fort' },
-];
-
-const waterLevelOptions: { key: WaterLevel; label: string }[] = [
-    { key: 'low', label: 'Bas' },
-    { key: 'normal', label: 'Normal' },
-    { key: 'high', label: 'Haut' },
-];
-
-const visibilityInfo = `
-• Privé : Personne ne peut voir la localisation de votre session.\n
-• Région : Seule la région (ex: "Haute-Savoie") est visible, pas le point GPS exact.\n
-• Public : La localisation GPS exacte de votre session est visible par les autres utilisateurs.
-`;
 
 const INPUT_HEIGHT = 50;
 
@@ -76,8 +45,6 @@ export const ActiveSessionScreen = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Editable fields
     const [locationName, setLocationName] = useState('');
@@ -255,11 +222,6 @@ export const ActiveSessionScreen = () => {
         }
     };
 
-    const openImageModal = (imageUrl: string) => {
-        setSelectedImage(imageUrl);
-        setModalVisible(true);
-    };
-
     const recenterMap = () => {
         if (!mapViewRef.current) return;
 
@@ -280,6 +242,15 @@ export const ActiveSessionScreen = () => {
             mapViewRef.current.animateToRegion(region, 500);
         } else if (location) {
             mapViewRef.current.animateCamera({ center: location.coords, zoom: 16 });
+        }
+    };
+
+    const onAddCatchPress = () => {
+        if (location?.coords) {
+            const { latitude, longitude, accuracy } = location.coords;
+            handleAddCatch({ latitude, longitude, accuracy: accuracy ?? undefined });
+        } else {
+            handleAddCatch();
         }
     };
 
@@ -309,20 +280,6 @@ export const ActiveSessionScreen = () => {
             keyboardShouldPersistTaps="handled"
             scrollEnabled={!mapInteractionEnabled}
         >
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                        <Ionicons name="close" size={30} color={theme.colors.white} />
-                    </TouchableOpacity>
-                    <Image source={{ uri: selectedImage || '' }} style={styles.fullScreenImage} resizeMode="contain" />
-                </View>
-            </Modal>
-
             <View style={styles.headerContainer}>
                 <TextInput
                     style={styles.titleInput}
@@ -354,26 +311,6 @@ export const ActiveSessionScreen = () => {
                     <Text style={styles.windInfo}>
                         Vent: {windStrengthLabel} ({session.wind_speed_kmh ? `${session.wind_speed_kmh.toFixed(1)} km/h` : '-'})
                     </Text>
-                </View>
-            </View>
-
-            <View style={styles.formGroup}>
-                <View style={styles.labelContainer}>
-                    <Text style={styles.label}>Visibilité de la localisation</Text>
-                    <TouchableOpacity onPress={() => Alert.alert('Niveaux de visibilité', visibilityInfo)}>
-                        <Ionicons name="information-circle-outline" size={theme.iconSizes.sm} color={theme.colors.primary[500]} />
-                    </TouchableOpacity>
-                </View>
-                <View style={styles.selectorContainer}>
-                    {visibilityOptions.map(opt => (
-                        <TouchableOpacity
-                            key={opt.key}
-                            style={[styles.selectorOption, locationVisibility === opt.key && styles.selectorOptionSelected]}
-                            onPress={() => setLocationVisibility(opt.key)}
-                        >
-                            <Text style={[styles.selectorText, locationVisibility === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
-                        </TouchableOpacity>
-                    ))}
                 </View>
             </View>
             
@@ -414,75 +351,23 @@ export const ActiveSessionScreen = () => {
                 </View>
             </View>
 
-            <View style={{width: '100%', marginTop: theme.spacing[4]}}>
-                <TouchableOpacity style={[styles.button, styles.addCatchButton]} onPress={() => handleAddCatch(location?.coords)}>
-                    <Text style={styles.buttonText}>Ajouter une prise</Text>
-                </TouchableOpacity>
+            <CatchList
+                catches={catches}
+                onAddCatch={onAddCatchPress}
+                onEditCatch={handleEditCatch}
+                onDeleteCatch={handleDeleteCatch}
+            />
 
-                <View>
-                    {catches.length > 0 ? (
-                        <>
-                            <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
-                            {catches.map(item => (
-                                <CatchListItem
-                                    key={item.id}
-                                    item={item}
-                                    onEdit={handleEditCatch}
-                                    onDelete={handleDeleteCatch}
-                                    onPressImage={openImageModal}
-                                />
-                            ))}
-                        </>
-                    ) : (
-                        <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
-                    )}
-                </View>
-            </View>
-
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Clarté de l'eau</Text>
-                <View style={styles.selectorContainer}>
-                    {waterClarityOptions.map(opt => (
-                        <TouchableOpacity
-                            key={opt.key}
-                            style={[styles.selectorOption, waterClarity === opt.key && styles.selectorOptionSelected]}
-                            onPress={() => setWaterClarity(prev => prev === opt.key ? null : opt.key)}
-                        >
-                            <Text style={[styles.selectorText, waterClarity === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Courant de l'eau</Text>
-                <View style={styles.selectorContainer}>
-                    {waterCurrentOptions.map(opt => (
-                        <TouchableOpacity
-                            key={opt.key}
-                            style={[styles.selectorOption, waterCurrent === opt.key && styles.selectorOptionSelected]}
-                            onPress={() => setWaterCurrent(prev => prev === opt.key ? null : opt.key)}
-                        >
-                            <Text style={[styles.selectorText, waterCurrent === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Niveau d'eau</Text>
-                <View style={styles.selectorContainer}>
-                    {waterLevelOptions.map(opt => (
-                        <TouchableOpacity
-                            key={opt.key}
-                            style={[styles.selectorOption, waterLevel === opt.key && styles.selectorOptionSelected]}
-                            onPress={() => setWaterLevel(prev => prev === opt.key ? null : opt.key)}
-                        >
-                            <Text style={[styles.selectorText, waterLevel === opt.key && styles.selectorTextSelected]}>{opt.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
+            <SessionForm
+                waterClarity={waterClarity}
+                setWaterClarity={setWaterClarity}
+                waterCurrent={waterCurrent}
+                setWaterCurrent={setWaterCurrent}
+                waterLevel={waterLevel}
+                setWaterLevel={setWaterLevel}
+                locationVisibility={locationVisibility}
+                setLocationVisibility={setLocationVisibility}
+            />
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
                 <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
@@ -613,45 +498,6 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing[2],
         textAlign: 'center',
     },
-    formGroup: { width: '100%', marginBottom: theme.spacing[5] },
-    labelContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    label: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
-        fontWeight: theme.typography.fontWeight.medium,
-        marginBottom: theme.spacing[3],
-    },
-    input: {
-        backgroundColor: theme.colors.background.paper,
-        color: theme.colors.text.primary,
-        height: INPUT_HEIGHT,
-        borderWidth: 1,
-        borderColor: theme.colors.border.main,
-        borderRadius: theme.borderRadius.base,
-        paddingHorizontal: theme.spacing[4],
-        fontSize: theme.typography.fontSize.base,
-    },
-    selectorContainer: {
-        flexDirection: 'row',
-        width: '100%',
-        backgroundColor: theme.colors.gray[100],
-        borderRadius: theme.borderRadius.md,
-        padding: theme.spacing[1],
-    },
-    selectorOption: { flex: 1, paddingVertical: theme.spacing[2], borderRadius: theme.borderRadius.base, alignItems: 'center' },
-    selectorOptionSelected: {
-        backgroundColor: theme.colors.white,
-        ...theme.shadows.sm,
-    },
-    selectorText: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.sm,
-        color: theme.colors.text.secondary,
-        fontWeight: theme.typography.fontWeight.medium,
-        textAlign: 'center',
-    },
-    selectorTextSelected: { color: theme.colors.primary[600] },
     button: {
         height: INPUT_HEIGHT,
         justifyContent: 'center',
@@ -660,9 +506,6 @@ const styles = StyleSheet.create({
         width: '100%',
         marginBottom: theme.spacing[3],
         ...theme.shadows.base,
-    },
-    addCatchButton: {
-        backgroundColor: theme.colors.success.main,
     },
     saveButton: { backgroundColor: theme.colors.primary[500] },
     endButton: { backgroundColor: theme.colors.error.main, ...theme.shadows.none },
@@ -698,33 +541,5 @@ const styles = StyleSheet.create({
     },
     mapButton: {
         padding: theme.spacing[1],
-    },
-    catchesTitle: {
-        fontSize: theme.typography.fontSize.lg,
-        fontFamily: theme.typography.fontFamily.bold,
-        color: theme.colors.text.primary,
-        marginTop: theme.spacing[6],
-        marginBottom: theme.spacing[3],
-    },
-    noCatchesText: {
-        textAlign: 'center',
-        color: theme.colors.text.secondary,
-        marginVertical: theme.spacing[4],
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    fullScreenImage: {
-        width: '100%',
-        height: '80%',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 50,
-        right: 20,
-        zIndex: 1,
     },
 });
