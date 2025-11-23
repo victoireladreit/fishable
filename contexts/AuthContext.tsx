@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 
@@ -6,13 +6,14 @@ interface AuthContextType {
     user: User | null;
     session: Session | null;
     loading: boolean;
+    refreshUser: () => Promise<void>;
     signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
     signIn: (emailOrUsername: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: any }>;
     updateUserEmail: (newEmail: string) => Promise<{ error: any }>;
     updateUserPassword: (newPassword: string) => Promise<{ error: any }>;
-    deleteAccount: () => Promise<{ error: any }>; // Nouvelle fonction
+    deleteAccount: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +22,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const refreshUser = useCallback(async () => {
+        const { data: { session: newSession }, error } = await supabase.auth.refreshSession();
+        if (newSession) {
+            setSession(newSession);
+            setUser(newSession.user);
+        } else {
+            // Si la session ne peut pas être rafraîchie, déconnecter l'utilisateur
+            await signOut();
+        }
+    }, []);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,7 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signUp = async (email: string, password: string, username: string) => {
         try {
-            // Vérifier si le username existe déjà
             const { data: existingProfile } = await supabase
                 .from('profiles')
                 .select('username')
@@ -63,7 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) return { error };
 
-            // Créer le profil utilisateur
             if (data.user) {
                 const { error: profileError } = await supabase
                     .from('profiles')
@@ -85,9 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             let email = emailOrUsername;
 
-            // Vérifier si c'est un email ou un username
             if (!emailOrUsername.includes('@')) {
-                // C'est un username, récupérer l'email associé
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('id')
@@ -98,11 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return { error: { message: 'Nom d\'utilisateur ou mot de passe incorrect' } };
                 }
 
-                // Récupérer l'email depuis auth.users via l'ID
                 const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.id);
 
                 if (userError || !user) {
-                    // Fallback: utiliser une fonction RPC côté serveur
                     const { data: emailData, error: emailError } = await supabase
                         .rpc('get_email_by_username', { username_input: emailOrUsername });
 
@@ -152,14 +158,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
     };
 
-    // Nouvelle fonction pour appeler la Edge Function
     const deleteAccount = async () => {
         try {
             const { error } = await supabase.functions.invoke('delete-user', {
                 method: 'POST',
             });
             if (error) throw error;
-            await signOut(); // Forcer la déconnexion
+            await signOut();
             return { error: null };
         } catch (error) {
             return { error };
@@ -172,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 user,
                 session,
                 loading,
+                refreshUser,
                 signUp,
                 signIn,
                 signOut,

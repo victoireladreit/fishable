@@ -33,6 +33,18 @@ export const ProfileService = {
     },
 
     async updateProfile(userId: string, updates: ProfileUpdate) {
+        // If username is being updated, also update it in the auth user metadata
+        if (updates.username) {
+            const { error: userError } = await supabase.auth.updateUser({
+                data: { username: updates.username }
+            });
+
+            if (userError) {
+                // Don't proceed with profile table update if auth update fails
+                throw userError;
+            }
+        }
+
         const { data, error } = await supabase
             .from(TABLE)
             .update(updates)

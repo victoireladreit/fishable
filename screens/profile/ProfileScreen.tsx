@@ -38,7 +38,7 @@ const StatItem: React.FC<StatItemProps> = ({ iconName, label, value, unit }) => 
 };
 
 export const ProfileScreen = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -146,6 +146,10 @@ export const ProfileScreen = () => {
             }
             
             await ProfileService.updateProfile(user.id, updates);
+            
+            // Refresh user data from auth context
+            await refreshUser();
+            
             await loadProfile();
             setIsEditing(false);
             Alert.alert("Succès", "Votre profil a été mis à jour.");
