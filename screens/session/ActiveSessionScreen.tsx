@@ -104,13 +104,13 @@ export const ActiveSessionScreen = () => {
                 if (isActive) {
                     if (fetchedSession) {
                         setSession(fetchedSession);
-                        setLocationName(fetchedSession.location_name || '');
-                        setRegion(fetchedSession.region || '');
-                        setCaption(fetchedSession.caption || ''); // Initialize caption
+                        setLocationName(fetchedSession.location_name);
+                        setRegion(fetchedSession.region);
+                        setCaption(fetchedSession.caption);
                         setLocationVisibility(fetchedSession.location_visibility || 'region');
-                        setWaterColor(fetchedSession.water_color || null);
-                        setWaterCurrent(fetchedSession.water_current || null);
-                        setWaterLevel(fetchedSession.water_level || null);
+                        setWaterColor(fetchedSession.water_color);
+                        setWaterCurrent(fetchedSession.water_current);
+                        setWaterLevel(fetchedSession.water_level);
                     } else {
                         Alert.alert('Erreur', 'Session invalide ou introuvable.');
                         navigation.goBack();

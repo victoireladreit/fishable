@@ -14,6 +14,7 @@ import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { useLocation, useLocationTracking } from '../../hooks';
 import { getWindStrengthCategory } from '../../lib/weather';
+import { SpeciesSelector } from '../../components/session/SpeciesSelector';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession'>;
 type NewSessionRouteProp = RouteProp<RootStackParamList, 'NewSession'>;
@@ -30,9 +31,7 @@ export const NewSessionScreen = () => {
     const { startLocationTracking } = useLocationTracking();
 
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
-    const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]); // New state for filtered species
     const [selectedTargetSpeciesNames, setSelectedTargetSpeciesNames] = useState<string[]>([]);
-    const [speciesInput, setSpeciesInput] = useState('');
 
     useEffect(() => {
         const fetchSpecies = async () => {
@@ -47,24 +46,9 @@ export const NewSessionScreen = () => {
         fetchSpecies();
     }, []);
 
-    const handleSpeciesSearch = (text: string) => {
-        setSpeciesInput(text);
-        if (text) {
-            const filtered = allSpecies.filter(species =>
-                species.name.toLowerCase().includes(text.toLowerCase()) &&
-                !selectedTargetSpeciesNames.includes(species.name) // Don't suggest already selected species
-            );
-            setFilteredSpecies(filtered);
-        } else {
-            setFilteredSpecies([]);
-        }
-    };
-
     const handleSelectSpecies = (species: { id: string; name: string }) => {
         if (!selectedTargetSpeciesNames.includes(species.name)) {
             setSelectedTargetSpeciesNames([...selectedTargetSpeciesNames, species.name]);
-            setSpeciesInput('');
-            setFilteredSpecies([]);
         }
     };
 
@@ -155,38 +139,13 @@ export const NewSessionScreen = () => {
                     placeholderTextColor={theme.colors.text.disabled}
                 />
 
-                <Text style={styles.label}>Espèces ciblées (optionnel)</Text>
-                <View style={styles.speciesInputContainer}>
-                    <TextInput
-                        style={[styles.input, styles.speciesTextInput]}
-                        placeholder="Rechercher et ajouter une espèce"
-                        value={speciesInput}
-                        onChangeText={handleSpeciesSearch}
-                        placeholderTextColor={theme.colors.text.disabled}
-                    />
-                </View>
-                {filteredSpecies.length > 0 && (
-                    <View style={styles.suggestionsList}>
-                        <ScrollView keyboardShouldPersistTaps="handled">
-                            {filteredSpecies.map(item => (
-                                <TouchableOpacity key={item.id} onPress={() => handleSelectSpecies(item)} style={styles.suggestionItem}>
-                                    <Text style={styles.suggestionItemText}>{item.name}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                <View style={styles.selectedSpeciesContainer}>
-                    {selectedTargetSpeciesNames.map((species, index) => (
-                        <View key={index} style={styles.speciesTag}>
-                            <Text style={styles.speciesTagText}>{species}</Text>
-                            <TouchableOpacity onPress={() => handleRemoveSpecies(species)} style={styles.removeSpeciesButton}>
-                                <Text style={styles.removeSpeciesButtonText}>x</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </View>
+                <SpeciesSelector
+                    label="Espèces ciblées (optionnel)"
+                    allSpecies={allSpecies}
+                    selectedSpecies={selectedTargetSpeciesNames}
+                    onSelectSpecies={handleSelectSpecies}
+                    onRemoveSpecies={handleRemoveSpecies}
+                />
 
                 <TouchableOpacity
                     style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -225,7 +184,7 @@ const styles = StyleSheet.create({
     label: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.primary,
+        color: theme.colors.text.secondary,
         marginBottom: theme.spacing[2], // Adjusted from 4 to 2
         marginTop: theme.spacing[2], // Adjusted from 4 to 2
     },
@@ -240,63 +199,6 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.base,
         marginBottom: theme.spacing[4], // Adjusted from 6 to 4
         width: '100%',
-    },
-    speciesInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing[4],
-    },
-    speciesTextInput: {
-        flex: 1,
-        marginBottom: 0, // Override default margin
-        marginRight: 0, // No add button anymore
-    },
-    suggestionsList: {
-        maxHeight: 150,
-        borderColor: theme.colors.border.main,
-        borderWidth: 1,
-        borderRadius: theme.borderRadius.base,
-        backgroundColor: theme.colors.background.paper,
-        marginBottom: theme.spacing[4],
-    },
-    suggestionItem: {
-        padding: theme.spacing[3],
-        borderBottomColor: theme.colors.border.light,
-        borderBottomWidth: 1,
-    },
-    suggestionItemText: {
-        fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.primary,
-    },
-    selectedSpeciesContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginBottom: theme.spacing[6],
-    },
-    speciesTag: {
-        flexDirection: 'row',
-        backgroundColor: theme.colors.primary[100],
-        borderRadius: theme.borderRadius.full,
-        paddingVertical: theme.spacing[2],
-        paddingHorizontal: theme.spacing[3],
-        marginRight: theme.spacing[2],
-        marginBottom: theme.spacing[2],
-        alignItems: 'center',
-    },
-    speciesTagText: {
-        color: theme.colors.primary[700],
-        fontSize: theme.typography.fontSize.sm,
-        fontFamily: theme.typography.fontFamily.medium,
-    },
-    removeSpeciesButton: {
-        marginLeft: theme.spacing[2],
-        paddingHorizontal: theme.spacing[1],
-    },
-    removeSpeciesButtonText: {
-        color: theme.colors.primary[700],
-        fontSize: theme.typography.fontSize.sm,
-        fontWeight: theme.typography.fontWeight.bold,
     },
     button: {
         height: INPUT_HEIGHT,

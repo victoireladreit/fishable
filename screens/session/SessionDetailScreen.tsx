@@ -8,6 +8,7 @@ import {
     FishingSession,
     FishingSessionUpdate,
     CatchesService,
+    SpeciesService,
     TargetSpeciesService
 } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useCatchManagement } from '../../hooks/useCatchManagement';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
+import { SpeciesSelector } from '../../components/session/SpeciesSelector';
 import { Card } from '../../components/common'; // Import Card component
 
 const INPUT_HEIGHT = 50;
@@ -66,11 +68,13 @@ export const SessionDetailScreen = () => {
 
     const [session, setSession] = useState<FishingSession | null>(null);
     const [catches, setCatches] = useState<Catch[]>([]);
-    const [targetSpecies, setTargetSpecies] = useState<string[]>([]); // New state for target species
+    const [selectedTargetSpeciesNames, setSelectedTargetSpeciesNames] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
+
+    const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
 
     // États pour les champs modifiables
     const [locationName, setLocationName] = useState('');
@@ -107,7 +111,7 @@ export const SessionDetailScreen = () => {
                 setLocationVisibility(fetchedSession.location_visibility || 'private');
 
                 const fetchedTargetSpecies = await TargetSpeciesService.getTargetSpeciesBySessionId(sessionId);
-                setTargetSpecies(fetchedTargetSpecies);
+                setSelectedTargetSpeciesNames(fetchedTargetSpecies);
 
                 if (loadCatches) {
                     const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
@@ -124,6 +128,19 @@ export const SessionDetailScreen = () => {
 
     useEffect(() => {
         loadSession();
+
+        const fetchSpecies = async () => {
+            try {
+                const species = await SpeciesService.getAllSpecies();
+                setAllSpecies(species);
+            } catch (error) {
+                console.error('Error fetching species:', error);
+                // Non-blocking error, the user can still edit other fields
+            }
+        };
+
+        fetchSpecies();
+
     }, [loadSession]);
 
     useFocusEffect(
@@ -139,6 +156,16 @@ export const SessionDetailScreen = () => {
             fetchCatches();
         }, [sessionId])
     );
+
+    const handleSelectSpecies = (species: { id: string; name: string }) => {
+        if (!selectedTargetSpeciesNames.includes(species.name)) {
+            setSelectedTargetSpeciesNames([...selectedTargetSpeciesNames, species.name]);
+        }
+    };
+
+    const handleRemoveSpecies = (speciesToRemove: string) => {
+        setSelectedTargetSpeciesNames(selectedTargetSpeciesNames.filter(s => s !== speciesToRemove));
+    };
 
     const sessionRoute = session?.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [];
 
@@ -194,6 +221,12 @@ export const SessionDetailScreen = () => {
         };
         try {
             await FishingSessionsService.updateSession(sessionId, updates);
+            
+            // Update target species
+            await TargetSpeciesService.deleteTargetSpeciesBySessionId(sessionId);
+            const targetSpeciesToInsert = selectedTargetSpeciesNames.map(name => ({ session_id: sessionId, species_name: name }));
+            if (targetSpeciesToInsert.length > 0) await TargetSpeciesService.createTargetSpecies(targetSpeciesToInsert);
+
             await loadSession(false); // Re-fetch session data, but not catches
             setIsEditing(false);
             Alert.alert("Succès", "La session a été mise à jour.");
@@ -232,7 +265,7 @@ export const SessionDetailScreen = () => {
                 ) : undefined
             ),
         });
-    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterColor, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, loadSession, handleSave, onGoBack]);
+    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterColor, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, selectedTargetSpeciesNames, loadSession, handleSave, onGoBack]);
 
     if (loading) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
@@ -248,7 +281,7 @@ export const SessionDetailScreen = () => {
         <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
             <ScrollView 
                 contentContainerStyle={styles.scrollContentContainer}
-                scrollEnabled={!mapInteractionEnabled}
+                scrollEnabled={isEditing || !mapInteractionEnabled}
             >
                 {isEditing ? (
                     <>
@@ -260,6 +293,12 @@ export const SessionDetailScreen = () => {
                             placeholderTextColor={theme.colors.text.disabled}
                         />
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
+                        <SpeciesSelector
+                            allSpecies={allSpecies}
+                            selectedSpecies={selectedTargetSpeciesNames}
+                            onSelectSpecies={handleSelectSpecies}
+                            onRemoveSpecies={handleRemoveSpecies}
+                        />
                         <View style={styles.formGroup}>
                             <Text style={styles.label}>Notes de session</Text>
                             <TextInput style={[styles.input, styles.textArea]} value={caption} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
@@ -292,11 +331,11 @@ export const SessionDetailScreen = () => {
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         
-                        {targetSpecies.length > 0 && (
+                        {selectedTargetSpeciesNames.length > 0 && (
                             <View style={styles.targetSpeciesContainer}>
                                 <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
                                 <View style={styles.targetSpeciesList}>
-                                    {targetSpecies.map((species, index) => (
+                                    {selectedTargetSpeciesNames.map((species, index) => (
                                         <View key={index} style={styles.speciesTag}>
                                             <Text style={styles.speciesTagText}>{species}</Text>
                                         </View>
@@ -553,6 +592,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing[3],
         marginRight: theme.spacing[2],
         marginBottom: theme.spacing[2],
+        flexDirection: 'row',
     },
     speciesTagText: {
         color: theme.colors.primary[700],

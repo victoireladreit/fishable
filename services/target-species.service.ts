@@ -17,4 +17,9 @@ export const TargetSpeciesService = {
         if (error) throw error;
         return data.map(ts => ts.species_name);
     },
+
+    async deleteTargetSpeciesBySessionId(sessionId: string) {
+        const { error } = await supabase.from(TABLE).delete().eq('session_id', sessionId);
+        if (error) throw error;
+    },
 };
