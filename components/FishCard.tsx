@@ -56,8 +56,9 @@ export const FishCard: React.FC<FishCardProps> = ({ species, isCaught, onPress, 
                     </Text>
                     {(catchInfo.biggestSizeCm || catchInfo.biggestWeightKg) && (
                         <View style={styles.prContainer}>
-                            <Text style={styles.prValue}>
-                                {catchInfo.biggestSizeCm ? `${catchInfo.biggestSizeCm} cm` : ''}
+                            <MaterialCommunityIcons name="medal" size={16} color={theme.colors.text.secondary} />
+                            <Text style={styles.prText}>
+                                {catchInfo.biggestSizeCm ? ` ${catchInfo.biggestSizeCm} cm` : ''}
                                 {catchInfo.biggestSizeCm && catchInfo.biggestWeightKg ? ' / ' : ''}
                                 {catchInfo.biggestWeightKg ? `${catchInfo.biggestWeightKg} kg` : ''}
                             </Text>
@@ -107,16 +108,17 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.xs,
         color: theme.colors.text.secondary,
-        textAlign: 'center', // Center the text
+        textAlign: 'center',
     },
     prContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         marginTop: theme.spacing[1],
     },
-    prValue: {
+    prText: {
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.xs,
-        color: theme.colors.success.dark,
-        textAlign: 'center',
+        color: theme.colors.text.secondary,
     },
 });
