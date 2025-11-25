@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import {
@@ -14,18 +14,12 @@ import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SessionMap } from '../../components/session/SessionMap';
 import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
+import { windStrengthOptions } from '../../lib/constants';
+import { SessionHeader } from '../../components/session/SessionHeader';
+import { SessionNotes } from '../../components/session/SessionNotes';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
-
-type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
-
-const windStrengthOptions: { key: WindStrength; label: string }[] = [
-    { key: 'calm', label: 'Calme' },
-    { key: 'light', label: 'Léger' },
-    { key: 'moderate', label: 'Modéré' },
-    { key: 'strong', label: 'Fort' },
-];
 
 const INPUT_HEIGHT = 50;
 
@@ -221,16 +215,12 @@ export const ActiveSessionScreen = () => {
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
         >
-            <View style={styles.headerContainer}>
-                <TextInput
-                    style={styles.titleInput}
-                    value={locationName ?? ''}
-                    onChangeText={setLocationName}
-                    placeholder="Nom du spot"
-                    placeholderTextColor={theme.colors.text.disabled}
-                />
-                {session.region ? <Text style={styles.regionText}>{session.region}</Text> : null}
-            </View>
+            <SessionHeader
+                isEditing={true}
+                locationName={locationName}
+                onLocationNameChange={setLocationName}
+                region={session.region}
+            />
 
             <TargetSpeciesList species={targetSpecies} />
 
@@ -286,18 +276,11 @@ export const ActiveSessionScreen = () => {
                 setLocationVisibility={setLocationVisibility}
             />
 
-            {/* Notes/Caption Input */}
-            <View style={styles.formGroup}>
-                <Text style={styles.label}>Notes de session</Text>
-                <TextInput
-                    style={[styles.input, styles.multilineInput]}
-                    value={caption ?? ''}
-                    onChangeText={setCaption}
-                    placeholder="Ajoutez des notes sur votre session..."
-                    placeholderTextColor={theme.colors.text.disabled}
-                    multiline
-                />
-            </View>
+            <SessionNotes
+                isEditing={true}
+                caption={caption}
+                onCaptionChange={setCaption}
+            />
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
                 <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveSessionChanges} disabled={isSaving || !hasUnsavedChanges}>
@@ -319,30 +302,6 @@ const styles = StyleSheet.create({
         padding: theme.layout.containerPadding 
     },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.default },
-    headerContainer: {
-        width: '100%',
-        padding: theme.spacing[4],
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        marginBottom: theme.spacing[6],
-        ...theme.shadows.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-    },
-    titleInput: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['2xl'],
-        color: theme.colors.text.primary,
-        paddingBottom: theme.spacing[1],
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border.main,
-    },
-    regionText: {
-        fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.lg,
-        color: theme.colors.text.secondary,
-        marginTop: theme.spacing[2],
-    },
     topStatsContainer: {
         flexDirection: 'row',
         width: '100%',
@@ -445,30 +404,5 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.inverse,
         fontWeight: theme.typography.fontWeight.bold,
-    },
-    formGroup: {
-        width: '100%',
-        marginBottom: theme.spacing[4],
-    },
-    label: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
-        marginBottom: theme.spacing[2],
-    },
-    input: {
-        backgroundColor: theme.colors.background.paper,
-        color: theme.colors.text.primary,
-        height: INPUT_HEIGHT,
-        borderWidth: 1,
-        borderColor: theme.colors.border.main,
-        borderRadius: theme.borderRadius.base,
-        paddingHorizontal: theme.spacing[4],
-        fontSize: theme.typography.fontSize.base,
-    },
-    multilineInput: {
-        height: 100,
-        textAlignVertical: 'top',
-        paddingTop: theme.spacing[3],
     },
 });

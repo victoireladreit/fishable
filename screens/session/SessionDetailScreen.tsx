@@ -17,46 +17,15 @@ import { useCatchManagement, useSession } from '../../hooks';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SpeciesSelector } from '../../components/session/SpeciesSelector';
-import { Card } from '../../components/common';
 import { SessionMap } from '../../components/session/SessionMap';
 import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
+import { windStrengthOptions, waterLevelOptions, locationVisibilityOptions, WindStrength } from '../../lib/constants';
+import { formatDuration } from '../../lib/formatters';
+import { SessionHeader } from '../../components/session/SessionHeader';
+import { SessionNotes } from '../../components/session/SessionNotes';
 
-const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
-
-type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
-type WaterLevel = 'normal' | 'high' | 'flood';
-type LocationVisibility = 'public' | 'region' | 'private';
-
-const windStrengthOptions: { key: WindStrength; label: string }[] = [
-    { key: 'calm', label: 'Calme' },
-    { key: 'light', label: 'Léger' },
-    { key: 'moderate', label: 'Modéré' },
-    { key: 'strong', label: 'Fort' },
-];
-
-const locationVisibilityOptions: { key: LocationVisibility; label: string }[] = [
-    { key: 'private', label: 'Privé' },
-    { key: 'region', label: 'Région' },
-    { key: 'public', label: 'Public' },
-];
-
-const waterLevelOptions: { key: WaterLevel; label: string }[] = [
-    { key: 'normal', label: 'Normal' },
-    { key: 'high', label: 'Haut' },
-    { key: 'flood', label: 'Crue' },
-];
-
-const formatDuration = (totalMinutes: number | null) => {
-    if (totalMinutes === null || totalMinutes < 0) return null;
-    if (totalMinutes < 60) {
-        return `${totalMinutes}min`;
-    }
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim();
-};
 
 export const SessionDetailScreen = () => {
     const route = useRoute<SessionDetailRouteProp>();
@@ -245,26 +214,25 @@ export const SessionDetailScreen = () => {
             <ScrollView 
                 contentContainerStyle={styles.scrollContentContainer}
             >
+                <SessionHeader
+                    isEditing={isEditing}
+                    locationName={locationName}
+                    onLocationNameChange={setLocationName}
+                    region={session.region}
+                />
                 {isEditing ? (
                     <>
-                        <TextInput
-                            style={styles.titleInput}
-                            value={locationName ?? ''}
-                            onChangeText={setLocationName}
-                            placeholder="Nom du spot"
-                            placeholderTextColor={theme.colors.text.disabled}
-                        />
-                        {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         <SpeciesSelector
                             allSpecies={allSpecies}
                             selectedSpecies={selectedTargetSpeciesNames}
                             onSelectSpecies={handleSelectSpecies}
                             onRemoveSpecies={handleRemoveSpecies}
                         />
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Notes de session</Text>
-                            <TextInput style={[styles.input, styles.textArea]} value={caption ?? ''} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
-                        </View>
+                        <SessionNotes
+                            isEditing={isEditing}
+                            caption={caption}
+                            onCaptionChange={setCaption}
+                        />
 
                         <SessionForm
                             waterColor={waterColor}
@@ -290,9 +258,6 @@ export const SessionDetailScreen = () => {
                     </>
                 ) : (
                     <>
-                        <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
-                        {session.region && <Text style={styles.regionText}>{session.region}</Text>}
-                        
                         <TargetSpeciesList species={targetSpecies} />
 
                         <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
@@ -336,15 +301,11 @@ export const SessionDetailScreen = () => {
                             onDeleteCatch={handleDeleteCatch}
                         />
 
-                        {/* Separate Card for Notes/Caption */}
-                        <Card style={styles.notesCard}>
-                            <Text style={[styles.infoLabel, styles.notesCardLabel]}>Notes de session</Text>
-                            {session.caption ? (
-                                <Text style={styles.captionText}>{session.caption}</Text>
-                            ) : (
-                                <Text style={styles.noCaptionText}>Pas de notes pour cette session.</Text>
-                            )}
-                        </Card>
+                        <SessionNotes
+                            isEditing={isEditing}
+                            caption={caption}
+                            onCaptionChange={setCaption}
+                        />
 
                         <View style={styles.infoCard}>
                             <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
@@ -371,22 +332,6 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background.default },
     scrollContentContainer: { padding: theme.layout.containerPadding, paddingBottom: theme.spacing[10] },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    infoTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary, marginBottom: theme.spacing[1] },
-    titleInput: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['2xl'],
-        color: theme.colors.text.primary,
-        marginBottom: theme.spacing[1],
-        backgroundColor: theme.colors.background.paper,
-        borderWidth: 1,
-        borderColor: theme.colors.border.main,
-        borderRadius: theme.borderRadius.base,
-        paddingHorizontal: theme.spacing[4],
-        paddingVertical: theme.spacing[2],
-    },
-    regionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.lg, color: theme.colors.text.secondary, marginBottom: theme.spacing[4] },
-    captionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontStyle: 'italic' },
-    noCaptionText: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary, fontStyle: 'italic' },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
     infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
@@ -394,10 +339,7 @@ const styles = StyleSheet.create({
     infoLabel: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary },
     infoValue: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary },
     infoDate: { fontFamily: 'Inter-Regular', fontSize: 10, color: '#a0aec0', marginTop: 8, textAlign: 'right' },
-    formGroup: { marginBottom: theme.spacing[5] },
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[3] },
-    input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
-    textArea: { height: 120, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
     switchGroup: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[5], paddingVertical: theme.spacing[2] },
     startMarker: {
         height: 14,
@@ -439,13 +381,5 @@ const styles = StyleSheet.create({
         paddingBottom: theme.spacing[2],
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border.light,
-    },
-    notesCard: {
-        marginTop: theme.spacing[4],
-        marginBottom: theme.spacing[4],
-        paddingBottom: theme.spacing[2],
-    },
-    notesCardLabel: {
-        marginBottom: theme.spacing[2],
     },
 });
