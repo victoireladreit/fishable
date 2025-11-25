@@ -1,32 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRoute, RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import {
     FishingSessionsService,
-    FishingSession,
     FishingSessionUpdate,
-    CatchesService,
     SpeciesService,
     TargetSpeciesService
 } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import MapView, { Region, Marker } from 'react-native-maps';
-import { Database } from '../../lib/types';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
-import { useCatchManagement } from '../../hooks/useCatchManagement';
+import { useCatchManagement, useSession } from '../../hooks';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SpeciesSelector } from '../../components/session/SpeciesSelector';
-import { Card } from '../../components/common'; // Import Card component
+import { Card } from '../../components/common';
 import { SessionMap } from '../../components/session/SessionMap';
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
-type Catch = Database['public']['Tables']['catches']['Row'];
 
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
 type WaterLevel = 'normal' | 'high' | 'flood';
@@ -67,96 +63,67 @@ export const SessionDetailScreen = () => {
     const { sessionId, onGoBack } = route.params;
     const mapViewRef = useRef<MapView>(null);
 
-    const [session, setSession] = useState<FishingSession | null>(null);
-    const [catches, setCatches] = useState<Catch[]>([]);
-    const [selectedTargetSpeciesNames, setSelectedTargetSpeciesNames] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        session,
+        catches,
+        setCatches,
+        targetSpecies,
+        loading,
+        isSaving,
+        locationName,
+        setLocationName,
+        caption,
+        setCaption,
+        locationVisibility,
+        setLocationVisibility,
+        waterColor,
+        setWaterColor,
+        waterCurrent,
+        setWaterCurrent,
+        waterLevel,
+        setWaterLevel,
+        reload,
+        saveChanges,
+    } = useSession(sessionId);
+
     const [isEditing, setIsEditing] = useState(false);
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
+    const [selectedTargetSpeciesNames, setSelectedTargetSpeciesNames] = useState<string[]>([]);
 
-    // États pour les champs modifiables
-    const [locationName, setLocationName] = useState('');
-    const [region, setRegion] = useState('');
-    const [caption, setCaption] = useState('');
-    const [weatherTemp, setWeatherTemp] = useState<string>(''); // Stocké en string pour TextInput
+    // States for fields not in useSession
+    const [weatherTemp, setWeatherTemp] = useState<string>('');
     const [weatherConditions, setWeatherConditions] = useState('');
-    const [waterColor, setWaterColor] = useState<string | null>(null);
-    const [waterCurrent, setWaterCurrent] = useState<string | null>(null);
     const [windStrength, setWindStrength] = useState<WindStrength | null>(null);
-    const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
     const [isPublished, setIsPublished] = useState(false);
-    const [locationVisibility, setLocationVisibility] = useState<LocationVisibility>('private');
 
     // Use the custom hook for catch management
     const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
 
-    const loadSession = useCallback(async (loadCatches = true) => {
-        try {
-            setLoading(true);
-            const fetchedSession = await FishingSessionsService.getSessionById(sessionId);
-            if (fetchedSession) {
-                setSession(fetchedSession);
-                setLocationName(fetchedSession.location_name || '');
-                setRegion(fetchedSession.region || '');
-                setCaption(fetchedSession.caption || '');
-                setWeatherTemp(fetchedSession.weather_temp?.toString() || '');
-                setWeatherConditions(fetchedSession.weather_conditions || '');
-                setWaterColor(fetchedSession.water_color || null);
-                setWaterCurrent(fetchedSession.water_current || null);
-                setWindStrength(fetchedSession.wind_strength || null);
-                setWaterLevel(fetchedSession.water_level || null);
-                setIsPublished(fetchedSession.is_published || false);
-                setLocationVisibility(fetchedSession.location_visibility || 'private');
-
-                const fetchedTargetSpecies = await TargetSpeciesService.getTargetSpeciesBySessionId(sessionId);
-                setSelectedTargetSpeciesNames(fetchedTargetSpecies);
-
-                if (loadCatches) {
-                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
-                    setCatches(sessionCatches);
-                }
-            }
-        } catch (error) {
-            console.error("Erreur chargement session:", error);
-            Alert.alert("Erreur", "Impossible de charger les détails de la session.");
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (session) {
+            setWeatherTemp(session.weather_temp?.toString() || '');
+            setWeatherConditions(session.weather_conditions || '');
+            setWindStrength(session.wind_strength || null);
+            setIsPublished(session.is_published || false);
+            setSelectedTargetSpeciesNames(targetSpecies);
         }
-    }, [sessionId]);
+    }, [session, targetSpecies]);
 
     useEffect(() => {
-        loadSession();
-
         const fetchSpecies = async () => {
             try {
                 const species = await SpeciesService.getAllSpecies();
                 setAllSpecies(species);
             } catch (error) {
                 console.error('Error fetching species:', error);
-                // Non-blocking error, the user can still edit other fields
             }
         };
 
         fetchSpecies();
-
-    }, [loadSession]);
-
-    useFocusEffect(
-        useCallback(() => {
-            const fetchCatches = async () => {
-                try {
-                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
-                    setCatches(sessionCatches);
-                } catch (error) {
-                    console.error('Erreur récupération des prises:', error);
-                }
-            };
-            fetchCatches();
-        }, [sessionId])
-    );
+    }, []);
 
     const handleSelectSpecies = (species: { id: string; name: string }) => {
         if (!selectedTargetSpeciesNames.includes(species.name)) {
@@ -206,36 +173,29 @@ export const SessionDetailScreen = () => {
 
 
     const handleSave = async () => {
-        setLoading(true);
-        const updates: FishingSessionUpdate = {
-            location_name: locationName,
-            region: region,
-            caption: caption,
-            weather_temp: weatherTemp ? parseFloat(weatherTemp) : null,
-            weather_conditions: weatherConditions,
-            water_color: waterColor,
-            water_current: waterCurrent,
-            wind_strength: windStrength,
-            water_level: waterLevel,
-            is_published: isPublished,
-            location_visibility: locationVisibility,
-        };
-        try {
-            await FishingSessionsService.updateSession(sessionId, updates);
-            
-            // Update target species
-            await TargetSpeciesService.deleteTargetSpeciesBySessionId(sessionId);
-            const targetSpeciesToInsert = selectedTargetSpeciesNames.map(name => ({ session_id: sessionId, species_name: name }));
-            if (targetSpeciesToInsert.length > 0) await TargetSpeciesService.createTargetSpecies(targetSpeciesToInsert);
+        const success = await saveChanges();
+        if (success) {
+            const updates: FishingSessionUpdate = {
+                weather_temp: weatherTemp ? parseFloat(weatherTemp) : null,
+                weather_conditions: weatherConditions,
+                wind_strength: windStrength,
+                is_published: isPublished,
+            };
+            try {
+                await FishingSessionsService.updateSession(sessionId, updates);
+                
+                // Update target species
+                await TargetSpeciesService.deleteTargetSpeciesBySessionId(sessionId);
+                const targetSpeciesToInsert = selectedTargetSpeciesNames.map(name => ({ session_id: sessionId, species_name: name }));
+                if (targetSpeciesToInsert.length > 0) await TargetSpeciesService.createTargetSpecies(targetSpeciesToInsert);
 
-            await loadSession(false); // Re-fetch session data, but not catches
-            setIsEditing(false);
-            Alert.alert("Succès", "La session a été mise à jour.");
-            if (onGoBack) onGoBack(true); // Signaler la modification
-        } catch (error) {
-            Alert.alert("Erreur", "Impossible de sauvegarder les modifications.");
-        } finally {
-            setLoading(false);
+                await reload(); // Re-fetch all session data
+                setIsEditing(false);
+                Alert.alert("Succès", "La session a été mise à jour.");
+                if (onGoBack) onGoBack(true);
+            } catch (error) {
+                Alert.alert("Erreur", "Impossible de sauvegarder les modifications supplémentaires.");
+            }
         }
     };
 
@@ -249,7 +209,7 @@ export const SessionDetailScreen = () => {
         navigation.setOptions({
             // @ts-ignore
             headerRight: () => (
-                <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading}>
+                <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>
                     <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
                 </TouchableOpacity>
             ),
@@ -258,17 +218,17 @@ export const SessionDetailScreen = () => {
                 isEditing ? (
                     <TouchableOpacity onPress={async () => { 
                         setIsEditing(false); 
-                        await loadSession();
-                        if (onGoBack) onGoBack(false); // Signaler qu'aucune modification n'a été enregistrée
+                        await reload();
+                        if (onGoBack) onGoBack(false);
                     }}>
                         <Ionicons name={"close-outline"} size={theme.iconSizes.lg} color={theme.colors.error.main} />
                     </TouchableOpacity>
                 ) : undefined
             ),
         });
-    }, [navigation, isEditing, loading, locationName, region, caption, weatherTemp, weatherConditions, waterColor, waterCurrent, windStrength, waterLevel, isPublished, locationVisibility, selectedTargetSpeciesNames, loadSession, handleSave, onGoBack]);
+    }, [navigation, isEditing, loading, isSaving, handleSave, reload, onGoBack]);
 
-    if (loading) {
+    if (loading && !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
@@ -288,7 +248,7 @@ export const SessionDetailScreen = () => {
                     <>
                         <TextInput
                             style={styles.titleInput}
-                            value={locationName}
+                            value={locationName ?? ''}
                             onChangeText={setLocationName}
                             placeholder="Nom du spot"
                             placeholderTextColor={theme.colors.text.disabled}
@@ -302,7 +262,7 @@ export const SessionDetailScreen = () => {
                         />
                         <View style={styles.formGroup}>
                             <Text style={styles.label}>Notes de session</Text>
-                            <TextInput style={[styles.input, styles.textArea]} value={caption} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
+                            <TextInput style={[styles.input, styles.textArea]} value={caption ?? ''} onChangeText={setCaption} multiline placeholder="Ajoutez une description..." placeholderTextColor={theme.colors.text.disabled} />
                         </View>
 
                         <SessionForm
@@ -332,11 +292,11 @@ export const SessionDetailScreen = () => {
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         
-                        {selectedTargetSpeciesNames.length > 0 && (
+                        {targetSpecies.length > 0 && (
                             <View style={styles.targetSpeciesContainer}>
                                 <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
                                 <View style={styles.targetSpeciesList}>
-                                    {selectedTargetSpeciesNames.map((species, index) => (
+                                    {targetSpecies.map((species, index) => (
                                         <View key={index} style={styles.speciesTag}>
                                             <Text style={styles.speciesTagText}>{species}</Text>
                                         </View>

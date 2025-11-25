@@ -1,21 +1,15 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
-import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import {
     FishingSessionsService,
-    FishingSession,
-    FishingSessionUpdate,
-    CatchesService,
-    TargetSpeciesService
 } from '../../services';
 import { theme } from '../../theme';
-import { useTimer, formatTime, useLocationTracking } from '../../hooks';
+import { useTimer, formatTime, useLocationTracking, useCatchManagement, useSession } from '../../hooks';
 import MapView from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
 import { RootStackParamList } from "../../navigation/types";
-import { Database } from '../../lib/types';
-import { useCatchManagement } from '../../hooks/useCatchManagement';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SessionMap } from '../../components/session/SessionMap';
@@ -23,10 +17,7 @@ import { SessionMap } from '../../components/session/SessionMap';
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
 
-type Catch = Database['public']['Tables']['catches']['Row'];
-type Visibility = 'public' | 'region' | 'private';
 type WindStrength = 'calm' | 'light' | 'moderate' | 'strong';
-type WaterLevel = 'normal' | 'high' | 'flood';
 
 const windStrengthOptions: { key: WindStrength; label: string }[] = [
     { key: 'calm', label: 'Calme' },
@@ -43,88 +34,43 @@ export const ActiveSessionScreen = () => {
     const { sessionId } = route.params;
     const mapViewRef = useRef<MapView>(null);
 
-    const [session, setSession] = useState<FishingSession | null>(null);
-    const [catches, setCatches] = useState<Catch[]>([]);
-    const [targetSpecies, setTargetSpecies] = useState<string[]>([]); // New state for target species
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const {
+        session,
+        catches,
+        setCatches,
+        targetSpecies,
+        loading,
+        isSaving,
+        locationName,
+        setLocationName,
+        caption,
+        setCaption,
+        locationVisibility,
+        setLocationVisibility,
+        waterColor,
+        setWaterColor,
+        waterCurrent,
+        setWaterCurrent,
+        waterLevel,
+        setWaterLevel,
+        hasUnsavedChanges,
+        saveChanges,
+    } = useSession(sessionId);
+
     const [userInteractingWithMap, setUserInteractingWithMap] = useState(false);
     const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
-
-    // Editable fields
-    const [locationName, setLocationName] = useState('');
-    const [region, setRegion] = useState('');
-    const [caption, setCaption] = useState(''); // New state for notes
-    const [locationVisibility, setLocationVisibility] = useState<Visibility>('region');
-    const [waterColor, setWaterColor] = useState<string | null>(null);
-    const [waterCurrent, setWaterCurrent] = useState<string | null>(null);
-    const [waterLevel, setWaterLevel] = useState<WaterLevel | null>(null);
 
     const { seconds, start, stop } = useTimer();
     const { route: locationRoute, stopLocationTracking, errorMsg, location } = useLocationTracking();
 
-    // Use the custom hook for catch management
+    // Use the custom hook for catch management, passing setCatches from useSession
     const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
-
-    const hasUnsavedChanges = session?.location_name !== locationName ||
-        session?.location_visibility !== locationVisibility ||
-        session?.water_color !== waterColor ||
-        session?.water_current !== waterCurrent ||
-        session?.water_level !== waterLevel ||
-        session?.caption !== caption; // Include caption in unsaved changes
-
-    useFocusEffect(
-        useCallback(() => {
-            const fetchCatchesAndTargetSpecies = async () => {
-                try {
-                    const sessionCatches = await CatchesService.getCatchesBySession(sessionId);
-                    setCatches(sessionCatches);
-
-                    const fetchedTargetSpecies = await TargetSpeciesService.getTargetSpeciesBySessionId(sessionId);
-                    setTargetSpecies(fetchedTargetSpecies);
-                } catch (error) {
-                    console.error('Erreur récupération des prises ou espèces cibles:', error);
-                }
-            };
-            fetchCatchesAndTargetSpecies();
-        }, [sessionId])
-    );
 
     useEffect(() => {
         if (errorMsg) {
             Alert.alert('Erreur de localisation', errorMsg);
         }
     }, [errorMsg]);
-
-    useEffect(() => {
-        let isActive = true;
-        const fetchSession = async () => {
-            try {
-                const fetchedSession = await FishingSessionsService.getSessionById(sessionId);
-                if (isActive) {
-                    if (fetchedSession) {
-                        setSession(fetchedSession);
-                        setLocationName(fetchedSession.location_name);
-                        setRegion(fetchedSession.region);
-                        setCaption(fetchedSession.caption);
-                        setLocationVisibility(fetchedSession.location_visibility || 'region');
-                        setWaterColor(fetchedSession.water_color);
-                        setWaterCurrent(fetchedSession.water_current);
-                        setWaterLevel(fetchedSession.water_level);
-                    } else {
-                        Alert.alert('Erreur', 'Session invalide ou introuvable.');
-                        navigation.goBack();
-                    }
-                }
-            } catch (error) {
-                if (isActive) console.error('Erreur chargement session:', error);
-            } finally {
-                if (isActive) setLoading(false);
-            }
-        };
-        fetchSession();
-        return () => { isActive = false; };
-    }, [sessionId, navigation]);
 
     useEffect(() => {
         if (session && session.started_at) {
@@ -143,28 +89,12 @@ export const ActiveSessionScreen = () => {
         }
     }, [location, userInteractingWithMap, mapInteractionEnabled]);
 
-    const handleSaveChanges = async () => {
-        setIsSaving(true);
-        const updates: FishingSessionUpdate = { 
-            location_name: locationName, 
-            location_visibility: locationVisibility,
-            water_color: waterColor,
-            water_current: waterCurrent,
-            water_level: waterLevel,
-            caption: caption, // Include caption in updates
-        };
-        try {
-            await FishingSessionsService.updateSession(sessionId, updates);
-            setSession(prev => prev ? { ...prev, ...updates } : null);
-            Alert.alert('Succès', 'Les informations ont été mises à jour.');
-            return true;
-        } catch (error) {
-            console.error('Erreur sauvegarde session:', error);
-            Alert.alert('Erreur', 'Impossible de sauvegarder.');
-            return false;
-        } finally {
-            setIsSaving(false);
+    const handleSaveSessionChanges = async () => {
+        const success = await saveChanges();
+        if (success) {
+            Alert.alert('Succès', 'Les modifications ont été enregistrées.');
         }
+        return success;
     };
 
     const proceedToEndSession = async () => {
@@ -214,7 +144,7 @@ export const ActiveSessionScreen = () => {
                     {
                         text: 'Enregistrer et Terminer',
                         onPress: async () => {
-                            const success = await handleSaveChanges();
+                            const success = await handleSaveSessionChanges();
                             if (success) {
                                 proceedToEndSession();
                             }
@@ -294,12 +224,12 @@ export const ActiveSessionScreen = () => {
             <View style={styles.headerContainer}>
                 <TextInput
                     style={styles.titleInput}
-                    value={locationName}
+                    value={locationName ?? ''}
                     onChangeText={setLocationName}
                     placeholder="Nom du spot"
                     placeholderTextColor={theme.colors.text.disabled}
                 />
-                {region ? <Text style={styles.regionText}>{region}</Text> : null}
+                {session.region ? <Text style={styles.regionText}>{session.region}</Text> : null}
             </View>
 
             {targetSpecies.length > 0 && (
@@ -372,7 +302,7 @@ export const ActiveSessionScreen = () => {
                 <Text style={styles.label}>Notes de session</Text>
                 <TextInput
                     style={[styles.input, styles.multilineInput]}
-                    value={caption}
+                    value={caption ?? ''}
                     onChangeText={setCaption}
                     placeholder="Ajoutez des notes sur votre session..."
                     placeholderTextColor={theme.colors.text.disabled}
@@ -381,7 +311,7 @@ export const ActiveSessionScreen = () => {
             </View>
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
-                <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveChanges} disabled={isSaving || !hasUnsavedChanges}>
+                <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled, !hasUnsavedChanges && styles.buttonDisabled]} onPress={handleSaveSessionChanges} disabled={isSaving || !hasUnsavedChanges}>
                     {isSaving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.buttonText}>Enregistrer les modifications</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.button, styles.endButton]} onPress={handleEndSession}>
