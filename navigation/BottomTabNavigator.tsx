@@ -3,7 +3,6 @@ import { createBottomTabNavigator, BottomTabScreenProps } from '@react-navigatio
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
-import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { theme } from '../theme';
 import { MainTabParamList, FishLogStackParamList } from './types';
 import { HomeScreen } from "../screens/home/HomeScreen";
@@ -40,8 +39,6 @@ export const BottomTabNavigator = () => {
                         iconName = focused ? 'fish' : 'fish-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
-                    } else if (route.name === 'Settings') {
-                        iconName = focused ? 'settings' : 'settings-outline';
                     }
 
                     return <Ionicons name={iconName} size={size} color={color} />;
@@ -62,7 +59,6 @@ export const BottomTabNavigator = () => {
             <Tab.Screen name="Sessions" component={SessionScreen} options={{ title: 'Sessions' }} />
             <Tab.Screen name="FishLog" component={FishLogNavigator} options={{ title: 'FishLog' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
-            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
         </Tab.Navigator>
     );
 };

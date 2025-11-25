@@ -11,7 +11,6 @@ export type MainTabParamList = {
     Sessions: undefined;
     FishLog: NavigatorScreenParams<FishLogStackParamList>; // Le FishLog est maintenant un StackNavigator
     Profile: undefined;
-    Settings: undefined;
 };
 
 export type RootStackParamList = {
@@ -19,6 +18,7 @@ export type RootStackParamList = {
     Register: undefined;
     ForgotPassword: undefined;
     Home: NavigatorScreenParams<MainTabParamList>; // Onglets imbriqués
+    Settings: undefined;
     NewSession: { onGoBack: () => void };
     ActiveSession: { sessionId: string; onGoBack: () => void; };
     SessionDetail: { sessionId: string; onGoBack?: (modified: boolean) => void };

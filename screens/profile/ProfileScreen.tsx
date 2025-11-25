@@ -10,6 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { Card } from '../../components/common';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../navigation/types';
 
 const INPUT_HEIGHT = 50;
 const screenWidth = Dimensions.get('window').width;
@@ -57,6 +59,7 @@ export const ProfileScreen = () => {
 
     const { pickImage, takePhoto } = useImagePicker();
     const { showActionSheetWithOptions } = useActionSheet();
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
     const loadProfile = useCallback(async () => {
         if (!user) return;
@@ -250,9 +253,16 @@ export const ProfileScreen = () => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Mon Profil</Text>
-                <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
-                    <Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity onPress={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
+                        <Ionicons name={isEditing ? "close-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                    </TouchableOpacity>
+                    {!isEditing && (
+                        <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ marginLeft: theme.spacing[4] }}>
+                            <Ionicons name="settings-outline" size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             <ScrollView
@@ -381,6 +391,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.layout.screenPadding,
         marginTop: theme.spacing[4],
         marginBottom: theme.spacing[4],
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     title: {
         fontFamily: theme.typography.fontFamily.bold,

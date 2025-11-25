@@ -11,6 +11,7 @@ import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../s
 import { AddCatchScreen, EditCatchScreen } from '../screens/catch';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -42,6 +43,7 @@ const RootNavigator = () => {
             {user ? (
                 <>
                     <Stack.Screen name="Home" component={BottomTabNavigator} options={{ headerShown: false }} />
+                    <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ActiveSession" component={ActiveSessionScreen} options={{ title: 'Session en cours' }} />
                     <Stack.Screen name="SessionDetail" component={SessionDetailScreen} options={{ title: 'Détails de la session' }} />
                     <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ title: 'Nouvelle session', presentation: 'modal' }} />
