@@ -13,7 +13,7 @@ import {
 } from '../../services';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
-import MapView, { Polyline, Region, Marker } from 'react-native-maps';
+import MapView, { Region, Marker } from 'react-native-maps';
 import { Database } from '../../lib/types';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
 import { useCatchManagement } from '../../hooks/useCatchManagement';
@@ -21,6 +21,7 @@ import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SpeciesSelector } from '../../components/session/SpeciesSelector';
 import { Card } from '../../components/common'; // Import Card component
+import { SessionMap } from '../../components/session/SessionMap';
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
@@ -276,12 +277,12 @@ export const SessionDetailScreen = () => {
     }
 
     const formattedDuration = formatDuration(session.duration_minutes);
+    const hasRouteData = sessionRoute && sessionRoute.length > 1;
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
             <ScrollView 
                 contentContainerStyle={styles.scrollContentContainer}
-                scrollEnabled={isEditing || !mapInteractionEnabled}
             >
                 {isEditing ? (
                     <>
@@ -353,61 +354,30 @@ export const SessionDetailScreen = () => {
                             </Text>
                         </View>
 
-                        <View style={styles.mapContainer}>
-                            {mapRegion ? (
+                        <SessionMap
+                            mapRef={mapViewRef}
+                            initialRegion={mapRegion}
+                            route={sessionRoute}
+                            isMapInteractionEnabled={mapInteractionEnabled}
+                            setMapInteractionEnabled={setMapInteractionEnabled}
+                            recenterMap={recenterMap}
+                        >
+                            {hasRouteData && (
                                 <>
-                                    <MapView
-                                        ref={mapViewRef}
-                                        style={styles.map}
-                                        initialRegion={mapRegion}
-                                        showsCompass={true}
-                                        scrollEnabled={mapInteractionEnabled}
-                                        zoomEnabled={mapInteractionEnabled}
-                                    >
-                                        {sessionRoute && sessionRoute.length > 1 && (
-                                            <>
-                                                <Polyline
-                                                    coordinates={sessionRoute}
-                                                    strokeColor={theme.colors.primary[500]}
-                                                    strokeWidth={4}
-                                                />
-                                                <Marker coordinate={sessionRoute[0]} title="Départ" anchor={{ x: 0.5, y: 0.5 }}>
-                                                    <View style={styles.startMarker} />
-                                                </Marker>
-                                                <Marker coordinate={sessionRoute[sessionRoute.length - 1]} title="Arrivée" anchor={{ x: 0.5, y: 1 }}>
-                                                    <View style={styles.calloutContainer}>
-                                                        <View style={styles.calloutBubble}>
-                                                            <Text style={styles.calloutText}>🏁</Text>
-                                                        </View>
-                                                        <View style={styles.calloutPointer} />
-                                                    </View>
-                                                </Marker>
-                                            </>
-                                        )}
-                                    </MapView>
-                                    <View style={styles.mapButtonsContainer}>
-                                        <TouchableOpacity 
-                                            style={styles.mapButton} 
-                                            onPress={() => {
-                                                if (mapInteractionEnabled) {
-                                                    recenterMap();
-                                                }
-                                                setMapInteractionEnabled(prev => !prev);
-                                            }}
-                                        >
-                                            <Ionicons name={mapInteractionEnabled ? "lock-open-outline" : "lock-closed-outline"} size={theme.iconSizes.xs} color={theme.colors.text.primary} />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.mapButton} onPress={recenterMap}>
-                                            <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </> 
-                            ) : (
-                                <View style={styles.mapFallback}>
-                                    <Text style={styles.mapFallbackText}>Aucune donnée de parcours disponible.</Text>
-                                </View>
+                                    <Marker coordinate={sessionRoute[0]} title="Départ" anchor={{ x: 0.5, y: 0.5 }}>
+                                        <View style={styles.startMarker} />
+                                    </Marker>
+                                    <Marker coordinate={sessionRoute[sessionRoute.length - 1]} title="Arrivée" anchor={{ x: 0.5, y: 1 }}>
+                                        <View style={styles.calloutContainer}>
+                                            <View style={styles.calloutBubble}>
+                                                <Text style={styles.calloutText}>🏁</Text>
+                                            </View>
+                                            <View style={styles.calloutPointer} />
+                                        </View>
+                                    </Marker>
+                                </>
                             )}
-                        </View>
+                        </SessionMap>
 
                         <CatchList
                             catches={catches}
@@ -479,30 +449,6 @@ const styles = StyleSheet.create({
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
     textArea: { height: 120, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
     switchGroup: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[5], paddingVertical: theme.spacing[2] },
-    mapContainer: {
-        position: 'relative',
-        height: 300,
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden',
-        marginTop: theme.spacing[6],
-        ...theme.shadows.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    mapFallback: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: theme.colors.gray[100],
-    },
-    mapFallbackText: {
-        fontFamily: theme.typography.fontFamily.regular,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
-    },
     startMarker: {
         height: 14,
         width: 14,
@@ -510,19 +456,6 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.success.main,
         borderColor: theme.colors.white,
         borderWidth: 2,
-    },
-    mapButtonsContainer: {
-        position: 'absolute',
-        top: theme.spacing[2],
-        right: theme.spacing[2],
-        flexDirection: 'row',
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.borderRadius.full,
-        ...theme.shadows.md,
-        padding: theme.spacing[1],
-    },
-    mapButton: {
-        padding: theme.spacing[1],
     },
     calloutContainer: {
         alignItems: 'center',

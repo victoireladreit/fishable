@@ -10,7 +10,7 @@ FROM catches c
          JOIN fishing_sessions fs ON c.session_id = fs.id
 WHERE fs.user_id = p_user_id AND c.species_id = p_species_id;
 
--- 2. If no catches remain at all, delete the fish-log entry and exit.
+-- 2. If no catches remain at all, delete the fishlog entry and exit.
 IF v_catch_count = 0 THEN
 DELETE FROM user_pokedex WHERE user_id = p_user_id AND species_id = p_species_id;
 RETURN;
@@ -25,7 +25,7 @@ SELECT EXISTS (
 ) INTO v_dated_catch_exists;
 
 -- 4. If no dated catches exist, we cannot satisfy the NOT NULL constraint for first_caught_at.
--- The only logical action is to remove the fish-log entry.
+-- The only logical action is to remove the fishlog entry.
 IF NOT v_dated_catch_exists THEN
 DELETE FROM user_pokedex WHERE user_id = p_user_id AND species_id = p_species_id;
 RETURN;

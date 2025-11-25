@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 import {
     FishingSessionsService,
     FishingSession,
@@ -12,13 +11,14 @@ import {
 } from '../../services';
 import { theme } from '../../theme';
 import { useTimer, formatTime, useLocationTracking } from '../../hooks';
-import MapView, { Polyline } from "react-native-maps";
+import MapView from "react-native-maps";
 import { calculateTotalDistance } from '../../lib/geolocation';
 import { RootStackParamList } from "../../navigation/types";
 import { Database } from '../../lib/types';
 import { useCatchManagement } from '../../hooks/useCatchManagement';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
+import { SessionMap } from '../../components/session/SessionMap';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -290,7 +290,6 @@ export const ActiveSessionScreen = () => {
             style={styles.scrollContainer} 
             contentContainerStyle={styles.container}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={!mapInteractionEnabled}
         >
             <View style={styles.headerContainer}>
                 <TextInput
@@ -339,42 +338,16 @@ export const ActiveSessionScreen = () => {
                 </View>
             </View>
             
-            <View style={styles.mapContainer}>
-                <MapView
-                    ref={mapViewRef}
-                    style={styles.map}
-                    initialRegion={initialMapRegion}
-                    showsUserLocation
-                    onPanDrag={() => setUserInteractingWithMap(true)}
-                    scrollEnabled={mapInteractionEnabled}
-                    zoomEnabled={mapInteractionEnabled}
-                >
-                    {locationRoute.length > 1 && (
-                        <Polyline
-                            coordinates={locationRoute}
-                            strokeColor={theme.colors.primary[500]}
-                            strokeWidth={4}
-                        />
-                    )}
-                </MapView>
-
-                <View style={styles.mapButtonsContainer}>
-                    <TouchableOpacity 
-                        style={styles.mapButton} 
-                        onPress={() => {
-                            if (mapInteractionEnabled) {
-                                recenterMap(); // Recenter map when locking it
-                            }
-                            setMapInteractionEnabled(prev => !prev);
-                        }}
-                    >
-                        <Ionicons name={mapInteractionEnabled ? "lock-open-outline" : "lock-closed-outline"} size={theme.iconSizes.xs} color={theme.colors.text.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.mapButton} onPress={recenterMap}>
-                        <Ionicons name="locate-outline" size={theme.iconSizes.xs} color={theme.colors.text.primary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
+            <SessionMap
+                mapRef={mapViewRef}
+                initialRegion={initialMapRegion}
+                route={locationRoute}
+                isMapInteractionEnabled={mapInteractionEnabled}
+                setMapInteractionEnabled={setMapInteractionEnabled}
+                recenterMap={recenterMap}
+                onPanDrag={() => setUserInteractingWithMap(true)}
+                showUserLocation={true}
+            />
 
             <CatchList
                 catches={catches}
@@ -586,32 +559,6 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.inverse,
         fontWeight: theme.typography.fontWeight.bold,
-    },
-    mapContainer: {
-        position: 'relative',
-        width: '100%',
-        height: 300,
-        borderRadius: theme.borderRadius.lg,
-        marginVertical: theme.spacing[4],
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    mapButtonsContainer: {
-        position: 'absolute',
-        top: theme.spacing[2],
-        right: theme.spacing[2],
-        flexDirection: 'row',
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.borderRadius.full,
-        ...theme.shadows.md,
-        padding: theme.spacing[1],
-    },
-    mapButton: {
-        padding: theme.spacing[1],
     },
     formGroup: {
         width: '100%',

@@ -7,7 +7,7 @@ import { theme } from '../../theme';
 import { FishLogStackParamList } from '../../navigation/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { CatchLeaderboardCard, TopCatch } from '../../components/CatchLeaderboardCard';
+import { CatchLeaderboardCard, TopCatch } from '../../components/fishlog/CatchLeaderboardCard';
 
 type Species = Database['public']['Tables']['species_registry']['Row'];
 type UserPokedexEntry = Database['public']['Tables']['user_pokedex']['Row'];

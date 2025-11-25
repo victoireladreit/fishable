@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Database } from '../../lib/types';
-import { FishCard, CatchInfo } from '../../components/FishCard';
+import { FishCard, CatchInfo } from '../../components/fishlog/FishCard';
 import { theme } from '../../theme';
 import { FishLogStackParamList } from '../../navigation/types';
 

@@ -86,7 +86,7 @@ UPDATE catches SET
                    updated_at = v_new_catch.updated_at
 WHERE id = p_catch_id;
 
--- 6. Trigger recalculation for the affected fish-log entries
+-- 6. Trigger recalculation for the affected fishlog entries
 PERFORM public.recalculate_pokedex_for_species(v_user_id, v_old_catch.species_id);
 
     IF v_new_species_id IS DISTINCT FROM v_old_catch.species_id THEN

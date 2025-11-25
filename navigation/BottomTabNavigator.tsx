@@ -7,8 +7,8 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { theme } from '../theme';
 import { MainTabParamList, FishLogStackParamList } from './types';
 import { HomeScreen } from "../screens/home/HomeScreen";
-import { FishLogScreen } from '../screens/fish-log/FishLogScreen';
-import { FishLogDetailScreen } from '../screens/fish-log/FishLogDetailScreen';
+import { FishLogScreen } from '../screens/fishlog/FishLogScreen';
+import { FishLogDetailScreen } from '../screens/fishlog/FishLogDetailScreen';
 import { SessionScreen } from "../screens/session/SessionScreen";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();

@@ -1,10 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Database } from '../lib/types';
+import { Database } from '../../lib/types';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../../navigation/types';
 
 type ProfileInfo = Pick<Database['public']['Tables']['profiles']['Row'], 'username' | 'avatar_url'>;
 

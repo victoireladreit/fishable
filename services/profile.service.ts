@@ -76,7 +76,7 @@ export const ProfileService = {
             .eq('user_id', userId);
 
         if (fishLogError) {
-            console.error("Error fetching user fish-log:", fishLogError);
+            console.error("Error fetching user fishlog:", fishLogError);
             throw fishLogError;
         }
 

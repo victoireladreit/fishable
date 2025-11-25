@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, Image, StyleSheet, TouchableOpacity, Dimensions, View } from 'react-native';
-import { Database } from '../lib/types';
-import { theme } from '../theme';
+import { Database } from '../../lib/types';
+import { theme } from '../../theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type Species = Database['public']['Tables']['species_registry']['Row'];

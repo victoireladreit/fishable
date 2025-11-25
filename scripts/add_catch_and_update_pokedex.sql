@@ -74,7 +74,7 @@ VALUES (
        )
     RETURNING id INTO v_new_catch_id;
 
--- 4. Recalculate fish-log for the affected species
+-- 4. Recalculate fishlog for the affected species
 PERFORM public.recalculate_pokedex_for_species(v_user_id, v_species_id);
 
     -- 5. Return the newly created catch
