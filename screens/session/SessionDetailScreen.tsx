@@ -19,6 +19,7 @@ import { CatchList } from '../../components/catch/CatchList';
 import { SpeciesSelector } from '../../components/session/SpeciesSelector';
 import { Card } from '../../components/common';
 import { SessionMap } from '../../components/session/SessionMap';
+import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
 
 const INPUT_HEIGHT = 50;
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
@@ -292,18 +293,7 @@ export const SessionDetailScreen = () => {
                         <Text style={styles.infoTitle}>{session.location_name || 'Session sans nom'}</Text>
                         {session.region && <Text style={styles.regionText}>{session.region}</Text>}
                         
-                        {targetSpecies.length > 0 && (
-                            <View style={styles.targetSpeciesContainer}>
-                                <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
-                                <View style={styles.targetSpeciesList}>
-                                    {targetSpecies.map((species, index) => (
-                                        <View key={index} style={styles.speciesTag}>
-                                            <Text style={styles.speciesTagText}>{species}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
+                        <TargetSpeciesList species={targetSpecies} />
 
                         <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
                         {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
@@ -445,51 +435,17 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginTop: -1.5,
     },
-    infoSection: { // New style for grouping label and value in infoCard
+    infoSection: {
         paddingBottom: theme.spacing[2],
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border.light,
     },
     notesCard: {
         marginTop: theme.spacing[4],
-        marginBottom: theme.spacing[4], // Add margin to separate from infoCard
-        paddingBottom: theme.spacing[2], // Reduce padding at the bottom of the card content
+        marginBottom: theme.spacing[4],
+        paddingBottom: theme.spacing[2],
     },
     notesCardLabel: {
-        marginBottom: theme.spacing[2], // Add spacing below the label
-    },
-    targetSpeciesContainer: {
-        width: '100%',
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing[4],
-        marginBottom: theme.spacing[6],
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-        ...theme.shadows.sm,
-    },
-    targetSpeciesLabel: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
         marginBottom: theme.spacing[2],
-    },
-    targetSpeciesList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-    },
-    speciesTag: {
-        backgroundColor: theme.colors.primary[100],
-        borderRadius: theme.borderRadius.full,
-        paddingVertical: theme.spacing[2],
-        paddingHorizontal: theme.spacing[3],
-        marginRight: theme.spacing[2],
-        marginBottom: theme.spacing[2],
-        flexDirection: 'row',
-    },
-    speciesTagText: {
-        color: theme.colors.primary[700],
-        fontSize: theme.typography.fontSize.sm,
-        fontFamily: theme.typography.fontFamily.medium,
     },
 });

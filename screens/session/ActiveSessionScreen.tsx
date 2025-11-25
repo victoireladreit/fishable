@@ -13,6 +13,7 @@ import { RootStackParamList } from "../../navigation/types";
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SessionMap } from '../../components/session/SessionMap';
+import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -63,7 +64,6 @@ export const ActiveSessionScreen = () => {
     const { seconds, start, stop } = useTimer();
     const { route: locationRoute, stopLocationTracking, errorMsg, location } = useLocationTracking();
 
-    // Use the custom hook for catch management, passing setCatches from useSession
     const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
 
     useEffect(() => {
@@ -232,18 +232,7 @@ export const ActiveSessionScreen = () => {
                 {session.region ? <Text style={styles.regionText}>{session.region}</Text> : null}
             </View>
 
-            {targetSpecies.length > 0 && (
-                <View style={styles.targetSpeciesContainer}>
-                    <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
-                    <View style={styles.targetSpeciesList}>
-                        {targetSpecies.map((species, index) => (
-                            <View key={index} style={styles.speciesTag}>
-                                <Text style={styles.speciesTagText}>{species}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-            )}
+            <TargetSpeciesList species={targetSpecies} />
 
             <View style={styles.topStatsContainer}>
                 <View style={styles.timerAndDistanceContainer}>
@@ -353,39 +342,6 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.lg,
         color: theme.colors.text.secondary,
         marginTop: theme.spacing[2],
-    },
-    targetSpeciesContainer: {
-        width: '100%',
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing[4],
-        marginBottom: theme.spacing[6],
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-        ...theme.shadows.sm,
-    },
-    targetSpeciesLabel: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
-        marginBottom: theme.spacing[2],
-    },
-    targetSpeciesList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-    },
-    speciesTag: {
-        backgroundColor: theme.colors.primary[100],
-        borderRadius: theme.borderRadius.full,
-        paddingVertical: theme.spacing[2],
-        paddingHorizontal: theme.spacing[3],
-        marginRight: theme.spacing[2],
-        marginBottom: theme.spacing[2],
-    },
-    speciesTagText: {
-        color: theme.colors.primary[700],
-        fontSize: theme.typography.fontSize.sm,
-        fontFamily: theme.typography.fontFamily.medium,
     },
     topStatsContainer: {
         flexDirection: 'row',
