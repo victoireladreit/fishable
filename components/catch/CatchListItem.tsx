@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
+import { renderDeleteAction } from '../common/SwipeableActions'; // Import the common function
 
 type Catch = Database['public']['Tables']['catches']['Row'];
 
@@ -14,25 +14,10 @@ type CatchListItemProps = {
     onPressImage: (url: string) => void;
 };
 
-const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, onPress: () => void) => {
-    const trans = dragX.interpolate({
-        inputRange: [-80, 0],
-        outputRange: [0, 80],
-        extrapolate: 'clamp',
-    });
-    return (
-        <TouchableOpacity onPress={onPress} style={styles.deleteButtonContainer}>
-            <Animated.View style={[styles.deleteButton, { transform: [{ translateX: trans }] }]}>
-                <Ionicons name="trash-outline" size={theme.iconSizes.lg} color={theme.colors.error.main} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
-
 export const CatchListItem: React.FC<CatchListItemProps> = ({ item, onEdit, onDelete, onPressImage }) => {
     return (
         <View style={styles.catchItemWrapper}>
-            <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, () => onDelete(item.id))}>
+            <Swipeable renderRightActions={(progress, dragX) => renderDeleteAction(progress, dragX, () => onDelete(item.id))}>
                 <TouchableOpacity onPress={() => onEdit(item.id)}>
                     <View style={styles.catchItem}>
                         {item.photo_url && (
@@ -88,19 +73,5 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.sm,
         color: theme.colors.text.secondary,
-    },
-    deleteButtonContainer: {
-        width: 80,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: theme.spacing[2],
-    },
-    deleteButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: theme.borderRadius.md,
-        borderColor: theme.colors.error.main,
     },
 });
