@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, SafeAreaView, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { Database } from '../../lib/types';
@@ -8,6 +8,7 @@ import { FishLogStackParamList } from '../../navigation/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { CatchLeaderboardCard, TopCatch } from '../../components/fishlog/CatchLeaderboardCard';
+import { InfoRow, Card } from '../../components/common';
 
 type Species = Database['public']['Tables']['species_registry']['Row'];
 type UserPokedexEntry = Database['public']['Tables']['user_pokedex']['Row'];
@@ -20,29 +21,6 @@ const waterTypeTranslations: { [key: string]: string } = {
     'saltwater': 'Mer',
     'brackish': 'Saumâtre',
 };
-
-interface StatItemProps {
-    iconName: keyof typeof Ionicons.glyphMap;
-    label: string;
-    value: string | number | null | undefined;
-    unit?: string;
-    defaultValue?: string;
-}
-
-const StatItem: React.FC<StatItemProps> = ({ iconName, label, value, unit, defaultValue = '-' }) => {
-    const displayValue = value !== null && value !== undefined && value !== '' ? `${value}${unit || ''}` : defaultValue;
-
-    return (
-        <View style={styles.statItem}>
-            <Ionicons name={iconName} size={theme.iconSizes.sm} color={theme.colors.primary[500]} style={styles.statIcon} />
-            <View style={styles.statTextContainer}>
-                <Text style={styles.statLabel}>{label}</Text>
-                <Text style={styles.statValue} numberOfLines={1}>{displayValue}</Text>
-            </View>
-        </View>
-    );
-};
-
 
 export const FishLogDetailScreen = () => {
     const route = useRoute<FishLogDetailScreenRouteProp>();
@@ -155,25 +133,25 @@ export const FishLogDetailScreen = () => {
                     </View>
                 )}
 
-                <View style={styles.infoCard}>
+                <Card style={styles.infoCard}>
                     <Text style={styles.cardTitle}>Informations Générales</Text>
-                    <StatItem iconName="flask-outline" label="Nom scientifique" value={species.scientific_name} />
-                    <StatItem iconName="pricetag-outline" label="Famille" value={species.family} />
-                    <StatItem iconName="water-outline" label="Type d'eau" value={getTranslatedWaterTypes()} />
-                    <StatItem iconName="star-outline" label="Rareté" value={species.rarity} />
-                    <StatItem iconName="resize-outline" label="Taille max." value={species.max_size_cm} unit=" cm" />
-                    <StatItem iconName="scale-outline" label="Poids max." value={species.max_weight_kg} unit=" kg" />
-                </View>
+                    <InfoRow iconName="flask-outline" label="Nom scientifique" value={species.scientific_name} />
+                    <InfoRow iconName="pricetag-outline" label="Famille" value={species.family} />
+                    <InfoRow iconName="water-outline" label="Type d'eau" value={getTranslatedWaterTypes()} />
+                    <InfoRow iconName="star-outline" label="Rareté" value={species.rarity} />
+                    <InfoRow iconName="resize-outline" label="Taille max." value={species.max_size_cm} unit=" cm" />
+                    <InfoRow iconName="scale-outline" label="Poids max." value={species.max_weight_kg} unit=" kg" />
+                </Card>
 
                 {isCaught && userPokedexEntry && (
-                    <View style={styles.infoCard}>
+                    <Card style={styles.infoCard}>
                         <Text style={styles.cardTitle}>Mes Statistiques</Text>
-                        <StatItem iconName="trophy-outline" label="Plus grosse prise" value={userPokedexEntry.biggest_size_cm || userPokedexEntry.biggest_weight_kg} unit={userPokedexEntry.biggest_size_cm ? ' cm' : ' kg'} />
-                        <StatItem iconName="stats-chart-outline" label="Nombre de captures" value={userPokedexEntry.total_caught} />
-                        <StatItem iconName="calendar-outline" label="Date 1ère prise" value={new Date(userPokedexEntry.first_caught_at).toLocaleDateString()} />
-                        <StatItem iconName="location-outline" label="Lieu 1ère prise" value={userPokedexEntry.first_region} />
-                        <StatItem iconName="hammer-outline" label="Technique favorite" value={userPokedexEntry.favorite_technique} />
-                    </View>
+                        <InfoRow iconName="trophy-outline" label="Plus grosse prise" value={userPokedexEntry.biggest_size_cm || userPokedexEntry.biggest_weight_kg} unit={userPokedexEntry.biggest_size_cm ? ' cm' : ' kg'} />
+                        <InfoRow iconName="stats-chart-outline" label="Nombre de captures" value={userPokedexEntry.total_caught} />
+                        <InfoRow iconName="calendar-outline" label="Date 1ère prise" value={new Date(userPokedexEntry.first_caught_at).toLocaleDateString()} />
+                        <InfoRow iconName="location-outline" label="Lieu 1ère prise" value={userPokedexEntry.first_region} />
+                        <InfoRow iconName="hammer-outline" label="Technique favorite" value={userPokedexEntry.favorite_technique} />
+                    </Card>
                 )}
 
             </ScrollView>
@@ -220,16 +198,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: theme.colors.gray[200],
     },
-
     infoCard: {
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.md,
-        padding: theme.spacing[4],
         marginBottom: theme.spacing[4],
         marginHorizontal: theme.layout.containerPadding,
-        ...theme.shadows.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
     },
     cardTitle: {
         fontFamily: theme.typography.fontFamily.bold,
@@ -250,31 +221,5 @@ const styles = StyleSheet.create({
     },
     leaderboardScrollView: {
         paddingHorizontal: theme.layout.containerPadding,
-    },
-
-    statItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing[3],
-    },
-    statIcon: {
-        marginRight: theme.spacing[3],
-    },
-    statTextContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    statLabel: {
-        fontFamily: theme.typography.fontFamily.medium,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.secondary,
-    },
-    statValue: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize.base,
-        color: theme.colors.text.primary,
-        flexShrink: 1,
     },
 });

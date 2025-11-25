@@ -16,7 +16,7 @@ export const SessionNotes: React.FC<SessionNotesProps> = ({
 }) => {
     if (isEditing) {
         return (
-            <View style={styles.formGroup}>
+            <View style={{ width: "100%", marginBottom: theme.spacing[6] }}>
                 <Text style={styles.label}>Notes de session</Text>
                 <TextInput
                     style={[styles.input, styles.textArea]}
@@ -31,7 +31,7 @@ export const SessionNotes: React.FC<SessionNotesProps> = ({
     }
 
     return (
-        <Card style={styles.notesCard}>
+        <Card style={{ marginBottom: theme.spacing[6] }}>
             <Text style={[styles.infoLabel, styles.notesCardLabel]}>Notes de session</Text>
             {caption ? (
                 <Text style={styles.captionText}>{caption}</Text>
@@ -43,10 +43,6 @@ export const SessionNotes: React.FC<SessionNotesProps> = ({
 };
 
 const styles = StyleSheet.create({
-    formGroup: {
-        width: '100%',
-        marginBottom: theme.spacing[5],
-    },
     label: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.base,
@@ -67,12 +63,6 @@ const styles = StyleSheet.create({
         height: 120,
         textAlignVertical: 'top',
         paddingTop: theme.spacing[3],
-    },
-    notesCard: {
-        width: '100%',
-        marginTop: theme.spacing[4],
-        marginBottom: theme.spacing[4],
-        paddingBottom: theme.spacing[2],
     },
     notesCardLabel: {
         marginBottom: theme.spacing[2],

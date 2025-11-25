@@ -17,6 +17,7 @@ import { useCatchManagement, useSession } from '../../hooks';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
 import { SpeciesSelector } from '../../components/session/SpeciesSelector';
+import { Card, InfoRow} from '../../components/common';
 import { SessionMap } from '../../components/session/SessionMap';
 import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
 import { windStrengthOptions, waterLevelOptions, locationVisibilityOptions, WindStrength } from '../../lib/constants';
@@ -307,19 +308,16 @@ export const SessionDetailScreen = () => {
                             onCaptionChange={setCaption}
                         />
 
-                        <View style={styles.infoCard}>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Température</Text><Text style={styles.infoValue}>{session.weather_temp ? `${session.weather_temp}°C` : '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Conditions météo</Text><Text style={styles.infoValue}>{session.weather_conditions || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Vent</Text><Text style={styles.infoValue}>{`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || '-'}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Couleur de l'eau</Text><Text style={styles.infoValue}>{session.water_color || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Courant</Text><Text style={styles.infoValue}>{session.water_current || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Niveau d'eau</Text><Text style={styles.infoValue}>{waterLevelOptions.find(o => o.key === session.water_level)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Visibilité Loc.</Text><Text style={styles.infoValue}>{locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label || '-'}</Text></View>
-                            <View style={styles.infoRow}><Text style={styles.infoLabel}>Publiée</Text><Text style={styles.infoValue}>{session.is_published ? 'Oui' : 'Non'}</Text></View>
-
-                            <Text style={styles.infoDate}>Créée le: {new Date(session.created_at!).toLocaleDateString('fr-FR')}</Text>
-                            {session.updated_at && <Text style={styles.infoDate}>Mise à jour le: {new Date(session.updated_at!).toLocaleDateString('fr-FR')}</Text>}
-                        </View>
+                        <Card style={{ marginTop: theme.spacing[4] }}>
+                            <InfoRow iconName="thermometer-outline" label="Température" value={session.weather_temp} unit="°C" />
+                            <InfoRow iconName="partly-sunny-outline" label="Conditions météo" value={session.weather_conditions} />
+                            <InfoRow iconName="flag-outline" label="Vent" value={`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || ''}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`} />
+                            <InfoRow iconName="color-palette-outline" label="Couleur de l'eau" value={session.water_color} />
+                            <InfoRow iconName="swap-vertical-outline" label="Courant" value={session.water_current} />
+                            <InfoRow iconName="pulse-outline" label="Niveau d'eau" value={waterLevelOptions.find(o => o.key === session.water_level)?.label} />
+                            <InfoRow iconName="eye-outline" label="Visibilité Loc." value={locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label} />
+                            <InfoRow iconName="share-social-outline" label="Publiée" value={session.is_published ? 'Oui' : 'Non'} />
+                        </Card>
                     </>
                 )}
             </ScrollView>
@@ -334,11 +332,6 @@ const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     sessionDate: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing[2] },
-    infoCard: { backgroundColor: theme.colors.background.paper, borderRadius: theme.borderRadius.md, padding: theme.spacing[5], ...theme.shadows.sm, borderWidth: 1, borderColor: theme.colors.border.light, marginTop: theme.spacing[4] },
-    infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: theme.spacing[2], borderBottomWidth: 1, borderBottomColor: theme.colors.border.light },
-    infoLabel: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary },
-    infoValue: { fontFamily: theme.typography.fontFamily.regular, fontSize: theme.typography.fontSize.base, color: theme.colors.text.primary },
-    infoDate: { fontFamily: 'Inter-Regular', fontSize: 10, color: '#a0aec0', marginTop: 8, textAlign: 'right' },
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[3] },
     switchGroup: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[5], paddingVertical: theme.spacing[2] },
     startMarker: {
@@ -376,10 +369,5 @@ const styles = StyleSheet.create({
         borderTopColor: theme.colors.border.light,
         alignSelf: 'center',
         marginTop: -1.5,
-    },
-    infoSection: {
-        paddingBottom: theme.spacing[2],
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border.light,
     },
 });

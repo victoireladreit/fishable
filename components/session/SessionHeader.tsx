@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { Text, TextInput, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
+import { Card } from '../common';
 
 interface SessionHeaderProps {
     isEditing: boolean;
@@ -16,7 +17,7 @@ export const SessionHeader: React.FC<SessionHeaderProps> = ({
     region,
 }) => {
     return (
-        <View style={styles.headerContainer}>
+        <Card style={{ width: "100%", marginBottom: theme.spacing[6] }}>
             {isEditing ? (
                 <TextInput
                     style={styles.titleInput}
@@ -29,21 +30,11 @@ export const SessionHeader: React.FC<SessionHeaderProps> = ({
                 <Text style={styles.infoTitle}>{locationName || 'Session sans nom'}</Text>
             )}
             {region ? <Text style={styles.regionText}>{region}</Text> : null}
-        </View>
+        </Card>
     );
 };
 
 const styles = StyleSheet.create({
-    headerContainer: {
-        width: '100%',
-        padding: theme.spacing[4],
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        marginBottom: theme.spacing[6],
-        ...theme.shadows.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-    },
     titleInput: {
         fontFamily: theme.typography.fontFamily.bold,
         fontSize: theme.typography.fontSize['2xl'],

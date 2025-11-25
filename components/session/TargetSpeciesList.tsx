@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
+import { Card } from '../common';
 
 interface TargetSpeciesListProps {
     species: string[];
@@ -12,7 +13,7 @@ export const TargetSpeciesList: React.FC<TargetSpeciesListProps> = ({ species })
     }
 
     return (
-        <View style={styles.targetSpeciesContainer}>
+        <Card style={{ marginBottom: theme.spacing[6] }}>
             <Text style={styles.targetSpeciesLabel}>Espèces ciblées :</Text>
             <View style={styles.targetSpeciesList}>
                 {species.map((s, index) => (
@@ -21,21 +22,11 @@ export const TargetSpeciesList: React.FC<TargetSpeciesListProps> = ({ species })
                     </View>
                 ))}
             </View>
-        </View>
+        </Card>
     );
 };
 
 const styles = StyleSheet.create({
-    targetSpeciesContainer: {
-        width: '100%',
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing[4],
-        marginBottom: theme.spacing[6],
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-        ...theme.shadows.sm,
-    },
     targetSpeciesLabel: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.base,

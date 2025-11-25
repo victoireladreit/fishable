@@ -17,6 +17,7 @@ import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
 import { windStrengthOptions } from '../../lib/constants';
 import { SessionHeader } from '../../components/session/SessionHeader';
 import { SessionNotes } from '../../components/session/SessionNotes';
+import { Card } from '../../components/common';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -225,18 +226,18 @@ export const ActiveSessionScreen = () => {
             <TargetSpeciesList species={targetSpecies} />
 
             <View style={styles.topStatsContainer}>
-                <View style={styles.timerAndDistanceContainer}>
-                    <View style={styles.timerContainer}>
-                        <Text style={styles.distanceLabel}>Temps</Text>
-                        <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+                <Card style={styles.timerAndDistanceContainer}>
+                    <View style={styles.statBox}>
+                        <Text style={styles.statLabel}>Temps</Text>
+                        <Text style={styles.statValue}>{formatTime(seconds)}</Text>
                     </View>
-                    <View style={styles.distanceContainer}>
-                        <Text style={styles.distanceLabel}>Distance</Text>
-                        <Text style={styles.distanceText}>{currentDistance.toFixed(2)} km</Text>
+                    <View style={styles.statBox}>
+                        <Text style={styles.statLabel}>Distance</Text>
+                        <Text style={styles.statValue}>{currentDistance.toFixed(2)} km</Text>
                     </View>
-                </View>
+                </Card>
 
-                <View style={styles.weatherContainer}>
+                <Card style={styles.weatherContainer}>
                     <View style={styles.weatherRow}>
                         <Text style={styles.weatherTemp}>{session.weather_temp ? `${Math.round(session.weather_temp)}°C` : '-'}</Text>
                     </View>
@@ -244,7 +245,7 @@ export const ActiveSessionScreen = () => {
                     <Text style={styles.windInfo}>
                         Vent: {windStrengthLabel} ({session.wind_speed_kmh ? `${session.wind_speed_kmh.toFixed(1)} km/h` : '-'})
                     </Text>
-                </View>
+                </Card>
             </View>
             
             <SessionMap
@@ -311,56 +312,30 @@ const styles = StyleSheet.create({
     },
     timerAndDistanceContainer: {
         flex: 2,
+        backgroundColor: theme.colors.primary["50"],
         flexDirection: 'column',
-        borderRadius: theme.borderRadius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.primary[200],
+        justifyContent: 'space-around',
+        alignItems: 'center',
         marginRight: theme.spacing[2],
-        overflow: 'hidden',
+        paddingVertical: theme.spacing[3],
     },
-    timerContainer: {
-        flex: 1,
-        paddingVertical: theme.spacing[2],
-        paddingHorizontal: theme.spacing[2],
-        backgroundColor: theme.colors.primary[50],
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderBottomColor: theme.colors.primary[200],
-    },
-    timerText: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize.lg,
-        color: theme.colors.primary[700],
-        textAlign: 'center',
-    },
-    distanceContainer: {
-        flex: 1,
-        paddingVertical: theme.spacing[2],
-        paddingHorizontal: theme.spacing[2],
-        backgroundColor: theme.colors.primary[50],
-        justifyContent: 'center',
+    statBox: {
         alignItems: 'center',
     },
-    distanceLabel: {
+    statLabel: {
         fontFamily: theme.typography.fontFamily.medium,
         fontSize: theme.typography.fontSize.sm,
-        color: theme.colors.primary[600],
+        color: theme.colors.text.secondary,
         marginBottom: theme.spacing[1],
     },
-    distanceText: {
+    statValue: {
         fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize.lg,
-        color: theme.colors.primary[700],
-        textAlign: 'center',
+        fontSize: theme.typography.fontSize['xl'],
+        color: theme.colors.text.primary,
     },
     weatherContainer: {
         flex: 2,
         alignItems: 'center',
-        padding: theme.spacing[4],
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
         marginLeft: theme.spacing[2],
         justifyContent: 'center',
     },

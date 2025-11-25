@@ -9,6 +9,7 @@ import {ProfileService, Profile, ProfileUpdate, ProfileStats} from '../../servic
 import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
 import { useActionSheet } from '@expo/react-native-action-sheet';
+import { Card } from '../../components/common';
 
 const INPUT_HEIGHT = 50;
 const screenWidth = Dimensions.get('window').width;
@@ -302,7 +303,7 @@ export const ProfileScreen = () => {
                         </View>
                     </>
                 ) : (
-                    <View style={styles.infoCard}>
+                    <Card style={{ marginTop: theme.spacing[4] }}>
                         <View style={styles.profileSummary}>
                             <TouchableOpacity onPress={() => avatarUrl && setShowFullSizeAvatar(true)} style={styles.avatarContainerDisplay}>
                                 <Image source={avatarUrl ? { uri: avatarUrl } : require('../../assets/default-avatar.jpg')} style={styles.avatarDisplay} />
@@ -333,7 +334,7 @@ export const ProfileScreen = () => {
                                 </View>
                             </View>
                         )}
-                    </View>
+                    </Card>
                 )}
             </ScrollView>
 
@@ -397,15 +398,6 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.primary[500],
         fontWeight: theme.typography.fontWeight.medium,
-    },
-    infoCard: {
-        backgroundColor: theme.colors.background.paper,
-        borderRadius: theme.borderRadius.md,
-        padding: theme.spacing[4], // Reduced from 5 to 4
-        ...theme.shadows.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border.light,
-        marginTop: theme.spacing[4]
     },
     profileSummary: { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing[4] },
     avatarContainerDisplay: { marginRight: theme.spacing[4] },

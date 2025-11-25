@@ -4,44 +4,20 @@ import { theme } from '../../theme';
 
 interface CardProps {
     children: React.ReactNode;
-    variant?: 'elevated' | 'outlined' | 'filled';
-    padding?: keyof typeof theme.spacing;
     style?: ViewStyle;
 }
 
-export const Card: React.FC<CardProps> = ({
-                                              children,
-                                              variant = 'elevated',
-                                              padding = 4,
-                                              style,
-                                          }) => {
-    return (
-        <View
-            style={[
-                styles.card,
-                styles[`card_${variant}`],
-                { padding: theme.spacing[padding] },
-                style,
-            ]}
-        >
-            {children}
-        </View>
-    );
+export const Card: React.FC<CardProps> = ({ children, style }) => {
+    return <View style={[styles.card, style]}>{children}</View>;
 };
 
 const styles = StyleSheet.create({
     card: {
+        backgroundColor: theme.colors.background.paper,
         borderRadius: theme.borderRadius.lg,
-        backgroundColor: theme.colors.white,
-    },
-    card_elevated: {
-        ...theme.shadows.base,
-    },
-    card_outlined: {
+        padding: theme.spacing[4],
+        ...theme.shadows.sm,
         borderWidth: 1,
         borderColor: theme.colors.border.light,
-    },
-    card_filled: {
-        backgroundColor: theme.colors.background.paper,
     },
 });
