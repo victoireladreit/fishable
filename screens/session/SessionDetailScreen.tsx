@@ -24,6 +24,7 @@ import { windStrengthOptions, waterLevelOptions, locationVisibilityOptions, Wind
 import { formatDuration } from '../../lib/formatters';
 import { SessionHeader } from '../../components/session/SessionHeader';
 import { SessionNotes } from '../../components/session/SessionNotes';
+import {AddCatchButton} from "../../components/catch/AddCatchButton";
 
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
@@ -295,9 +296,10 @@ export const SessionDetailScreen = () => {
                             )}
                         </SessionMap>
 
+                        <AddCatchButton onAddCatch={handleAddCatch}/>
+
                         <CatchList
                             catches={catches}
-                            onAddCatch={handleAddCatch}
                             onEditCatch={handleEditCatch}
                             onDeleteCatch={handleDeleteCatch}
                         />

@@ -9,6 +9,7 @@ import { HomeScreen } from "../screens/home/HomeScreen";
 import { FishLogScreen } from '../screens/fishlog/FishLogScreen';
 import { FishLogDetailScreen } from '../screens/fishlog/FishLogDetailScreen';
 import { SessionScreen } from "../screens/session/SessionScreen";
+import { UserCatchesScreen } from '../screens/catch/UserCatchesScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -35,8 +36,10 @@ export const BottomTabNavigator = () => {
                         iconName = focused ? 'home' : 'home-outline';
                     } else if (route.name === 'Sessions') {
                         iconName = focused ? 'boat' : 'boat-outline';
-                    } else if (route.name === 'FishLog') {
+                    } else if (route.name === 'UserCatches') {
                         iconName = focused ? 'fish' : 'fish-outline';
+                    } else if (route.name === 'FishLog') {
+                        iconName = focused ? 'book' : 'book-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -57,6 +60,7 @@ export const BottomTabNavigator = () => {
         >
             <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Accueil' }} />
             <Tab.Screen name="Sessions" component={SessionScreen} options={{ title: 'Sessions' }} />
+            <Tab.Screen name="UserCatches" component={UserCatchesScreen} options={{ title: 'Prises' }} />
             <Tab.Screen name="FishLog" component={FishLogNavigator} options={{ title: 'FishLog' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
         </Tab.Navigator>

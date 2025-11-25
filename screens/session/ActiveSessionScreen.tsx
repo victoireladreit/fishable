@@ -18,6 +18,7 @@ import { windStrengthOptions } from '../../lib/constants';
 import { SessionHeader } from '../../components/session/SessionHeader';
 import { SessionNotes } from '../../components/session/SessionNotes';
 import { Card } from '../../components/common';
+import {AddCatchButton} from "../../components/catch/AddCatchButton";
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -259,9 +260,10 @@ export const ActiveSessionScreen = () => {
                 showUserLocation={true}
             />
 
+            <AddCatchButton onAddCatch={handleAddCatch}/>
+
             <CatchList
                 catches={catches}
-                onAddCatch={onAddCatchPress}
                 onEditCatch={handleEditCatch}
                 onDeleteCatch={handleDeleteCatch}
             />

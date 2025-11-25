@@ -9,6 +9,7 @@ export type FishLogStackParamList = {
 export type MainTabParamList = {
     HomeTab: undefined;
     Sessions: undefined;
+    UserCatches: undefined;
     FishLog: NavigatorScreenParams<FishLogStackParamList>; // Le FishLog est maintenant un StackNavigator
     Profile: undefined;
 };
@@ -23,6 +24,6 @@ export type RootStackParamList = {
     ActiveSession: { sessionId: string; onGoBack: () => void; };
     SessionDetail: { sessionId: string; onGoBack?: (modified: boolean) => void };
     SessionSummary: { sessionId: string };
-    AddCatch: { sessionId: string; catchLocationLat?: number; catchLocationLng?: number; catchLocationAccuracy?: number; };
+    AddCatch: { sessionId?: string; catchLocationLat?: number; catchLocationLng?: number; catchLocationAccuracy?: number; };
     EditCatch: { catchId: string };
 };

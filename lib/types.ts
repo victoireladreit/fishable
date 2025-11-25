@@ -13,6 +13,7 @@ export interface Database {
                 Row: {
                     id: string
                     session_id: string
+                    user_id: string
                     species_id: string | null
                     species_name: string
                     size_cm: number | null
@@ -40,6 +41,7 @@ export interface Database {
                 Insert: {
                     id?: string
                     session_id: string
+                    user_id: string // AJOUTÉ
                     species_id?: string | null
                     species_name: string
                     size_cm?: number | null
@@ -67,6 +69,7 @@ export interface Database {
                 Update: {
                     id?: string
                     session_id?: string
+                    user_id?: string // AJOUTÉ
                     species_id?: string | null
                     species_name?: string
                     size_cm?: number | null

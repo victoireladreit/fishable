@@ -4,14 +4,14 @@ import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
 
 type Catch = Database['public']['Tables']['catches']['Row'];
-type CatchInsertPayload = Omit<Database['public']['Tables']['catches']['Insert'], 'species_id' | 'photo_url'> & { 
+type CatchInsertPayload = Omit<Database['public']['Tables']['catches']['Insert'], 'species_id' | 'photo_url' | 'user_id'> & { 
     species_name: string;
     photo_uri?: string | null;
     catch_location_lat?: number | null;
     catch_location_lng?: number | null;
     catch_location_accuracy?: number | null; // AJOUTÉ
 };
-type CatchUpdatePayload = Omit<Database['public']['Tables']['catches']['Update'], 'species_id' | 'photo_url'> & { 
+type CatchUpdatePayload = Omit<Database['public']['Tables']['catches']['Update'], 'species_id' | 'photo_url' | 'user_id'> & { 
     species_name?: string;
     photo_uri?: string | null;
     catch_location_lat?: number | null;
@@ -54,6 +54,9 @@ const uploadCatchPhoto = async (photoUri: string | null | undefined, sessionId: 
 };
 
 const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Utilisateur non authentifié.");
+
     const { photo_uri, session_id, species_name, catch_location_lat, catch_location_lng, catch_location_accuracy, ...catchDetails } = catchData;
 
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id);
@@ -62,6 +65,7 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
         p_session_id: session_id,
         p_catch_data: {
             ...catchDetails,
+            user_id: user.id, // AJOUTÉ: Ajout de l'ID utilisateur
             species_name,
             photo_url: photoUrl,
             catch_location_lat,
@@ -79,6 +83,8 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
 const updateCatch = async (id: string, catchData: CatchUpdatePayload): Promise<void> => {
     const { photo_uri, session_id, catch_location_lat, catch_location_lng, catch_location_accuracy, ...catchDetails } = catchData;
     
+    // Note: user_id is not updated here as it's typically immutable for a catch.
+    // If photo_uri is provided, it implies a new photo upload, which needs a session_id for pathing.
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id!);
 
     const updates = {
@@ -122,6 +128,19 @@ const getCatchesBySession = async (sessionId: string): Promise<Catch[]> => {
     return data;
 };
 
+const getCatchesByUserId = async (userId: string): Promise<Catch[]> => {
+    const { data, error } = await supabase
+        .from('catches')
+        .select('*')
+        .eq('user_id', userId)
+        .order('caught_at', { ascending: false });
+
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
 const getCatchById = async (id: string): Promise<Catch | null> => {
     const { data, error } = await supabase
         .from('catches')
@@ -140,5 +159,6 @@ export const CatchesService = {
     updateCatch,
     deleteCatch,
     getCatchesBySession,
+    getCatchesByUserId,
     getCatchById,
 };
