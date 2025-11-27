@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { CatchesService } from '../../services';
-import { theme, colors } from '../../theme';
+import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { CatchList } from '../../components/catch/CatchList';
 import { Database } from '../../lib/types';
@@ -19,9 +19,15 @@ export const UserCatchesScreen = () => {
     const [catches, setCatches] = useState<Catch[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
 
     const loadCatches = useCallback(async () => {
         if (!user) return;
+
+        if (!hasLoadedInitial) {
+            setLoading(true);
+        }
+
         try {
             const userCatches = await CatchesService.getCatchesByUserId(user.id);
             setCatches(userCatches || []);
@@ -29,29 +35,36 @@ export const UserCatchesScreen = () => {
             console.error("Erreur lors du chargement des prises:", error);
             Alert.alert("Erreur", "Impossible de charger les prises.");
         } finally {
-            setLoading(false);
-            setIsRefreshing(false);
+            if (!hasLoadedInitial) {
+                setLoading(false);
+                setHasLoadedInitial(true);
+            }
         }
-    }, [user]);
+    }, [user, hasLoadedInitial]);
 
     useFocusEffect(
         useCallback(() => {
-            setLoading(true);
             loadCatches();
         }, [loadCatches])
     );
 
-    const handleRefresh = useCallback(() => {
+    const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
-        loadCatches();
+        await loadCatches();
+        setIsRefreshing(false);
     }, [loadCatches]);
 
     const handleAddCatch = () => {
-        navigation.navigate('AddCatch', {});
+        navigation.navigate('AddCatch', {
+            onGoBack: () => loadCatches(),
+        });
     };
 
     const handleEditCatch = (catchId: string) => {
-        navigation.navigate('EditCatch', { catchId });
+        navigation.navigate('EditCatch', { 
+            catchId,
+            onGoBack: () => loadCatches(),
+        });
     };
 
     const handleDeleteCatch = (catchId: string) => {
@@ -77,7 +90,7 @@ export const UserCatchesScreen = () => {
         );
     };
 
-    if (loading && !isRefreshing) {
+    if (loading && !hasLoadedInitial) {
         return (
             <View style={styles.center}>
                 <ActivityIndicator size="large" color={theme.colors.primary[500]} />
@@ -87,24 +100,14 @@ export const UserCatchesScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView
-                contentContainerStyle={styles.scrollContainer}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={handleRefresh}
-                        colors={[colors.primary['500']]}
-                        tintColor={colors.primary['500']}
-                    />
-                }
-            >
-                <Text style={styles.title}>Prises</Text>
-                <CatchList
-                    catches={catches}
-                    onEditCatch={handleEditCatch}
-                    onDeleteCatch={handleDeleteCatch}
-                />
-            </ScrollView>
+            <CatchList
+                catches={catches}
+                onEditCatch={handleEditCatch}
+                onDeleteCatch={handleDeleteCatch}
+                onAddCatch={handleAddCatch}
+                isRefreshing={isRefreshing}
+                onRefresh={handleRefresh}
+            />
         </SafeAreaView>
     );
 };
@@ -114,21 +117,10 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background.default,
     },
-    scrollContainer: {
-        flexGrow: 1,
-        paddingHorizontal: theme.layout.screenPadding,
-    },
     center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: theme.colors.background.default,
-    },
-    title: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['4xl'],
-        color: theme.colors.text.primary,
-        marginTop: theme.spacing[4],
-        marginBottom: theme.spacing[4],
     },
 });

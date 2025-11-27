@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
     FishingSessionsService,
 } from '../../services';
@@ -18,7 +18,6 @@ import { windStrengthOptions } from '../../lib/constants';
 import { SessionHeader } from '../../components/session/SessionHeader';
 import { SessionNotes } from '../../components/session/SessionNotes';
 import { Card } from '../../components/common';
-import {AddCatchButton} from "../../components/catch/AddCatchButton";
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ActiveSession'>;
@@ -78,7 +77,7 @@ export const ActiveSessionScreen = () => {
 
     useEffect(() => {
         if (location && mapViewRef.current && !userInteractingWithMap && !mapInteractionEnabled) {
-            mapViewRef.current.animateCamera({ 
+            mapViewRef.current.animateCamera({
                 center: location.coords,
                 zoom: 16,
              });
@@ -105,16 +104,16 @@ export const ActiveSessionScreen = () => {
         const distanceKm = calculateTotalDistance(locationRoute);
 
         try {
-            await FishingSessionsService.updateSession(sessionId, { 
-                status: 'completed', 
+            await FishingSessionsService.updateSession(sessionId, {
+                status: 'completed',
                 ended_at: new Date(endTime).toISOString(),
                 duration_minutes: durationMinutes,
                 route: locationRoute as any,
                 distance_km: distanceKm,
             });
-            
+
             route.params?.onGoBack();
-            
+
             navigation.popToTop();
         } catch (error) {
             console.error('Erreur fin de session:', error);
@@ -142,7 +141,7 @@ export const ActiveSessionScreen = () => {
                         onPress: async () => {
                             const success = await handleSaveSessionChanges();
                             if (success) {
-                                proceedToEndSession();
+                                await proceedToEndSession();
                             }
                         },
                     },
@@ -211,12 +210,8 @@ export const ActiveSessionScreen = () => {
     const windStrengthLabel = windStrengthOptions.find(opt => opt.key === session.wind_strength)?.label || '-';
     const currentDistance = calculateTotalDistance(locationRoute);
 
-    return (
-        <ScrollView 
-            style={styles.scrollContainer} 
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps="handled"
-        >
+    const renderHeader = () => (
+        <View style={styles.headerContainer}>
             <SessionHeader
                 isEditing={true}
                 locationName={locationName}
@@ -248,7 +243,7 @@ export const ActiveSessionScreen = () => {
                     </Text>
                 </Card>
             </View>
-            
+
             <SessionMap
                 mapRef={mapViewRef}
                 initialRegion={initialMapRegion}
@@ -259,15 +254,11 @@ export const ActiveSessionScreen = () => {
                 onPanDrag={() => setUserInteractingWithMap(true)}
                 showUserLocation={true}
             />
+        </View>
+    );
 
-            <AddCatchButton onAddCatch={handleAddCatch}/>
-
-            <CatchList
-                catches={catches}
-                onEditCatch={handleEditCatch}
-                onDeleteCatch={handleDeleteCatch}
-            />
-
+    const renderFooter = () => (
+        <View style={styles.footerContainer}>
             <SessionForm
                 waterColor={waterColor}
                 setWaterColor={setWaterColor}
@@ -293,16 +284,34 @@ export const ActiveSessionScreen = () => {
                     <Text style={styles.buttonText}>Terminer la session</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </View>
+    );
+
+    return (
+        <View style={styles.screenContainer}>
+            <CatchList
+                catches={catches}
+                onEditCatch={handleEditCatch}
+                onDeleteCatch={handleDeleteCatch}
+                isRefreshing={false}
+                onRefresh={() => {}}
+                onAddCatch={onAddCatchPress}
+                ListHeaderComponent={renderHeader()}
+                ListFooterComponent={renderFooter()}
+            />
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    scrollContainer: { flex: 1, backgroundColor: theme.colors.background.default },
-    container: { 
-        flexGrow: 1, 
-        alignItems: 'center',
-        padding: theme.layout.containerPadding 
+    screenContainer: { flex: 1, backgroundColor: theme.colors.background.default},
+    headerContainer: {
+        paddingHorizontal: theme.layout.containerPadding,
+        paddingTop: theme.layout.containerPadding,
+    },
+    footerContainer: {
+        paddingHorizontal: theme.layout.containerPadding,
+        paddingBottom: theme.layout.containerPadding,
     },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.default },
     topStatsContainer: {

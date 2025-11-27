@@ -24,7 +24,6 @@ import { windStrengthOptions, waterLevelOptions, locationVisibilityOptions, Wind
 import { formatDuration } from '../../lib/formatters';
 import { SessionHeader } from '../../components/session/SessionHeader';
 import { SessionNotes } from '../../components/session/SessionNotes';
-import {AddCatchButton} from "../../components/catch/AddCatchButton";
 
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
@@ -209,118 +208,125 @@ export const SessionDetailScreen = () => {
     const formattedDuration = formatDuration(session.duration_minutes);
     const hasRouteData = sessionRoute && sessionRoute.length > 1;
 
-    return (
-        <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-            <ScrollView 
-                contentContainerStyle={styles.scrollContentContainer}
+    const renderNonEditingHeader = () => (
+        <View style={[styles.scrollContentContainer, { paddingBottom: 0 }]}>
+            <SessionHeader
+                isEditing={isEditing}
+                locationName={locationName}
+                onLocationNameChange={setLocationName}
+                region={session.region}
+            />
+            <TargetSpeciesList species={targetSpecies} />
+            <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
+            {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
+            <View style={styles.statsContainer}>
+                {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
+                <Text style={styles.sessionDate}>
+                    Distance: {session.distance_km !== null ? `${session.distance_km.toFixed(2)} km` : '-'}
+                </Text>
+            </View>
+            <SessionMap
+                mapRef={mapViewRef}
+                initialRegion={mapRegion}
+                route={sessionRoute}
+                isMapInteractionEnabled={mapInteractionEnabled}
+                setMapInteractionEnabled={setMapInteractionEnabled}
+                recenterMap={recenterMap}
             >
-                <SessionHeader
-                    isEditing={isEditing}
-                    locationName={locationName}
-                    onLocationNameChange={setLocationName}
-                    region={session.region}
-                />
-                {isEditing ? (
+                {hasRouteData && (
                     <>
-                        <SpeciesSelector
-                            allSpecies={allSpecies}
-                            selectedSpecies={selectedTargetSpeciesNames}
-                            onSelectSpecies={handleSelectSpecies}
-                            onRemoveSpecies={handleRemoveSpecies}
-                        />
-                        <SessionNotes
-                            isEditing={isEditing}
-                            caption={caption}
-                            onCaptionChange={setCaption}
-                        />
-
-                        <SessionForm
-                            waterColor={waterColor}
-                            setWaterColor={setWaterColor}
-                            waterCurrent={waterCurrent}
-                            setWaterCurrent={setWaterCurrent}
-                            waterLevel={waterLevel}
-                            setWaterLevel={setWaterLevel}
-                            locationVisibility={locationVisibility}
-                            setLocationVisibility={setLocationVisibility}
-                        />
-
-                        {/* Switch Publier la session */}
-                        <View style={styles.switchGroup}>
-                            <Text style={styles.label}>Publier la session</Text>
-                            <Switch
-                                trackColor={{ false: theme.colors.gray[400], true: theme.colors.primary[300] }}
-                                thumbColor={isPublished ? theme.colors.primary[500] : theme.colors.gray[200]}
-                                onValueChange={setIsPublished}
-                                value={isPublished}
-                            />
-                        </View>
-                    </>
-                ) : (
-                    <>
-                        <TargetSpeciesList species={targetSpecies} />
-
-                        <Text style={styles.sessionDate}>Début: {new Date(session.started_at).toLocaleString('fr-FR')}</Text>
-                        {session.ended_at && <Text style={styles.sessionDate}>Fin: {new Date(session.ended_at).toLocaleString('fr-FR')}</Text>}
-                        <View style={styles.statsContainer}>
-                            {formattedDuration && <Text style={styles.sessionDate}>Durée: {formattedDuration}</Text>}
-                            <Text style={styles.sessionDate}>
-                                Distance: {session.distance_km !== null ? `${session.distance_km.toFixed(2)} km` : '-'}
-                            </Text>
-                        </View>
-
-                        <SessionMap
-                            mapRef={mapViewRef}
-                            initialRegion={mapRegion}
-                            route={sessionRoute}
-                            isMapInteractionEnabled={mapInteractionEnabled}
-                            setMapInteractionEnabled={setMapInteractionEnabled}
-                            recenterMap={recenterMap}
-                        >
-                            {hasRouteData && (
-                                <>
-                                    <Marker coordinate={sessionRoute[0]} title="Départ" anchor={{ x: 0.5, y: 0.5 }}>
-                                        <View style={styles.startMarker} />
-                                    </Marker>
-                                    <Marker coordinate={sessionRoute[sessionRoute.length - 1]} title="Arrivée" anchor={{ x: 0.5, y: 1 }}>
-                                        <View style={styles.calloutContainer}>
-                                            <View style={styles.calloutBubble}>
-                                                <Text style={styles.calloutText}>🏁</Text>
-                                            </View>
-                                            <View style={styles.calloutPointer} />
-                                        </View>
-                                    </Marker>
-                                </>
-                            )}
-                        </SessionMap>
-
-                        <AddCatchButton onAddCatch={handleAddCatch}/>
-
-                        <CatchList
-                            catches={catches}
-                            onEditCatch={handleEditCatch}
-                            onDeleteCatch={handleDeleteCatch}
-                        />
-
-                        <SessionNotes
-                            isEditing={isEditing}
-                            caption={caption}
-                            onCaptionChange={setCaption}
-                        />
-
-                        <Card style={{ marginTop: theme.spacing[4] }}>
-                            <InfoRow iconName="thermometer-outline" label="Température" value={session.weather_temp} unit="°C" />
-                            <InfoRow iconName="partly-sunny-outline" label="Conditions météo" value={session.weather_conditions} />
-                            <InfoRow iconName="flag-outline" label="Vent" value={`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || ''}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`} />
-                            <InfoRow iconName="color-palette-outline" label="Couleur de l'eau" value={session.water_color} />
-                            <InfoRow iconName="swap-vertical-outline" label="Courant" value={session.water_current} />
-                            <InfoRow iconName="pulse-outline" label="Niveau d'eau" value={waterLevelOptions.find(o => o.key === session.water_level)?.label} />
-                            <InfoRow iconName="eye-outline" label="Visibilité Loc." value={locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label} />
-                            <InfoRow iconName="share-social-outline" label="Publiée" value={session.is_published ? 'Oui' : 'Non'} />
-                        </Card>
+                        <Marker coordinate={sessionRoute[0]} title="Départ" anchor={{ x: 0.5, y: 0.5 }}>
+                            <View style={styles.startMarker} />
+                        </Marker>
+                        <Marker coordinate={sessionRoute[sessionRoute.length - 1]} title="Arrivée" anchor={{ x: 0.5, y: 1 }}>
+                            <View style={styles.calloutContainer}>
+                                <View style={styles.calloutBubble}>
+                                    <Text style={styles.calloutText}>🏁</Text>
+                                </View>
+                                <View style={styles.calloutPointer} />
+                            </View>
+                        </Marker>
                     </>
                 )}
-            </ScrollView>
+            </SessionMap>
+        </View>
+    );
+
+    const renderNonEditingFooter = () => (
+        <View style={[styles.scrollContentContainer, { paddingTop: 0 }]}>
+            <SessionNotes
+                isEditing={isEditing}
+                caption={caption}
+                onCaptionChange={setCaption}
+            />
+            <Card style={{ marginTop: theme.spacing[4] }}>
+                <InfoRow iconName="thermometer-outline" label="Température" value={session.weather_temp} unit="°C" />
+                <InfoRow iconName="partly-sunny-outline" label="Conditions météo" value={session.weather_conditions} />
+                <InfoRow iconName="flag-outline" label="Vent" value={`${windStrengthOptions.find(o => o.key === session.wind_strength)?.label || ''}${session.wind_speed_kmh ? ` (${session.wind_speed_kmh} km/h)` : ''}`} />
+                <InfoRow iconName="color-palette-outline" label="Couleur de l'eau" value={session.water_color} />
+                <InfoRow iconName="swap-vertical-outline" label="Courant" value={session.water_current} />
+                <InfoRow iconName="pulse-outline" label="Niveau d'eau" value={waterLevelOptions.find(o => o.key === session.water_level)?.label} />
+                <InfoRow iconName="eye-outline" label="Visibilité Loc." value={locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label} />
+                <InfoRow iconName="share-social-outline" label="Publiée" value={session.is_published ? 'Oui' : 'Non'} />
+            </Card>
+        </View>
+    );
+
+    return (
+        <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
+            {isEditing ? (
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContentContainer}
+                >
+                    <SessionHeader
+                        isEditing={isEditing}
+                        locationName={locationName}
+                        onLocationNameChange={setLocationName}
+                        region={session.region}
+                    />
+                    <SpeciesSelector
+                        allSpecies={allSpecies}
+                        selectedSpecies={selectedTargetSpeciesNames}
+                        onSelectSpecies={handleSelectSpecies}
+                        onRemoveSpecies={handleRemoveSpecies}
+                    />
+                    <SessionNotes
+                        isEditing={isEditing}
+                        caption={caption}
+                        onCaptionChange={setCaption}
+                    />
+                    <SessionForm
+                        waterColor={waterColor}
+                        setWaterColor={setWaterColor}
+                        waterCurrent={waterCurrent}
+                        setWaterCurrent={setWaterCurrent}
+                        waterLevel={waterLevel}
+                        setWaterLevel={setWaterLevel}
+                        locationVisibility={locationVisibility}
+                        setLocationVisibility={setLocationVisibility}
+                    />
+                    <View style={styles.switchGroup}>
+                        <Text style={styles.label}>Publier la session</Text>
+                        <Switch
+                            trackColor={{ false: theme.colors.gray[400], true: theme.colors.primary[300] }}
+                            thumbColor={isPublished ? theme.colors.primary[500] : theme.colors.gray[200]}
+                            onValueChange={setIsPublished}
+                            value={isPublished}
+                        />
+                    </View>
+                </ScrollView>
+            ) : (
+                <CatchList
+                    catches={catches}
+                    onEditCatch={handleEditCatch}
+                    onDeleteCatch={handleDeleteCatch}
+                    isRefreshing={loading}
+                    onRefresh={reload}
+                    onAddCatch={handleAddCatch}
+                    ListHeaderComponent={renderNonEditingHeader()}
+                    ListFooterComponent={renderNonEditingFooter()}
+                />
+            )}
         </SafeAreaView>
     );
 };

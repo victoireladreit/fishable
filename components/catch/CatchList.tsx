@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Modal, FlatList, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../theme';
+import { theme, colors } from '../../theme';
 import { CatchListItem } from './CatchListItem';
 import { Database } from '../../lib/types';
 
@@ -11,9 +11,23 @@ interface CatchListProps {
     catches: Catch[];
     onEditCatch: (catchId: string) => void;
     onDeleteCatch: (catchId: string) => void;
+    onAddCatch: () => void;
+    isRefreshing: boolean;
+    onRefresh: () => void;
+    ListHeaderComponent?: React.ReactElement;
+    ListFooterComponent?: React.ReactElement;
 }
 
-export const CatchList: React.FC<CatchListProps> = ({ catches, onEditCatch, onDeleteCatch }) => {
+export const CatchList: React.FC<CatchListProps> = ({
+    catches,
+    onEditCatch,
+    onDeleteCatch,
+    onAddCatch,
+    isRefreshing,
+    onRefresh,
+    ListHeaderComponent,
+    ListFooterComponent,
+}) => {
     const [modalVisible, setModalVisible] = React.useState(false);
     const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
 
@@ -22,8 +36,26 @@ export const CatchList: React.FC<CatchListProps> = ({ catches, onEditCatch, onDe
         setModalVisible(true);
     };
 
+    const renderInternalHeader = () => (
+        <>
+            <Text style={styles.title}>Mes Prises</Text>
+            <View style={styles.headerButtons}>
+                <TouchableOpacity style={styles.buttonPrimary} onPress={onAddCatch}>
+                    <Text style={styles.buttonText}>🎣 Nouvelle prise</Text>
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.subtitle}>Historique</Text>
+        </>
+    );
+
+    const renderEmptyComponent = () => (
+        <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Aucune prise pour le moment.</Text>
+        </View>
+    );
+
     return (
-        <View style={{width: '100%', marginTop: theme.spacing[4]}}>
+        <>
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -38,38 +70,77 @@ export const CatchList: React.FC<CatchListProps> = ({ catches, onEditCatch, onDe
                 </View>
             </Modal>
 
-            {catches.length > 0 ? (
-                <>
-                    <Text style={styles.catchesTitle}>Prises ({catches.length})</Text>
-                    {catches.map(item => (
+            <FlatList
+                data={catches}
+                ListHeaderComponent={<>{ListHeaderComponent}{renderInternalHeader()}</>}
+                ListFooterComponent={ListFooterComponent}
+                renderItem={({ item }) => (
+                    <View style={styles.listItemContainer}>
                         <CatchListItem
-                            key={item.id}
                             item={item}
                             onEdit={onEditCatch}
                             onDelete={onDeleteCatch}
                             onPressImage={openImageModal}
                         />
-                    ))}
-                </>
-            ) : (
-                <Text style={styles.noCatchesText}>Aucune prise pour le moment.</Text>
-            )}
-        </View>
+                    </View>
+                )}
+                keyExtractor={item => item.id}
+                contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
+                ListEmptyComponent={renderEmptyComponent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                        colors={[colors.primary['500']]}
+                        tintColor={colors.primary['500']}
+                    />
+                }
+            />
+        </>
     );
 };
 
 const styles = StyleSheet.create({
-    catchesTitle: {
-        fontSize: theme.typography.fontSize.lg,
+    title: {
         fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['4xl'],
+        color: theme.colors.text.primary,
+        marginTop: theme.spacing[4],
+        paddingHorizontal: theme.layout.screenPadding,
+    },
+    subtitle: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize['2xl'],
         color: theme.colors.text.primary,
         marginTop: theme.spacing[6],
-        marginBottom: theme.spacing[3],
+        marginBottom: theme.spacing[4],
+        paddingHorizontal: theme.layout.screenPadding,
     },
-    noCatchesText: {
-        textAlign: 'center',
+    headerButtons: {
+        paddingHorizontal: theme.layout.screenPadding,
+        marginTop: theme.spacing[4],
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: theme.spacing[8],
+    },
+    emptyText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.secondary,
-        marginVertical: theme.spacing[4],
+    },
+    buttonPrimary: {
+        backgroundColor: colors.primary["500"],
+        padding: 15,
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
     modalContainer: {
         flex: 1,
@@ -87,4 +158,7 @@ const styles = StyleSheet.create({
         right: 20,
         zIndex: 1,
     },
+    listItemContainer: {
+        paddingHorizontal: theme.layout.screenPadding,
+    }
 });
