@@ -253,16 +253,16 @@ export const SessionDetailScreen = () => {
                     </>
                 )}
             </SessionMap>
-        </View>
-    );
-
-    const renderNonEditingFooter = () => (
-        <View style={[styles.scrollContentContainer, { paddingTop: 0 }]}>
             <SessionNotes
                 isEditing={isEditing}
                 caption={caption}
                 onCaptionChange={setCaption}
             />
+        </View>
+    );
+
+    const renderNonEditingFooter = () => (
+        <View style={[styles.scrollContentContainer, { paddingTop: 0 }]}>
             <Card style={{ marginTop: theme.spacing[4] }}>
                 <InfoRow iconName="thermometer-outline" label="Température" value={session.weather_temp} unit="°C" />
                 <InfoRow iconName="partly-sunny-outline" label="Conditions météo" value={session.weather_conditions} />
