@@ -170,6 +170,11 @@ export const AddCatchScreen = () => {
             return;
         }
 
+        if (!sessionId) {
+            Alert.alert('Erreur', 'ID de session manquant.');
+            return;
+        }
+
         setLoading(true);
         try {
             await CatchesService.addCatch({

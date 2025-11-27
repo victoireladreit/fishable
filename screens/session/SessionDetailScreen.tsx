@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import MapView, { Region, Marker } from 'react-native-maps';
-import { NativeStackNavigationProp } from 'react-native-screens/native-stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCatchManagement, useSession } from '../../hooks';
 import { SessionForm } from '../../components/session/SessionForm';
 import { CatchList } from '../../components/catch/CatchList';
@@ -179,13 +179,11 @@ export const SessionDetailScreen = () => {
 
     useEffect(() => {
         navigation.setOptions({
-            // @"@ts-expect-error
             headerRight: () => (
                 <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>
                     <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
                 </TouchableOpacity>
             ),
-            // @"@ts-expect-error
             headerLeft: () => (
                 isEditing ? (
                     <TouchableOpacity onPress={async () => { 
