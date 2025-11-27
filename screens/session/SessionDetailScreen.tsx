@@ -179,13 +179,13 @@ export const SessionDetailScreen = () => {
 
     useEffect(() => {
         navigation.setOptions({
-            // @ts-ignore
+            // @"@ts-expect-error
             headerRight: () => (
                 <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>
                     <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
                 </TouchableOpacity>
             ),
-            // @ts-ignore
+            // @"@ts-expect-error
             headerLeft: () => (
                 isEditing ? (
                     <TouchableOpacity onPress={async () => { 

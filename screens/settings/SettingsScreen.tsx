@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView, ScrollView,
-    Platform
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { theme } from '../../theme';
