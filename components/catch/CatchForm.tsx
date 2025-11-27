@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch
 import { SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
-import { useImagePicker, CustomImagePickerAsset } from '../../hooks'; // Importer CustomImagePickerAsset
+import { useImagePicker, CustomImagePickerAsset } from '../../hooks';
 import { supabase } from '../../config/supabase';
 import {Ionicons} from "@expo/vector-icons";
 
@@ -23,7 +23,7 @@ export type CatchFormData = {
     fightDurationMinutes: string;
     isReleased: boolean;
     notes: string;
-    sessionSearchText: string;
+    sessionSearchText: string; // Garder ce champ pour l'affichage dans le TextInput
     selectedSessionId: string | null;
     imageUri: string | null;
     photoTakenAt: string | null; // Nouveau champ pour la date de prise de vue de la photo
@@ -52,8 +52,17 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     // Autocomplete states
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
+    const [speciesSearchText, setSpeciesSearchText] = useState(formData.speciesName || ''); // Nouvel état local pour le texte de recherche d'espèce
+
     const [allSessions, setAllSessions] = useState<FishingSession[]>([]);
     const [filteredSessions, setFilteredSessions] = useState<FishingSession[]>([]);
+    const [sessionSearchText, setSessionSearchText] = useState(formData.sessionSearchText || ''); // Nouvel état local pour le texte de recherche de session
+
+    useEffect(() => {
+        // Synchroniser les états locaux avec formData lors du chargement initial ou de la mise à jour de formData
+        setSpeciesSearchText(formData.speciesName || '');
+        setSessionSearchText(formData.sessionSearchText || '');
+    }, [formData.speciesName, formData.sessionSearchText]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -115,7 +124,10 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     };
 
     const handleSpeciesSearch = (text: string) => {
-        onFormChange({ speciesName: text });
+        setSpeciesSearchText(text); // Met à jour l'état local du texte de recherche
+        // Toujours mettre à jour formData.speciesName à vide si le texte ne correspond pas à une sélection
+        // Cela permet de s'assurer que seule une espèce sélectionnée est enregistrée
+        onFormChange({ speciesName: '' });
         if (text) {
             setFilteredSpecies(allSpecies.filter(s => s.name.toLowerCase().includes(text.toLowerCase())));
         } else {
@@ -124,12 +136,16 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     };
 
     const handleSelectSpecies = (species: { id: string; name: string }) => {
-        onFormChange({ speciesName: species.name });
+        onFormChange({ speciesName: species.name }); // Met à jour formData.speciesName avec l'espèce sélectionnée
+        setSpeciesSearchText(species.name); // Met à jour le texte de recherche pour afficher l'espèce sélectionnée
         setFilteredSpecies([]);
     };
 
     const handleSessionSearch = (text: string) => {
-        onFormChange({ sessionSearchText: text });
+        setSessionSearchText(text); // Met à jour l'état local du texte de recherche
+        // Toujours réinitialiser selectedSessionId et mettre à jour sessionSearchText dans formData
+        // Cela permet de s'assurer que seule une session sélectionnée est enregistrée
+        onFormChange({ selectedSessionId: null, sessionSearchText: text });
         if (text) {
             const filtered = allSessions.filter(session =>
                 session.location_name?.toLowerCase().includes(text.toLowerCase())
@@ -137,15 +153,16 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             setFilteredSessions(filtered);
         } else {
             setFilteredSessions([]);
-            onFormChange({ selectedSessionId: null });
         }
     };
 
     const handleSelectSession = (session: FishingSession) => {
+        const sessionDisplay = `${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`;
         onFormChange({
             selectedSessionId: session.id,
-            sessionSearchText: `${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`
+            sessionSearchText: sessionDisplay // Met à jour formData.sessionSearchText pour l'affichage
         });
+        setSessionSearchText(sessionDisplay); // Met à jour le texte de recherche pour afficher la session sélectionnée
         setFilteredSessions([]);
     };
 
@@ -188,15 +205,21 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Espèce *</Text>
-                <TextInput style={styles.input} value={formData.speciesName} onChangeText={handleSpeciesSearch} placeholder="Ex: Brochet" placeholderTextColor={theme.colors.text.disabled} />
+                <TextInput
+                    style={styles.input}
+                    value={speciesSearchText}
+                    onChangeText={handleSpeciesSearch}
+                    placeholder="Ex: Brochet"
+                    placeholderTextColor={theme.colors.text.disabled}
+                />
                 {filteredSpecies.length > 0 && (
-                    <View style={styles.suggestionsList}>
+                    <ScrollView style={styles.suggestionsList}>
                         {filteredSpecies.map(item => (
                             <TouchableOpacity key={item.id} onPress={() => handleSelectSpecies(item)} style={styles.suggestionItem}>
                                 <Text>{item.name}</Text>
                             </TouchableOpacity>
                         ))}
-                    </View>
+                    </ScrollView>
                 )}
             </View>
 
@@ -204,19 +227,19 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                 <Text style={styles.label}>Session</Text>
                 <TextInput
                     style={styles.input}
-                    value={formData.sessionSearchText}
+                    value={sessionSearchText} // Utilise l'état local pour le texte affiché
                     onChangeText={handleSessionSearch}
                     placeholder="Rechercher une session..."
                     placeholderTextColor={theme.colors.text.disabled}
                 />
                 {filteredSessions.length > 0 && (
-                    <View style={styles.suggestionsList}>
+                    <ScrollView style={styles.suggestionsList}>
                         {filteredSessions.map(item => (
                             <TouchableOpacity key={item.id} onPress={() => handleSelectSession(item)} style={styles.suggestionItem}>
                                 <Text>{item.location_name} - {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</Text>
                             </TouchableOpacity>
                         ))}
-                    </View>
+                    </ScrollView>
                 )}
             </View>
 

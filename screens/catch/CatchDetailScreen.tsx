@@ -32,7 +32,7 @@ const catchToFormData = (catchData: Catch, sessionText: string): CatchFormData =
     sessionSearchText: sessionText,
     selectedSessionId: catchData.session_id,
     imageUri: catchData.photo_url,
-    photoTakenAt: catchData.caught_at, // Mapper caught_at à photoTakenAt pour l'édition
+    photoTakenAt: catchData.caught_at,
 });
 
 export const CatchDetailScreen = () => {
