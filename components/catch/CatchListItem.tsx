@@ -16,7 +16,7 @@ type CatchListItemProps = {
 };
 
 export const CatchListItem: React.FC<CatchListItemProps> = ({ item, onEdit, onDelete, onPressImage }) => {
-    const formattedDate = item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+    const formattedDate = item.caught_at ? new Date(item.caught_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
     return (
         <View style={styles.cardWrapper}>

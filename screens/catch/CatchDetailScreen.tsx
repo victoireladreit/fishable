@@ -8,7 +8,7 @@ import { theme } from '../../theme';
 import { Database } from '../../lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { CatchForm, CatchFormData } from '../../components/catch/CatchForm';
-import { Card, InfoRow } from '../../components/common';
+import {Card, InfoRow} from "../../components/common";
 
 type CatchDetailRouteProp = RouteProp<RootStackParamList, 'CatchDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CatchDetail'>;
@@ -32,6 +32,7 @@ const catchToFormData = (catchData: Catch, sessionText: string): CatchFormData =
     sessionSearchText: sessionText,
     selectedSessionId: catchData.session_id,
     imageUri: catchData.photo_url,
+    photoTakenAt: catchData.caught_at, // Mapper caught_at à photoTakenAt pour l'édition
 });
 
 export const CatchDetailScreen = () => {
@@ -58,7 +59,7 @@ export const CatchDetailScreen = () => {
                 if (data.session_id) {
                     const session = await FishingSessionsService.getSessionById(data.session_id);
                     if (session) {
-                        sessionText = `${session.location_name} - ${new Date(session.created_at).toLocaleDateString()}`;
+                        sessionText = session.location_name;
                         currentSessionDetails = sessionText;
                         setAssociatedSessionId(data.session_id);
                     }
@@ -91,11 +92,27 @@ export const CatchDetailScreen = () => {
 
         setIsSaving(true);
         try {
+            // Déterminer la valeur de caught_at
+            let finalCaughtAt: string;
+            const photoChanged = formData.imageUri !== catchData?.photo_url;
+
+            if (formData.photoTakenAt) {
+                // Si une nouvelle photo a été sélectionnée/prise et qu'elle a des données EXIF
+                finalCaughtAt = formData.photoTakenAt;
+            } else if (photoChanged) {
+                // Si la photo a été changée (nouvelle photo sans EXIF) ou supprimée
+                finalCaughtAt = new Date().toISOString();
+            } else {
+                // Si la photo n'a pas été changée, ou s'il n'y a jamais eu de photo
+                finalCaughtAt = catchData?.caught_at || new Date().toISOString();
+            }
+
             await CatchesService.updateCatch(catchId, {
                 session_id: formData.selectedSessionId,
                 species_name: formData.speciesName,
                 size_cm: formData.sizeCm ? parseFloat(formData.sizeCm.replace(',', '.')) : null,
                 weight_kg: formData.weightKg ? parseFloat(formData.weightKg.replace(',', '.')) : null,
+                caught_at: finalCaughtAt, // Utiliser la date déterminée
                 technique: formData.technique || null,
                 lure_name: formData.lureName || null,
                 lure_color: formData.lureColor || null,
@@ -230,6 +247,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingRight: theme.spacing[2], // Pour donner un peu d'espace à l'icône
+        paddingRight: theme.spacing[2],
     },
 });

@@ -2,12 +2,17 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Linking } from 'react-native';
 
+// Étendre le type ImagePickerAsset pour inclure la propriété exif
+export interface CustomImagePickerAsset extends ImagePicker.ImagePickerAsset {
+    exif?: { [key: string]: any };
+}
+
 export const useImagePicker = (initialImageUri: string | null = null) => {
-    const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(
+    const [image, setImage] = useState<CustomImagePickerAsset | null>(
         initialImageUri ? { uri: initialImageUri, width: 0, height: 0 } : null
     );
 
-    const pickImage = async () => {
+    const pickImage = async (): Promise<CustomImagePickerAsset | null> => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permission.status !== 'granted') {
             Alert.alert(
@@ -22,18 +27,20 @@ export const useImagePicker = (initialImageUri: string | null = null) => {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'Images' as any,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
+            exif: true, // Demander les données EXIF
         });
 
-        if (!result.canceled) {
-            setImage(result.assets[0]);
-            return result.assets[0];
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const asset = result.assets[0] as CustomImagePickerAsset;
+            setImage(asset);
+            return asset;
         }
         return null;
     };
 
-    const takePhoto = async () => {
+    const takePhoto = async (): Promise<CustomImagePickerAsset | null> => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (permission.status !== 'granted') {
             Alert.alert(
@@ -49,11 +56,13 @@ export const useImagePicker = (initialImageUri: string | null = null) => {
 
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: false,
+            exif: true, // Demander les données EXIF
         });
 
-        if (!result.canceled) {
-            setImage(result.assets[0]);
-            return result.assets[0];
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const asset = result.assets[0] as CustomImagePickerAsset;
+            setImage(asset);
+            return asset;
         }
         return null;
     };

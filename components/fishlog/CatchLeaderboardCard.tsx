@@ -37,7 +37,7 @@ export const CatchLeaderboardCard: React.FC<CatchLeaderboardCardProps> = ({
     animatedRotate,
 }) => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-    const { size_cm, weight_kg, photo_url, caught_at, session_id, fishing_sessions } = catchData;
+    const { id: catchId, size_cm, weight_kg, photo_url, caught_at, session_id, fishing_sessions } = catchData; // Destructurer catchId
 
     let displayValue = '-';
     if (size_cm && weight_kg) {
@@ -54,6 +54,12 @@ export const CatchLeaderboardCard: React.FC<CatchLeaderboardCardProps> = ({
     const handleSessionPress = () => {
         if (session_id) {
             navigation.navigate('SessionDetail', { sessionId: session_id });
+        }
+    };
+
+    const handleImagePress = () => {
+        if (catchId) {
+            navigation.navigate('CatchDetail', { catchId: catchId });
         }
     };
     
@@ -96,7 +102,9 @@ export const CatchLeaderboardCard: React.FC<CatchLeaderboardCardProps> = ({
 
     return (
         <View style={[styles.card, isFeatured && styles.featuredCard]}>
-            <Image source={{ uri: photo_url || undefined }} style={[styles.catchImage, isFeatured && styles.featuredCatchImage]} />
+            <TouchableOpacity onPress={handleImagePress} disabled={!catchId}>
+                <Image source={{ uri: photo_url || undefined }} style={[styles.catchImage, isFeatured && styles.featuredCatchImage]} />
+            </TouchableOpacity>
             {renderRankBadge()}
             <View style={styles.infoContainer}>
                 <View style={styles.catchDetailRow}>

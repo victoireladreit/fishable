@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch
 import { SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
-import { useImagePicker } from '../../hooks';
+import { useImagePicker, CustomImagePickerAsset } from '../../hooks'; // Importer CustomImagePickerAsset
 import { supabase } from '../../config/supabase';
 import {Ionicons} from "@expo/vector-icons";
 
@@ -26,6 +26,7 @@ export type CatchFormData = {
     sessionSearchText: string;
     selectedSessionId: string | null;
     imageUri: string | null;
+    photoTakenAt: string | null; // Nouveau champ pour la date de prise de vue de la photo
 };
 
 type CatchFormProps = {
@@ -60,7 +61,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                 const species = await SpeciesService.getAllSpecies();
                 setAllSpecies(species);
 
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user } = {} } = await supabase.auth.getUser(); // Destructurer avec valeur par défaut
                 if (user) {
                     const sessions = await FishingSessionsService.getSessions({ userId: user.id });
                     setAllSessions(sessions);
@@ -76,13 +77,28 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         onFormChange({ imageUri: image?.uri ?? null });
     }, [image]);
 
+    const extractPhotoTakenDate = (asset: CustomImagePickerAsset | null) => {
+        if (asset && asset.exif && asset.exif.DateTimeOriginal) {
+            // Le format est généralement "YYYY:MM:DD HH:MM:SS"
+            const dateTimeOriginal = asset.exif.DateTimeOriginal.replace(/:/, '-').replace(/:/, '-');
+            return new Date(dateTimeOriginal).toISOString();
+        }
+        return null;
+    };
+
     const handleImagePress = () => {
         if (image) {
             setModalVisible(true);
         } else {
             Alert.alert("Ajouter une photo", "Choisissez une source", [
-                { text: "Prendre une photo", onPress: takePhoto },
-                { text: "Choisir depuis la galerie", onPress: pickImage },
+                { text: "Prendre une photo", onPress: async () => {
+                    const asset = await takePhoto();
+                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset) });
+                }},
+                { text: "Choisir depuis la galerie", onPress: async () => {
+                    const asset = await pickImage();
+                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset) });
+                }},
                 { text: "Annuler", style: "cancel" }
             ]);
         }
@@ -91,7 +107,10 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     const handleRemoveImage = () => {
         Alert.alert("Supprimer la photo", "Êtes-vous sûr de vouloir supprimer cette photo ?", [
             { text: "Annuler", style: "cancel" },
-            { text: "Supprimer", onPress: () => setImage(null), style: 'destructive' }
+            { text: "Supprimer", onPress: () => {
+                setImage(null);
+                onFormChange({ imageUri: null, photoTakenAt: null }); // Réinitialiser photoTakenAt
+            }, style: 'destructive' }
         ]);
     };
 

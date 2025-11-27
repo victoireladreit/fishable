@@ -28,6 +28,7 @@ const initialFormData: CatchFormData = {
     sessionSearchText: '',
     selectedSessionId: null,
     imageUri: null,
+    photoTakenAt: null, // Initialiser photoTakenAt
 };
 
 export const AddCatchScreen = () => {
@@ -88,7 +89,7 @@ export const AddCatchScreen = () => {
                 species_name: formData.speciesName,
                 size_cm: formData.sizeCm ? parseFloat(formData.sizeCm.replace(',', '.')) : null,
                 weight_kg: formData.weightKg ? parseFloat(formData.weightKg.replace(',', '.')) : null,
-                caught_at: new Date().toISOString(),
+                caught_at: formData.photoTakenAt || new Date().toISOString(), // Utiliser photoTakenAt ou la date actuelle
                 technique: formData.technique || null,
                 lure_name: formData.lureName || null,
                 lure_color: formData.lureColor || null,
