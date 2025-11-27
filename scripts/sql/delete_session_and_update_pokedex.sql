@@ -1,5 +1,4 @@
-CREATE OR REPLACE FUNCTION delete_session_and_update_pokedex(p_session_id uuid)
-RETURNS void AS $$
+
 DECLARE
 v_species_record RECORD;
     v_user_id uuid;
@@ -27,11 +26,11 @@ SELECT DISTINCT species_id FROM catches WHERE session_id = p_session_id AND spec
               AND c.species_id = v_species_record.species_id
               AND c.session_id != p_session_id
         ) THEN
--- 4. No other catches exist, so simply delete the fishlog entry
+-- 4. No other catches exist, so simply delete the pokedex entry
 DELETE FROM user_pokedex
 WHERE user_id = v_user_id AND species_id = v_species_record.species_id;
 ELSE
-            -- 5. Other catches will remain, so we must fully recalculate the fishlog entry
+            -- 5. Other catches will remain, so we must fully recalculate the pokedex entry
 
             -- A) Calculate stats of the catches being deleted (for decrementing)
 SELECT
@@ -88,9 +87,8 @@ WHERE
 END IF;
 END LOOP;
 
-    -- 6. Finally, now that the fishlog is clean, safely delete the session's data
+    -- 6. Finally, now that the pokedex is clean, safely delete the session's data
 DELETE FROM catches WHERE session_id = p_session_id;
 DELETE FROM fishing_sessions WHERE id = p_session_id;
 
 END;
-$$ LANGUAGE plpgsql;

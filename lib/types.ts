@@ -12,7 +12,7 @@ export interface Database {
             catches: {
                 Row: {
                     id: string
-                    session_id: string
+                    session_id: string | null
                     user_id: string
                     species_id: string | null
                     species_name: string
@@ -40,7 +40,7 @@ export interface Database {
                 }
                 Insert: {
                     id?: string
-                    session_id: string
+                    session_id?: string | null
                     user_id: string // AJOUTÉ
                     species_id?: string | null
                     species_name: string
@@ -68,7 +68,7 @@ export interface Database {
                 }
                 Update: {
                     id?: string
-                    session_id?: string
+                    session_id?: string | null
                     user_id?: string // AJOUTÉ
                     species_id?: string | null
                     species_name?: string

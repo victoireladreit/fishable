@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Platform, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Modal } from 'react-native';
 import { useRoute, RouteProp, useNavigation, usePreventRemove } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { CatchesService, SpeciesService } from '../../services';
+import { CatchesService, SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
+import { supabase } from '../../config/supabase';
 
 type AddCatchRouteProp = RouteProp<RootStackParamList, 'AddCatch'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddCatch'>;
@@ -24,7 +25,7 @@ const INPUT_HEIGHT = 50;
 export const AddCatchScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<AddCatchRouteProp>();
-    const { sessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params;
+    const { sessionId: initialSessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params;
     const { image, takePhoto, pickImage, setImage } = useImagePicker();
 
     // Form states
@@ -43,11 +44,16 @@ export const AddCatchScreen = () => {
     const [isReleased, setIsReleased] = useState(true);
     const [notes, setNotes] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [sessionSearchText, setSessionSearchText] = useState('');
+    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(initialSessionId ?? null);
+
 
     // Helper states
     const [loading, setLoading] = useState(false);
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
+    const [allSessions, setAllSessions] = useState<FishingSession[]>([]);
+    const [filteredSessions, setFilteredSessions] = useState<FishingSession[]>([]);
 
     const hasUnsavedChanges =
         speciesName !== '' ||
@@ -64,7 +70,8 @@ export const AddCatchScreen = () => {
         fightDurationMinutes !== '' ||
         !isReleased ||
         notes !== '' ||
-        image !== null;
+        image !== null ||
+        (selectedSessionId ?? null) !== (initialSessionId ?? null);
 
     usePreventRemove(
         hasUnsavedChanges && !loading,
@@ -89,16 +96,31 @@ export const AddCatchScreen = () => {
     );
 
     useEffect(() => {
-        const fetchSpecies = async () => {
+        const fetchInitialData = async () => {
             try {
+                // Fetch species
                 const species = await SpeciesService.getAllSpecies();
                 setAllSpecies(species);
+
+                // Fetch sessions
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const sessions = await FishingSessionsService.getSessions({ userId: user.id });
+                    setAllSessions(sessions);
+
+                    if (initialSessionId) {
+                        const initialSession = sessions.find(s => s.id === initialSessionId);
+                        if (initialSession) {
+                            setSessionSearchText(`${initialSession.spot_name} - ${initialSession.created_at ? new Date(initialSession.created_at).toLocaleDateString() : ''}`);
+                        }
+                    }
+                }
             } catch (error) {
-                console.error('Erreur récupération des espèces:', error);
+                console.error('Erreur récupération données initiales:', error);
             }
         };
-        fetchSpecies();
-    }, []);
+        fetchInitialData().catch(console.error);
+    }, [initialSessionId]);
 
     const selectImageSource = () => {
         Alert.alert(
@@ -164,21 +186,35 @@ export const AddCatchScreen = () => {
         setFilteredSpecies([]);
     };
 
+    const handleSessionSearch = (text: string) => {
+        setSessionSearchText(text);
+        if (text) {
+            const filtered = allSessions.filter(session =>
+                session.location_name?.toLowerCase().includes(text.toLowerCase())
+            );
+            setFilteredSessions(filtered);
+        } else {
+            setFilteredSessions([]);
+            setSelectedSessionId(null);
+        }
+    };
+
+    const handleSelectSession = (session: FishingSession) => {
+        setSelectedSessionId(session.id);
+        setSessionSearchText(`${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`);
+        setFilteredSessions([]);
+    };
+
     const handleSave = async () => {
         if (!speciesName) {
             Alert.alert('Erreur', 'Veuillez renseigner le nom de l\'espèce.');
             return;
         }
 
-        if (!sessionId) {
-            Alert.alert('Erreur', 'ID de session manquant.');
-            return;
-        }
-
         setLoading(true);
         try {
             await CatchesService.addCatch({
-                session_id: sessionId,
+                session_id: selectedSessionId,
                 species_name: speciesName,
                 size_cm: sizeCm ? parseFloat(sizeCm.replace(',', '.')) : null,
                 weight_kg: weightKg ? parseFloat(weightKg.replace(',', '.')) : null,
@@ -261,6 +297,27 @@ export const AddCatchScreen = () => {
                         {filteredSpecies.map(item => (
                             <TouchableOpacity key={item.id} onPress={() => handleSelectSpecies(item)} style={styles.suggestionItem}>
                                 <Text>{item.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+            </View>
+
+            {/* Session */}
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Session</Text>
+                <TextInput
+                    style={styles.input}
+                    value={sessionSearchText}
+                    onChangeText={handleSessionSearch}
+                    placeholder="Rechercher une session..."
+                    placeholderTextColor={theme.colors.text.disabled}
+                />
+                {filteredSessions.length > 0 && (
+                    <View style={styles.suggestionsList}>
+                        {filteredSessions.map(item => (
+                            <TouchableOpacity key={item.id} onPress={() => handleSelectSession(item)} style={styles.suggestionItem}>
+                                <Text>{item.location_name} - {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -416,6 +473,11 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: theme.borderRadius.base,
         backgroundColor: theme.colors.background.paper,
+        position: 'absolute',
+        top: INPUT_HEIGHT + theme.spacing[2] + theme.typography.fontSize.base,
+        left: 0,
+        right: 0,
+        zIndex: 1,
     },
     suggestionItem: {
         padding: theme.spacing[3],

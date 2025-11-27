@@ -1,5 +1,4 @@
-CREATE OR REPLACE FUNCTION recalculate_pokedex_for_species(p_user_id uuid, p_species_id uuid)
-RETURNS void AS $$
+
 DECLARE
 v_catch_count INT;
     v_dated_catch_exists BOOLEAN;
@@ -7,8 +6,7 @@ BEGIN
     -- 1. Count remaining catches for this user and species
 SELECT COUNT(*) INTO v_catch_count
 FROM catches c
-         JOIN fishing_sessions fs ON c.session_id = fs.id
-WHERE fs.user_id = p_user_id AND c.species_id = p_species_id;
+WHERE c.user_id = p_user_id AND c.species_id = p_species_id;
 
 -- 2. If no catches remain at all, delete the fishlog entry and exit.
 IF v_catch_count = 0 THEN
@@ -20,8 +18,7 @@ END IF;
 SELECT EXISTS (
     SELECT 1
     FROM catches c
-             JOIN fishing_sessions fs ON c.session_id = fs.id
-    WHERE fs.user_id = p_user_id AND c.species_id = p_species_id AND c.caught_at IS NOT NULL
+    WHERE c.user_id = p_user_id AND c.species_id = p_species_id AND c.caught_at IS NOT NULL
 ) INTO v_dated_catch_exists;
 
 -- 4. If no dated catches exist, we cannot satisfy the NOT NULL constraint for first_caught_at.
@@ -35,8 +32,8 @@ END IF;
 WITH remaining_catches AS (
     SELECT c.*, fs.region
     FROM catches c
-             JOIN fishing_sessions fs ON c.session_id = fs.id
-    WHERE fs.user_id = p_user_id AND c.species_id = p_species_id
+             LEFT JOIN fishing_sessions fs ON c.session_id = fs.id
+    WHERE c.user_id = p_user_id AND c.species_id = p_species_id
 ),
      first_catch AS (
          SELECT * FROM remaining_catches
@@ -112,4 +109,3 @@ ON CONFLICT (user_id, species_id) DO UPDATE SET
                                          updated_at = NOW();
 
 END;
-$$ LANGUAGE plpgsql;

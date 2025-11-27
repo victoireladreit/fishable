@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Platform, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image, Modal, ActivityIndicator } from 'react-native';
 import { useRoute, RouteProp, useNavigation, usePreventRemove } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { CatchesService, SpeciesService } from '../../services';
+import { CatchesService, SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useImagePicker } from '../../hooks/useImagePicker';
+import { useImagePicker } from '../../hooks';
+import { supabase } from '../../config/supabase';
 
 type EditCatchRouteProp = RouteProp<RootStackParamList, 'EditCatch'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditCatch'>;
@@ -45,14 +46,19 @@ export const EditCatchScreen = () => {
     const [isReleased, setIsReleased] = useState(true);
     const [notes, setNotes] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [sessionSearchText, setSessionSearchText] = useState('');
+    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
     // Helper states
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
     const [filteredSpecies, setFilteredSpecies] = useState<{ id: string; name: string }[]>([]);
+    const [allSessions, setAllSessions] = useState<FishingSession[]>([]);
+    const [filteredSessions, setFilteredSessions] = useState<FishingSession[]>([]);
 
     const hasUnsavedChanges =
+        (initialCatch?.session_id || null) !== selectedSessionId ||
         (initialCatch?.species_name || '') !== speciesName ||
         (initialCatch?.size_cm?.toString().replace('.', ',') || '') !== sizeCm ||
         (initialCatch?.weight_kg?.toString().replace('.', ',') || '') !== weightKg ||
@@ -67,7 +73,7 @@ export const EditCatchScreen = () => {
         (initialCatch?.fight_duration_minutes?.toString() || '') !== fightDurationMinutes ||
         (initialCatch?.is_released ?? true) !== isReleased ||
         (initialCatch?.notes || '') !== notes ||
-        (initialCatch?.photo_url || null) !== image?.uri;
+        (initialCatch?.photo_url || null) !== (image?.uri || null);
 
     usePreventRemove(
         hasUnsavedChanges && !isSaving,
@@ -92,11 +98,24 @@ export const EditCatchScreen = () => {
     );
 
     useEffect(() => {
-        const fetchCatchData = async () => {
+        const fetchData = async () => {
             try {
-                const catchData = await CatchesService.getCatchById(catchId);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error("User not found");
+
+                // Fetch species, sessions and catch data in parallel
+                const [species, sessions, catchData] = await Promise.all([
+                    SpeciesService.getAllSpecies(),
+                    FishingSessionsService.getSessions({ userId: user.id }),
+                    CatchesService.getCatchById(catchId)
+                ]);
+
+                setAllSpecies(species);
+                setAllSessions(sessions);
+
                 if (catchData) {
                     setInitialCatch(catchData);
+                    setSelectedSessionId(catchData.session_id);
                     setSpeciesName(catchData.species_name || '');
                     setSizeCm(catchData.size_cm?.toString().replace('.', ',') || '');
                     setWeightKg(catchData.weight_kg?.toString().replace('.', ',') || '');
@@ -114,26 +133,22 @@ export const EditCatchScreen = () => {
                     if (catchData.photo_url) {
                         setImage({ uri: catchData.photo_url, width: 0, height: 0 });
                     }
+
+                    // Set initial session text
+                    const initialSession = sessions.find(s => s.id === catchData.session_id);
+                    if (initialSession) {
+                        setSessionSearchText(`${initialSession.location_name} - ${initialSession.created_at ? new Date(initialSession.created_at).toLocaleDateString() : ''}`);
+                    }
                 }
             } catch (error) {
-                console.error("Erreur chargement de la prise:", error);
-                Alert.alert("Erreur", "Impossible de charger les données de la prise.");
+                console.error("Erreur chargement des données:", error);
+                Alert.alert("Erreur", "Impossible de charger les données.");
             } finally {
                 setLoading(false);
             }
         };
-
-        const fetchSpecies = async () => {
-            try {
-                const species = await SpeciesService.getAllSpecies();
-                setAllSpecies(species);
-            } catch (error) {
-                console.error('Erreur récupération des espèces:', error);
-            }
-        };
         
-        fetchCatchData();
-        fetchSpecies();
+        fetchData();
     }, [catchId, setImage]);
 
     const selectImageSource = () => {
@@ -170,6 +185,25 @@ export const EditCatchScreen = () => {
         setFilteredSpecies([]);
     };
 
+    const handleSessionSearch = (text: string) => {
+        setSessionSearchText(text);
+        if (text) {
+            const filtered = allSessions.filter(session =>
+                session.location_name?.toLowerCase().includes(text.toLowerCase())
+            );
+            setFilteredSessions(filtered);
+        } else {
+            setFilteredSessions([]);
+            setSelectedSessionId(null);
+        }
+    };
+
+    const handleSelectSession = (session: FishingSession) => {
+        setSelectedSessionId(session.id);
+        setSessionSearchText(`${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`);
+        setFilteredSessions([]);
+    };
+
     const handleSave = async () => {
         if (!speciesName) {
             Alert.alert('Erreur', 'Veuillez renseigner le nom de l\'espèce.');
@@ -179,6 +213,7 @@ export const EditCatchScreen = () => {
         setIsSaving(true);
         try {
             await CatchesService.updateCatch(catchId, {
+                session_id: selectedSessionId,
                 species_name: speciesName,
                 size_cm: sizeCm ? parseFloat(sizeCm.replace(',', '.')) : null,
                 weight_kg: weightKg ? parseFloat(weightKg.replace(',', '.')) : null,
@@ -253,6 +288,26 @@ export const EditCatchScreen = () => {
                         {filteredSpecies.map(item => (
                             <TouchableOpacity key={item.id} onPress={() => handleSelectSpecies(item)} style={styles.suggestionItem}>
                                 <Text>{item.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Session</Text>
+                <TextInput
+                    style={styles.input}
+                    value={sessionSearchText}
+                    onChangeText={handleSessionSearch}
+                    placeholder="Rechercher une session..."
+                    placeholderTextColor={theme.colors.text.disabled}
+                />
+                {filteredSessions.length > 0 && (
+                    <View style={styles.suggestionsList}>
+                        {filteredSessions.map(item => (
+                            <TouchableOpacity key={item.id} onPress={() => handleSelectSession(item)} style={styles.suggestionItem}>
+                                <Text>{item.location_name} - {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -355,7 +410,7 @@ const styles = StyleSheet.create({
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
     multilineInput: { height: 100, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
-    suggestionsList: { maxHeight: 150, borderColor: theme.colors.border.main, borderWidth: 1, borderRadius: theme.borderRadius.base, backgroundColor: theme.colors.background.paper },
+    suggestionsList: { maxHeight: 150, borderColor: theme.colors.border.main, borderWidth: 1, borderRadius: theme.borderRadius.base, backgroundColor: theme.colors.background.paper, position: 'absolute', top: INPUT_HEIGHT + theme.spacing[2] + theme.typography.fontSize.base, left: 0, right: 0, zIndex: 1 },
     suggestionItem: { padding: theme.spacing[3], borderBottomColor: theme.colors.border.main, borderBottomWidth: 1 },
     row: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
     halfWidth: { width: '48%' },
