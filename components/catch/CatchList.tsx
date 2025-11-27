@@ -11,7 +11,6 @@ interface CatchListProps {
     catches: Catch[];
     onCatchDetail: (catchId: string) => void;
     onDeleteCatch: (catchId: string) => void;
-    onAddCatch: () => void;
     isRefreshing: boolean;
     onRefresh: () => void;
     ListHeaderComponent?: React.ReactElement;
@@ -22,7 +21,6 @@ export const CatchList: React.FC<CatchListProps> = ({
     catches,
     onCatchDetail,
     onDeleteCatch,
-    onAddCatch,
     isRefreshing,
     onRefresh,
     ListHeaderComponent,
@@ -35,18 +33,6 @@ export const CatchList: React.FC<CatchListProps> = ({
         setSelectedImage(imageUrl);
         setModalVisible(true);
     };
-
-    const renderInternalHeader = () => (
-        <>
-            <Text style={styles.title}>Mes Prises</Text>
-            <View style={styles.headerButtons}>
-                <TouchableOpacity style={styles.buttonPrimary} onPress={onAddCatch}>
-                    <Text style={styles.buttonText}>🎣 Nouvelle prise</Text>
-                </TouchableOpacity>
-            </View>
-            <Text style={styles.subtitle}>Historique</Text>
-        </>
-    );
 
     const renderEmptyComponent = () => (
         <View style={styles.emptyContainer}>
@@ -72,7 +58,7 @@ export const CatchList: React.FC<CatchListProps> = ({
 
             <FlatList
                 data={catches}
-                ListHeaderComponent={<>{ListHeaderComponent}{renderInternalHeader()}</>}
+                ListHeaderComponent={ListHeaderComponent}
                 ListFooterComponent={ListFooterComponent}
                 renderItem={({ item }) => (
                     <View style={styles.listItemContainer}>
@@ -101,25 +87,6 @@ export const CatchList: React.FC<CatchListProps> = ({
 };
 
 const styles = StyleSheet.create({
-    title: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['4xl'],
-        color: theme.colors.text.primary,
-        marginTop: theme.spacing[4],
-        paddingHorizontal: theme.layout.screenPadding,
-    },
-    subtitle: {
-        fontFamily: theme.typography.fontFamily.bold,
-        fontSize: theme.typography.fontSize['2xl'],
-        color: theme.colors.text.primary,
-        marginTop: theme.spacing[6],
-        marginBottom: theme.spacing[4],
-        paddingHorizontal: theme.layout.screenPadding,
-    },
-    headerButtons: {
-        paddingHorizontal: theme.layout.screenPadding,
-        marginTop: theme.spacing[4],
-    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -130,17 +97,6 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.secondary,
-    },
-    buttonPrimary: {
-        backgroundColor: colors.primary["500"],
-        padding: 15,
-        borderRadius: 8,
-    },
-    buttonText: {
-        color: '#fff',
-        textAlign: 'center',
-        fontWeight: 'bold',
-        fontSize: 16,
     },
     modalContainer: {
         flex: 1,

@@ -295,7 +295,6 @@ export const ActiveSessionScreen = () => {
                 onDeleteCatch={handleDeleteCatch}
                 isRefreshing={false}
                 onRefresh={() => {}}
-                onAddCatch={onAddCatchPress}
                 ListHeaderComponent={renderHeader()}
                 ListFooterComponent={renderFooter()}
             />

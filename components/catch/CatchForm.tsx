@@ -27,6 +27,8 @@ export type CatchFormData = {
     selectedSessionId: string | null;
     imageUri: string | null;
     photoTakenAt: string | null; // Nouveau champ pour la date de prise de vue de la photo
+    catch_location_lat: number | null; // Nouveau champ pour la latitude
+    catch_location_lng: number | null; // Nouveau champ pour la longitude
 };
 
 type CatchFormProps = {
@@ -95,6 +97,40 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         return null;
     };
 
+    const extractPhotoLocation = (asset: CustomImagePickerAsset | null) => {
+        console.log("--- extractPhotoLocation called ---");
+        if (asset && asset.exif) {
+            console.log("asset.exif:", JSON.stringify(asset.exif, null, 2));
+            const gpsLatitude = asset.exif.GPSLatitude;
+            const gpsLongitude = asset.exif.GPSLongitude;
+            const gpsLatitudeRef = asset.exif.GPSLatitudeRef; // 'N' or 'S'
+            const gpsLongitudeRef = asset.exif.GPSLongitudeRef; // 'E' or 'W'
+
+            // Check if GPS coordinates are directly available as numbers
+            if (typeof gpsLatitude === 'number' && typeof gpsLongitude === 'number') {
+                let lat = gpsLatitude;
+                let lng = gpsLongitude;
+
+                // Adjust sign based on reference
+                if (gpsLatitudeRef === 'S') {
+                    lat = -Math.abs(lat); // Ensure it's negative if South
+                }
+                if (gpsLongitudeRef === 'W') {
+                    lng = -Math.abs(lng); // Ensure it's negative if West
+                }
+
+                console.log("Extracted Lat:", lat, "Lng:", lng);
+                return { lat, lng };
+            } else {
+                console.log("GPS data not found in EXIF or not in expected numeric format.");
+            }
+        } else {
+            console.log("Asset or asset.exif is null.");
+        }
+        console.log("--- extractPhotoLocation finished, returning nulls ---");
+        return { lat: null, lng: null };
+    };
+
     const handleImagePress = () => {
         if (image) {
             setModalVisible(true);
@@ -102,11 +138,13 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             Alert.alert("Ajouter une photo", "Choisissez une source", [
                 { text: "Prendre une photo", onPress: async () => {
                     const asset = await takePhoto();
-                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset) });
+                    const { lat, lng } = extractPhotoLocation(asset);
+                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
                 }},
                 { text: "Choisir depuis la galerie", onPress: async () => {
                     const asset = await pickImage();
-                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset) });
+                    const { lat, lng } = extractPhotoLocation(asset);
+                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
                 }},
                 { text: "Annuler", style: "cancel" }
             ]);
@@ -118,7 +156,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             { text: "Annuler", style: "cancel" },
             { text: "Supprimer", onPress: () => {
                 setImage(null);
-                onFormChange({ imageUri: null, photoTakenAt: null }); // Réinitialiser photoTakenAt
+                onFormChange({ imageUri: null, photoTakenAt: null, catch_location_lat: null, catch_location_lng: null }); // Réinitialiser photoTakenAt et la localisation
             }, style: 'destructive' }
         ]);
     };

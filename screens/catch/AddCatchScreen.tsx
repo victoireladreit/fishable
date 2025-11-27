@@ -29,6 +29,8 @@ const initialFormData: CatchFormData = {
     selectedSessionId: null,
     imageUri: null,
     photoTakenAt: null, // Initialiser photoTakenAt
+    catch_location_lat: null, // Initialiser la latitude
+    catch_location_lng: null, // Initialiser la longitude
 };
 
 export const AddCatchScreen = () => {
@@ -102,8 +104,8 @@ export const AddCatchScreen = () => {
                 is_released: formData.isReleased,
                 notes: formData.notes || null,
                 photo_uri: formData.imageUri,
-                catch_location_lat: catchLocationLat || null,
-                catch_location_lng: catchLocationLng || null,
+                catch_location_lat: formData.catch_location_lat || catchLocationLat || null, // Utiliser formData d'abord
+                catch_location_lng: formData.catch_location_lng || catchLocationLng || null, // Utiliser formData d'abord
                 catch_location_accuracy: catchLocationAccuracy || null,
             });
             navigation.goBack();

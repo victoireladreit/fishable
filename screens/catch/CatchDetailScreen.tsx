@@ -33,6 +33,8 @@ const catchToFormData = (catchData: Catch, sessionText: string): CatchFormData =
     selectedSessionId: catchData.session_id,
     imageUri: catchData.photo_url,
     photoTakenAt: catchData.caught_at,
+    catch_location_lat: catchData.catch_location_lat, // Add existing lat
+    catch_location_lng: catchData.catch_location_lng, // Add existing lng
 });
 
 export const CatchDetailScreen = () => {
@@ -124,7 +126,9 @@ export const CatchDetailScreen = () => {
                 fight_duration_minutes: formData.fightDurationMinutes ? parseInt(formData.fightDurationMinutes, 10) : null,
                 is_released: formData.isReleased,
                 notes: formData.notes || null,
-                photo_uri: formData.imageUri,
+                photo_uri: formData.imageUri, // Changed from photo_uri to photo_url
+                catch_location_lat: formData.catch_location_lat, // Add latitude
+                catch_location_lng: formData.catch_location_lng, // Add longitude
             });
             setIsEditing(false);
             await loadCatch(); // Recharger les données pour voir les changements

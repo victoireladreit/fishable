@@ -12,6 +12,9 @@ DECLARE
     v_species_name text := p_catch_data->>'species_name';
     v_region text;
 BEGIN
+    -- Log the incoming p_catch_data for debugging
+    RAISE NOTICE 'Incoming p_catch_data: %', p_catch_data;
+
     -- 1. Ensure user_id is not null
     IF p_user_id IS NULL THEN
         RAISE EXCEPTION 'User ID is required for adding a catch.';

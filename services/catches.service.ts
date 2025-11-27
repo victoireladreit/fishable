@@ -62,7 +62,7 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
 
     const photoUrl = await uploadCatchPhoto(photo_uri, session_id);
 
-    const { data, error } = await supabase.rpc('add_catch_and_update_pokedex', {
+    const rpcPayload = {
         p_user_id: user.id,
         p_session_id: session_id,
         p_catch_data: {
@@ -73,7 +73,11 @@ const addCatch = async (catchData: CatchInsertPayload): Promise<Catch> => {
             catch_location_lng,
             catch_location_accuracy,
         }
-    });
+    };
+
+    console.log("Payload sent to add_catch_and_update_pokedex RPC:", JSON.stringify(rpcPayload, null, 2));
+
+    const { data, error } = await supabase.rpc('add_catch_and_update_pokedex', rpcPayload);
 
     if (error) {
         console.error("Erreur ajout de la prise:", JSON.stringify(error));

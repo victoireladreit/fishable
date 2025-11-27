@@ -326,7 +326,6 @@ export const SessionDetailScreen = () => {
                     onDeleteCatch={handleDeleteCatch}
                     isRefreshing={loading}
                     onRefresh={reload}
-                    onAddCatch={handleAddCatch}
                     ListHeaderComponent={renderNonEditingHeader()}
                     ListFooterComponent={renderNonEditingFooter()}
                 />
