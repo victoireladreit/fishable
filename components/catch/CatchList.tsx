@@ -9,7 +9,7 @@ type Catch = Database['public']['Tables']['catches']['Row'];
 
 interface CatchListProps {
     catches: Catch[];
-    onEditCatch: (catchId: string) => void;
+    onCatchDetail: (catchId: string) => void;
     onDeleteCatch: (catchId: string) => void;
     onAddCatch: () => void;
     isRefreshing: boolean;
@@ -20,7 +20,7 @@ interface CatchListProps {
 
 export const CatchList: React.FC<CatchListProps> = ({
     catches,
-    onEditCatch,
+    onCatchDetail,
     onDeleteCatch,
     onAddCatch,
     isRefreshing,
@@ -78,7 +78,7 @@ export const CatchList: React.FC<CatchListProps> = ({
                     <View style={styles.listItemContainer}>
                         <CatchListItem
                             item={item}
-                            onEdit={onEditCatch}
+                            onEdit={onCatchDetail}
                             onDelete={onDeleteCatch}
                             onPressImage={openImageModal}
                         />

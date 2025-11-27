@@ -2,8 +2,10 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Linking } from 'react-native';
 
-export const useImagePicker = () => {
-    const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
+export const useImagePicker = (initialImageUri: string | null = null) => {
+    const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(
+        initialImageUri ? { uri: initialImageUri, width: 0, height: 0 } : null
+    );
 
     const pickImage = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();

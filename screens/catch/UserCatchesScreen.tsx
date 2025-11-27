@@ -11,7 +11,7 @@ import { CatchList } from '../../components/catch/CatchList';
 import { Database } from '../../lib/types';
 
 type Catch = Database['public']['Tables']['catches']['Row'];
-type CatchesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditCatch' | 'AddCatch'>;
+type CatchesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CatchDetail' | 'AddCatch'>;
 
 export const UserCatchesScreen = () => {
     const { user } = useAuth();
@@ -60,8 +60,8 @@ export const UserCatchesScreen = () => {
         });
     };
 
-    const handleEditCatch = (catchId: string) => {
-        navigation.navigate('EditCatch', { 
+    const handleCatchDetail = (catchId: string) => {
+        navigation.navigate('CatchDetail', {
             catchId,
             onGoBack: () => loadCatches(),
         });
@@ -102,7 +102,7 @@ export const UserCatchesScreen = () => {
         <SafeAreaView style={styles.container}>
             <CatchList
                 catches={catches}
-                onEditCatch={handleEditCatch}
+                onCatchDetail={handleCatchDetail}
                 onDeleteCatch={handleDeleteCatch}
                 onAddCatch={handleAddCatch}
                 isRefreshing={isRefreshing}

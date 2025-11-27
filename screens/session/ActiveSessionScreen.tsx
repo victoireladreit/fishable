@@ -59,7 +59,7 @@ export const ActiveSessionScreen = () => {
     const { seconds, start, stop } = useTimer();
     const { route: locationRoute, stopLocationTracking, errorMsg, location } = useLocationTracking();
 
-    const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
+    const { handleAddCatch, handleCatchDetail, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
 
     useEffect(() => {
         if (errorMsg) {
@@ -291,7 +291,7 @@ export const ActiveSessionScreen = () => {
         <View style={styles.screenContainer}>
             <CatchList
                 catches={catches}
-                onEditCatch={handleEditCatch}
+                onCatchDetail={handleCatchDetail}
                 onDeleteCatch={handleDeleteCatch}
                 isRefreshing={false}
                 onRefresh={() => {}}

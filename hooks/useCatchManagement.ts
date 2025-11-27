@@ -20,8 +20,8 @@ export const useCatchManagement = (sessionId: string, setCatches: React.Dispatch
         });
     };
 
-    const handleEditCatch = (catchId: string) => {
-        navigation.navigate('EditCatch', { catchId });
+    const handleCatchDetail = (catchId: string) => {
+        navigation.navigate('CatchDetail', { catchId });
     };
 
     const handleDeleteCatch = (catchId: string) => {
@@ -47,5 +47,5 @@ export const useCatchManagement = (sessionId: string, setCatches: React.Dispatch
         );
     };
 
-    return { handleAddCatch, handleEditCatch, handleDeleteCatch };
+    return { handleAddCatch, handleCatchDetail: handleCatchDetail, handleDeleteCatch };
 };

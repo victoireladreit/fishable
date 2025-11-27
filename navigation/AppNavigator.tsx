@@ -8,7 +8,7 @@ import { theme } from '../theme';
 import { LocationTrackingProvider } from '../hooks';
 
 import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../screens/session';
-import { AddCatchScreen, EditCatchScreen } from '../screens/catch';
+import { AddCatchScreen, CatchDetailScreen } from '../screens/catch';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
@@ -48,7 +48,7 @@ const RootNavigator = () => {
                     <Stack.Screen name="SessionDetail" component={SessionDetailScreen} options={{ title: 'Détails de la session' }} />
                     <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ title: 'Nouvelle session', presentation: 'modal' }} />
                     <Stack.Screen name="AddCatch" component={AddCatchScreen} options={{ title: 'Nouvelle prise', presentation: 'modal' }} />
-                    <Stack.Screen name="EditCatch" component={EditCatchScreen} options={{ title: 'Modifier la prise', presentation: 'modal' }} />
+                    <Stack.Screen name="CatchDetail" component={CatchDetailScreen} options={{ title: 'Détails de la prise' }} />
                 </>
             ) : (
                 <>

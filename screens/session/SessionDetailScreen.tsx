@@ -71,7 +71,11 @@ export const SessionDetailScreen = () => {
     const [isPublished, setIsPublished] = useState(false);
 
     // Use the custom hook for catch management
-    const { handleAddCatch, handleEditCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
+    const { handleAddCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
+
+    const handleCatchDetail = (catchId: string) => {
+        navigation.navigate('CatchDetail', { catchId });
+    };
 
     useEffect(() => {
         if (session) {
@@ -318,7 +322,7 @@ export const SessionDetailScreen = () => {
             ) : (
                 <CatchList
                     catches={catches}
-                    onEditCatch={handleEditCatch}
+                    onCatchDetail={handleCatchDetail}
                     onDeleteCatch={handleDeleteCatch}
                     isRefreshing={loading}
                     onRefresh={reload}
