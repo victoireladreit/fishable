@@ -297,6 +297,9 @@ export const ActiveSessionScreen = () => {
                 onRefresh={() => {}}
                 ListHeaderComponent={renderHeader()}
                 ListFooterComponent={renderFooter()}
+                onAddCatch={onAddCatchPress}
+                showTitleHeader={true}
+                contentContainerStyle={{ paddingTop: 0, paddingBottom: theme.spacing[12] }}
             />
         </View>
     );

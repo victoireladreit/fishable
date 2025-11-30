@@ -15,6 +15,9 @@ interface CatchListProps {
     onRefresh: () => void;
     ListHeaderComponent?: React.ReactElement;
     ListFooterComponent?: React.ReactElement;
+    onAddCatch?: () => void;
+    showTitleHeader?: boolean;
+    contentContainerStyle?: any;
 }
 
 export const CatchList: React.FC<CatchListProps> = ({
@@ -25,6 +28,9 @@ export const CatchList: React.FC<CatchListProps> = ({
     onRefresh,
     ListHeaderComponent,
     ListFooterComponent,
+    onAddCatch,
+    showTitleHeader,
+    contentContainerStyle,
 }) => {
     const [modalVisible, setModalVisible] = React.useState(false);
     const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
@@ -36,8 +42,25 @@ export const CatchList: React.FC<CatchListProps> = ({
 
     const renderEmptyComponent = () => (
         <View style={styles.emptyContainer}>
+            <Ionicons name="fish-outline" size={48} color={theme.colors.text.secondary} />
             <Text style={styles.emptyText}>Aucune prise pour le moment.</Text>
         </View>
+    );
+
+    const renderInternalListHeader = () => (
+        <>
+            {ListHeaderComponent}
+            {showTitleHeader && (
+                <View style={styles.catchListHeader}>
+                    <Text style={styles.catchListTitle}>Prises</Text>
+                    {onAddCatch && (
+                        <TouchableOpacity onPress={onAddCatch} style={styles.addButton}>
+                            <Ionicons name="add-circle-outline" size={28} color={theme.colors.primary[500]} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+        </>
     );
 
     return (
@@ -57,8 +80,9 @@ export const CatchList: React.FC<CatchListProps> = ({
             </Modal>
 
             <FlatList
+                style={{ flex: 1 }}
                 data={catches}
-                ListHeaderComponent={ListHeaderComponent}
+                ListHeaderComponent={renderInternalListHeader()}
                 ListFooterComponent={ListFooterComponent}
                 renderItem={({ item }) => (
                     <View style={styles.listItemContainer}>
@@ -71,7 +95,7 @@ export const CatchList: React.FC<CatchListProps> = ({
                     </View>
                 )}
                 keyExtractor={item => item.id}
-                contentContainerStyle={{ paddingBottom: theme.spacing[8] }}
+                contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
                 ListEmptyComponent={renderEmptyComponent}
                 refreshControl={
                     <RefreshControl
@@ -87,16 +111,23 @@ export const CatchList: React.FC<CatchListProps> = ({
 };
 
 const styles = StyleSheet.create({
+    contentContainer: {
+        paddingBottom: theme.spacing[8],
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: theme.spacing[8],
+        paddingHorizontal: theme.spacing[8],
     },
     emptyText: {
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.base,
         color: theme.colors.text.secondary,
+        marginTop: theme.spacing[4],
+        marginBottom: theme.spacing[6],
+        textAlign: 'center',
     },
     modalContainer: {
         flex: 1,
@@ -116,5 +147,20 @@ const styles = StyleSheet.create({
     },
     listItemContainer: {
         paddingHorizontal: theme.layout.screenPadding,
-    }
+    },
+    catchListHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: theme.layout.screenPadding,
+        paddingBottom: theme.spacing[4],
+    },
+    catchListTitle: {
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize.xl,
+        color: theme.colors.text.primary,
+    },
+    addButton: {
+        padding: theme.spacing[1],
+    },
 });

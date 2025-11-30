@@ -328,6 +328,9 @@ export const SessionDetailScreen = () => {
                     onRefresh={reload}
                     ListHeaderComponent={renderNonEditingHeader()}
                     ListFooterComponent={renderNonEditingFooter()}
+                    onAddCatch={handleAddCatch}
+                    showTitleHeader={true}
+                    contentContainerStyle={{ paddingTop: 0 }}
                 />
             )}
         </SafeAreaView>

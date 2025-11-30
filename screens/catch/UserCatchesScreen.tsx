@@ -149,13 +149,12 @@ const CatchMapScreen = ({ catches }: { catches: Catch[] }) => {
                         latitude: catchItem.catch_location_lat!,
                         longitude: catchItem.catch_location_lng!,
                     }}
-                    anchor={{ x: 0.5, y: 1 }} // Ancre le bas-milieu du marqueur à la coordonnée
+                    anchor={{ x: 0.5, y: 0.5 }} // Center anchor for a circle
                 >
-                    <View style={markerStyles.container}>
-                        <View style={markerStyles.bubble}>
+                    <View style={markerStyles.outerBubble}>
+                        <View style={markerStyles.innerBubble}>
                             <Text style={markerStyles.emoji}>🐟</Text>
                         </View>
-                        <View style={markerStyles.pointer} />
                     </View>
                     <Callout>
                         <CatchMapCallout catchItem={catchItem} />
@@ -292,34 +291,27 @@ export const UserCatchesScreen = () => {
 };
 
 const markerStyles = StyleSheet.create({
-    container: {
+    outerBubble: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#b558ef',
+        backgroundColor: 'white',
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    bubble: {
+    innerBubble: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         backgroundColor: '#b558ef',
-        padding: 5,
-        borderRadius: 15,
-        alignItems: 'center',
         justifyContent: 'center',
-        width: 30,
-        height: 30,
+        alignItems: 'center',
     },
     emoji: {
         fontSize: 16,
-        lineHeight: 18, // Adjust line height to center emoji vertically
-    },
-    pointer: {
-        width: 0,
-        height: 0,
-        backgroundColor: 'transparent',
-        borderStyle: 'solid',
-        borderLeftWidth: 8,
-        borderRightWidth: 8,
-        borderTopWidth: 8,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: '#b558ef',
-        marginTop: -3,
+        lineHeight: 18,
     },
 });
 

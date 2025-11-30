@@ -10,7 +10,7 @@ import { CatchForm, CatchFormData } from '../../components/catch/CatchForm';
 type AddCatchRouteProp = RouteProp<RootStackParamList, 'AddCatch'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddCatch'>;
 
-const initialFormData: CatchFormData = {
+const baseInitialFormData: CatchFormData = {
     speciesName: '',
     sizeCm: '',
     weightKg: '',
@@ -28,9 +28,9 @@ const initialFormData: CatchFormData = {
     sessionSearchText: '',
     selectedSessionId: null,
     imageUri: null,
-    photoTakenAt: null, // Initialiser photoTakenAt
-    catch_location_lat: null, // Initialiser la latitude
-    catch_location_lng: null, // Initialiser la longitude
+    photoTakenAt: null,
+    catch_location_lat: null,
+    catch_location_lng: null,
 };
 
 export const AddCatchScreen = () => {
@@ -38,18 +38,42 @@ export const AddCatchScreen = () => {
     const route = useRoute<AddCatchRouteProp>();
     const { sessionId: initialSessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params;
 
-    const [formData, setFormData] = useState<CatchFormData>({
-        ...initialFormData,
-        selectedSessionId: initialSessionId ?? null,
-    });
+    const [formData, setFormData] = useState<CatchFormData>(baseInitialFormData);
+    const [initialFormState, setInitialFormState] = useState<CatchFormData | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    
+
+    useEffect(() => {
+        const setupInitialData = async () => {
+            let initialState = {
+                ...baseInitialFormData,
+                selectedSessionId: initialSessionId ?? null,
+            };
+
+            if (initialSessionId) {
+                try {
+                    const session = await FishingSessionsService.getSessionById(initialSessionId);
+                    if (session) {
+                        initialState.sessionSearchText = `${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`;
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch initial session:", error);
+                }
+            }
+            
+            setFormData(initialState);
+            setInitialFormState(initialState);
+        };
+
+        setupInitialData();
+    }, [initialSessionId]);
+
     const handleFormChange = (data: Partial<CatchFormData>) => {
         setFormData(prev => ({ ...prev, ...data }));
     };
 
     const hasUnsavedChanges =
-        JSON.stringify(formData) !== JSON.stringify({ ...initialFormData, selectedSessionId: initialSessionId ?? null });
+        initialFormState !== null &&
+        JSON.stringify(formData) !== JSON.stringify(initialFormState);
 
     usePreventRemove(
         hasUnsavedChanges && !isSaving,
@@ -66,18 +90,6 @@ export const AddCatchScreen = () => {
         }
     );
 
-    useEffect(() => {
-        if (initialSessionId) {
-            FishingSessionsService.getSessionById(initialSessionId).then(session => {
-                if (session) {
-                    handleFormChange({
-                        sessionSearchText: `${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`
-                    });
-                }
-            }).catch(console.error);
-        }
-    }, [initialSessionId]);
-
     const handleSave = async () => {
         if (!formData.speciesName) {
             Alert.alert('Erreur', 'Veuillez renseigner le nom de l\'espèce.');
@@ -91,7 +103,7 @@ export const AddCatchScreen = () => {
                 species_name: formData.speciesName,
                 size_cm: formData.sizeCm ? parseFloat(formData.sizeCm.replace(',', '.')) : null,
                 weight_kg: formData.weightKg ? parseFloat(formData.weightKg.replace(',', '.')) : null,
-                caught_at: formData.photoTakenAt || new Date().toISOString(), // Utiliser photoTakenAt ou la date actuelle
+                caught_at: formData.photoTakenAt || new Date().toISOString(),
                 technique: formData.technique || null,
                 lure_name: formData.lureName || null,
                 lure_color: formData.lureColor || null,
@@ -104,8 +116,8 @@ export const AddCatchScreen = () => {
                 is_released: formData.isReleased,
                 notes: formData.notes || null,
                 photo_uri: formData.imageUri,
-                catch_location_lat: formData.catch_location_lat || catchLocationLat || null, // Utiliser formData d'abord
-                catch_location_lng: formData.catch_location_lng || catchLocationLng || null, // Utiliser formData d'abord
+                catch_location_lat: formData.catch_location_lat || catchLocationLat || null,
+                catch_location_lng: formData.catch_location_lng || catchLocationLng || null,
                 catch_location_accuracy: catchLocationAccuracy || null,
             });
             navigation.goBack();
@@ -116,6 +128,11 @@ export const AddCatchScreen = () => {
             setIsSaving(false);
         }
     };
+
+    if (!initialFormState) {
+        // Render a loading state or null while the initial form state is being prepared
+        return null;
+    }
 
     return (
         <View style={styles.container}>
