@@ -78,10 +78,11 @@ export const ProfileScreen = () => {
     const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
 
+    const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+
     const { pickImage, takePhoto } = useImagePicker();
     const { showActionSheetWithOptions } = useActionSheet();
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-    const isInitialMount = useRef(true);
     const mapRef = useRef<MapView>(null);
 
     const loadProfileAndStats = useCallback(async () => {
@@ -99,6 +100,7 @@ export const ProfileScreen = () => {
             }
             const stats = await ProfileService.getProfileStats(profileUserId);
             setProfileStats(stats);
+            setHasLoadedProfile(true); // Set to true after successful load
         } catch (error) {
             console.error("Erreur chargement du profil et des stats:", error);
         } finally {
@@ -140,18 +142,18 @@ export const ProfileScreen = () => {
 
     useFocusEffect(
         useCallback(() => {
-            loadProfileAndStats();
-        }, [loadProfileAndStats])
+            // Always load profile data and yearly data when the screen is focused
+            if (profileUserId) {
+                loadProfileAndStats();
+                loadYearlyData(selectedYear); 
+            }
+        }, [loadProfileAndStats, loadYearlyData, profileUserId, selectedYear])
     );
 
     useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            loadYearlyData(selectedYear);
-        } else {
-            loadYearlyData(selectedYear);
-        }
-    }, [selectedYear, loadYearlyData]);
+        // Load yearly data when selectedYear or profileUserId changes
+        loadYearlyData(selectedYear);
+    }, [selectedYear, loadYearlyData, profileUserId]);
 
     useEffect(() => {
         const handler = setTimeout(() => { setDebouncedUsername(newUsername.trim()); }, 500);
@@ -262,7 +264,7 @@ export const ProfileScreen = () => {
         mapRef.current?.animateToRegion(initialMapRegion, 1000);
     };
 
-    if (loading) {
+    if (loading && !hasLoadedProfile) { // Only show full loading if profile hasn't been loaded yet
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
 
@@ -351,7 +353,7 @@ export const ProfileScreen = () => {
                                 <Text style={styles.statsTitle}>Statistiques de pêche</Text>
                                 <View style={styles.statsGrid}>
                                     <StatItem iconName="fish-outline" label="Prises" value={profileStats.totalCaught} />
-                                    <StatItem iconName="leaf-outline" label="Esp. uniques" value={profileStats.uniqueSpeciesCount} />
+                                <StatItem iconName="leaf-outline" label="Esp. uniques" value={profileStats.uniqueSpeciesCount} />
                                     <StatItem iconName="scale-outline" label="Max poids" value={profileStats.biggestWeightKg || 0} unit=" kg" />
                                     <StatItem iconName="resize-outline" label="Max taille" value={profileStats.biggestSizeCm || 0} unit=" cm" />
                                     <StatItem iconName="arrow-undo-outline" label="Relâché %" value={(profileStats.releaseRate || 0).toFixed(0)} unit="%" />
@@ -367,36 +369,33 @@ export const ProfileScreen = () => {
                                 <Text style={styles.chartTitle}>Activité en {selectedYear}</Text>
                                 <TouchableOpacity onPress={() => setSelectedYear(selectedYear + 1)} disabled={selectedYear === new Date().getFullYear()}><Ionicons name="chevron-forward-outline" size={20} color={selectedYear === new Date().getFullYear() ? theme.colors.gray[400] : theme.colors.primary[500]} /></TouchableOpacity>
                             </View>
-                            {isYearlyDataLoading ? (
-                                <View style={styles.chartLoader}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>
-                            ) : (
-                                <>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                        <ContributionGraph
-                                            values={chartData || []}
-                                            endDate={endDateForChart}
-                                            numDays={numDaysInYear}
-                                            width={1200}
-                                            height={220}
-                                            chartConfig={chartConfig}
-                                            tooltipDataAttrs={() => ({})}
-                                            onDayPress={handleDayPress}
-                                        />
-                                    </ScrollView>
-                                    <View style={styles.legendContainer}>
-                                        <Text style={styles.legendText}>Moins</Text>
-                                        <View style={[styles.legendBox, { backgroundColor: theme.colors.gray[200] }]} />
-                                        <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[200] }]} />
-                                        <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[400] }]} />
-                                        <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[600] }]} />
-                                        <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[800] }]} />
-                                        <Text style={styles.legendText}>Plus</Text>
-                                    </View>
-                                    <TouchableOpacity onPress={showContributionInfo} style={styles.infoLink}>
-                                        <Text style={styles.infoLinkText}>En savoir plus sur le calcul des contributions</Text>
-                                    </TouchableOpacity>
-                                </>
-                            )}
+                            {/* Removed isYearlyDataLoading conditional rendering for the chart */}
+                            <>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    <ContributionGraph
+                                        values={chartData || []}
+                                        endDate={endDateForChart}
+                                        numDays={numDaysInYear}
+                                        width={1200}
+                                        height={220}
+                                        chartConfig={chartConfig}
+                                        tooltipDataAttrs={() => ({})}
+                                        onDayPress={handleDayPress}
+                                    />
+                                </ScrollView>
+                                <View style={styles.legendContainer}>
+                                    <Text style={styles.legendText}>Moins</Text>
+                                    <View style={[styles.legendBox, { backgroundColor: theme.colors.gray[200] }]} />
+                                    <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[200] }]} />
+                                    <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[400] }]} />
+                                    <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[600] }]} />
+                                    <View style={[styles.legendBox, { backgroundColor: theme.colors.primary[800] }]} />
+                                    <Text style={styles.legendText}>Plus</Text>
+                                </View>
+                                <TouchableOpacity onPress={showContributionInfo} style={styles.infoLink}>
+                                    <Text style={styles.infoLinkText}>En savoir plus sur le calcul des contributions</Text>
+                                </TouchableOpacity>
+                            </>
                         </View>
                         {isMyProfile && (
                             <View style={styles.statsContainer}>
@@ -414,11 +413,6 @@ export const ProfileScreen = () => {
                                     >
                                         {heatmapData.length > 0 && <Heatmap points={heatmapData} radius={40} opacity={0.7} />}
                                     </MapView>
-                                    {heatmapData.length > 0 && (
-                                        <TouchableOpacity style={styles.recenterButton} onPress={recenterMap}>
-                                            <Ionicons name="locate-outline" size={16} color={theme.colors.text.primary} />
-                                        </TouchableOpacity>
-                                    )}
                                     {heatmapData.length === 0 && !isYearlyDataLoading && (
                                         <View style={styles.mapOverlay}>
                                             <Text style={styles.mapOverlayText}>Aucune prise avec localisation pour cette année.</Text>
