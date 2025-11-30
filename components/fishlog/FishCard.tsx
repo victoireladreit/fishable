@@ -34,15 +34,33 @@ export const FishCard: React.FC<FishCardProps> = ({ species, isCaught, onPress, 
             onPress={onPress}
             disabled={!onPress}
         >
-            {isCaught && catchInfo?.photoUrl ? (
-                <Image
-                    source={{ uri: catchInfo.photoUrl }}
-                    style={styles.image}
-                />
+            {isCaught ? (
+                // Si le poisson a été pêché, afficher la photo de la prise si disponible
+                catchInfo?.photoUrl ? (
+                    <Image
+                        source={{ uri: catchInfo.photoUrl }}
+                        style={styles.image}
+                    />
+                ) : (
+                    // Sinon, afficher l'icône de poisson par défaut
+                    <View style={[styles.image, styles.iconPlaceholder]}>
+                        <MaterialCommunityIcons name="fish" size={50} color={theme.colors.text.disabled} />
+                    </View>
+                )
             ) : (
-                <View style={[styles.image, styles.iconPlaceholder]}>
-                    <MaterialCommunityIcons name="fish" size={50} color={theme.colors.text.disabled} />
-                </View>
+                // Si le poisson n'a jamais été pêché, afficher species.photo_url si disponible
+                species.photo_url ? (
+                    <Image
+                        source={{ uri: species.photo_url }}
+                        style={styles.image}
+                        resizeMode="contain" // Reste "contain" pour les poissons jamais pêchés
+                    />
+                ) : (
+                    // Sinon, afficher l'icône de poisson par défaut
+                    <View style={[styles.image, styles.iconPlaceholder]}>
+                        <MaterialCommunityIcons name="fish" size={50} color={theme.colors.text.disabled} />
+                    </View>
+                )
             )}
             
             <Text style={styles.name} numberOfLines={2}>
