@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../../hooks';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { Card } from '../../components/common';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 
 const INPUT_HEIGHT = 50;
@@ -48,7 +48,6 @@ export const ProfileScreen = () => {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [showFullSizeAvatar, setShowFullSizeAvatar] = useState(false);
-    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
@@ -64,9 +63,7 @@ export const ProfileScreen = () => {
 
     const loadProfile = useCallback(async () => {
         if (!user) return;
-        if (!isRefreshing) {
-            setLoading(true);
-        }
+        setLoading(true);
         try {
             const userProfile = await ProfileService.getProfile(user.id);
             if (userProfile) {
@@ -86,14 +83,13 @@ export const ProfileScreen = () => {
         } finally {
             setLoading(false);
         }
-    }, [user, isRefreshing]);
+    }, [user]);
 
-    useEffect(() => {
-        const fetchProfileData = async () => {
-            await loadProfile();
-        };
-        fetchProfileData();
-    }, [loadProfile]);
+    useFocusEffect(
+        useCallback(() => {
+            loadProfile();
+        }, [loadProfile])
+    );
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -236,12 +232,6 @@ export const ProfileScreen = () => {
         );
     };
 
-    const handleRefresh = useCallback(async () => {
-        setIsRefreshing(true);
-        await loadProfile();
-        setIsRefreshing(false);
-    }, [loadProfile]);
-
     if (loading && (!profile || !profileStats)) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
     }
@@ -269,13 +259,6 @@ export const ProfileScreen = () => {
             <ScrollView
                 contentContainerStyle={styles.scrollContentContainer}
                 keyboardShouldPersistTaps="handled"
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={handleRefresh}
-                        tintColor={theme.colors.primary[500]}
-                    />
-                }
             >
                 {isEditing ? (
                     <>
