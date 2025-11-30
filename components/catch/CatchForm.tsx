@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch, Image, Modal, Alert } from 'react-native';
 import { SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
@@ -6,6 +6,8 @@ import { Database } from '../../lib/types';
 import { useImagePicker, CustomImagePickerAsset } from '../../hooks';
 import { supabase } from '../../config/supabase';
 import {Ionicons} from "@expo/vector-icons";
+import MapView, { Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 type WaterType = Database['public']['Tables']['catches']['Row']['water_type'];
 export type CatchFormData = {
@@ -50,6 +52,11 @@ const INPUT_HEIGHT = 50;
 export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, onSubmit, isSaving, submitButtonText }) => {
     const { image, takePhoto, pickImage, setImage } = useImagePicker(formData.imageUri);
     const [modalVisible, setModalVisible] = useState(false);
+    const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+    const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
+    const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState(false);
+    const mapRef = useRef<MapView>(null);
+
 
     // Autocomplete states
     const [allSpecies, setAllSpecies] = useState<{ id: string; name: string }[]>([]);
@@ -81,7 +88,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                 console.error('Erreur récupération données pour le formulaire:', error);
             }
         };
-        fetchInitialData();
+        fetchInitialData().catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -140,11 +147,31 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                     const asset = await takePhoto();
                     const { lat, lng } = extractPhotoLocation(asset);
                     onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
+                    if (!lat && !lng) {
+                        Alert.alert(
+                            "Localisation non trouvée",
+                            "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
+                            [
+                                { text: "Non", style: "cancel" },
+                                { text: "Oui", onPress: () => openMapModal() }
+                            ]
+                        );
+                    }
                 }},
                 { text: "Choisir depuis la galerie", onPress: async () => {
                     const asset = await pickImage();
                     const { lat, lng } = extractPhotoLocation(asset);
                     onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
+                    if (!lat && !lng) {
+                        Alert.alert(
+                            "Localisation non trouvée",
+                            "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
+                            [
+                                { text: "Non", style: "cancel" },
+                                { text: "Oui", onPress: () => openMapModal() }
+                            ]
+                        );
+                    }
                 }},
                 { text: "Annuler", style: "cancel" }
             ]);
@@ -204,6 +231,48 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         setFilteredSessions([]);
     };
 
+    const openMapModal = async () => {
+        if (!image) {
+            Alert.alert("Aucune photo", "Veuillez d'abord ajouter une photo pour pouvoir sélectionner une localisation.");
+            return;
+        }
+
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission refusée', 'La permission de localisation est nécessaire pour afficher votre position sur la carte.');
+            setIsLocationPermissionGranted(false);
+        } else {
+            setIsLocationPermissionGranted(true);
+        }
+
+        let initialRegion: Region;
+        if (formData.catch_location_lat && formData.catch_location_lng) {
+            initialRegion = {
+                latitude: formData.catch_location_lat,
+                longitude: formData.catch_location_lng,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+            };
+        } else if (status === 'granted') {
+            try {
+                const location = await Location.getCurrentPositionAsync({});
+                initialRegion = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                };
+            } catch (error) {
+                console.error("Could not fetch location: ", error);
+                initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 5, longitudeDelta: 5 }; // Default to France
+            }
+        } else {
+            initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 5, longitudeDelta: 5 }; // Default to France
+        }
+        setMapRegion(initialRegion);
+        setIsMapModalVisible(true);
+    };
+
     return (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.container}>
             <Modal
@@ -217,6 +286,42 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                         <Ionicons name="close" size={30} color={theme.colors.white} />
                     </TouchableOpacity>
                     <Image source={{ uri: image?.uri || '' }} style={styles.fullScreenImage} resizeMode="contain" />
+                </View>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                transparent={false}
+                visible={isMapModalVisible}
+                onRequestClose={() => setIsMapModalVisible(false)}
+            >
+                <View style={{ flex: 1 }}>
+                    {mapRegion && (
+                        <MapView
+                            ref={mapRef}
+                            style={{ flex: 1 }}
+                            initialRegion={mapRegion}
+                            onRegionChangeComplete={setMapRegion}
+                            showsUserLocation={isLocationPermissionGranted}
+                        />
+                    )}
+                    <View style={styles.mapMarkerFixed}>
+                        <Ionicons name="location-sharp" size={40} color={theme.colors.primary[500]} />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.mapConfirmButton}
+                        onPress={() => {
+                            if (mapRegion) {
+                                onFormChange({ catch_location_lat: mapRegion.latitude, catch_location_lng: mapRegion.longitude });
+                            }
+                            setIsMapModalVisible(false);
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Confirmer la localisation</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.closeButton} onPress={() => setIsMapModalVisible(false)}>
+                        <Ionicons name="close" size={30} color={theme.colors.text.primary} />
+                    </TouchableOpacity>
                 </View>
             </Modal>
 
@@ -239,6 +344,20 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                         </TouchableOpacity>
                     )}
                 </View>
+            </View>
+
+            <View style={styles.formGroup}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={[styles.label, !image && styles.disabledLabel]}>Localisation</Text>
+                    <TouchableOpacity onPress={openMapModal} disabled={!image}>
+                        <Text style={{color: image ? theme.colors.primary[500] : theme.colors.text.disabled}}>Choisir sur la carte</Text>
+                    </TouchableOpacity>
+                </View>
+                {formData.catch_location_lat && formData.catch_location_lng ? (
+                    <Text>Lat: {formData.catch_location_lat.toFixed(4)}, Lng: {formData.catch_location_lng.toFixed(4)}</Text>
+                ) : (
+                    <Text style={{color: theme.colors.text.disabled}}>Aucune localisation sélectionnée</Text>
+                )}
             </View>
 
             <View style={styles.formGroup}>
@@ -373,6 +492,7 @@ const styles = StyleSheet.create({
     container: { flexGrow: 1, alignItems: 'center', paddingBottom: theme.spacing[16] },
     formGroup: { width: '100%', marginBottom: theme.spacing[4] },
     label: { fontFamily: theme.typography.fontFamily.medium, fontSize: theme.typography.fontSize.base, color: theme.colors.text.secondary, marginBottom: theme.spacing[2] },
+    disabledLabel: { color: theme.colors.text.disabled },
     input: { backgroundColor: theme.colors.background.paper, color: theme.colors.text.primary, height: INPUT_HEIGHT, borderWidth: 1, borderColor: theme.colors.border.main, borderRadius: theme.borderRadius.base, paddingHorizontal: theme.spacing[4], fontSize: theme.typography.fontSize.base },
     multilineInput: { height: 100, textAlignVertical: 'top', paddingTop: theme.spacing[3] },
     suggestionsList: { maxHeight: 150, borderColor: theme.colors.border.main, borderWidth: 1, borderRadius: theme.borderRadius.base, backgroundColor: theme.colors.background.paper, position: 'absolute', top: INPUT_HEIGHT + theme.spacing[2] + theme.typography.fontSize.base, left: 0, right: 0, zIndex: 1 },
@@ -397,4 +517,23 @@ const styles = StyleSheet.create({
     modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
     fullScreenImage: { width: '100%', height: '80%' },
     closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1 },
+    mapConfirmButton: {
+        position: 'absolute',
+        bottom: 30,
+        left: 20,
+        right: 20,
+        backgroundColor: theme.colors.primary[500],
+        padding: 15,
+        borderRadius: theme.borderRadius.base,
+        alignItems: 'center',
+    },
+    mapMarkerFixed: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginLeft: -20,
+        marginTop: -40,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });

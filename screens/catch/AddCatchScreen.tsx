@@ -36,7 +36,7 @@ const baseInitialFormData: CatchFormData = {
 export const AddCatchScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<AddCatchRouteProp>();
-    const { sessionId: initialSessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params;
+    const { sessionId: initialSessionId, catchLocationLat, catchLocationLng, catchLocationAccuracy } = route.params || {};
 
     const [formData, setFormData] = useState<CatchFormData>(baseInitialFormData);
     const [initialFormState, setInitialFormState] = useState<CatchFormData | null>(null);
@@ -47,6 +47,8 @@ export const AddCatchScreen = () => {
             let initialState = {
                 ...baseInitialFormData,
                 selectedSessionId: initialSessionId ?? null,
+                catch_location_lat: catchLocationLat ?? null,
+                catch_location_lng: catchLocationLng ?? null,
             };
 
             if (initialSessionId) {
@@ -64,8 +66,8 @@ export const AddCatchScreen = () => {
             setInitialFormState(initialState);
         };
 
-        setupInitialData();
-    }, [initialSessionId]);
+        setupInitialData().catch(console.error);
+    }, [initialSessionId, catchLocationLat, catchLocationLng]);
 
     const handleFormChange = (data: Partial<CatchFormData>) => {
         setFormData(prev => ({ ...prev, ...data }));
@@ -116,8 +118,8 @@ export const AddCatchScreen = () => {
                 is_released: formData.isReleased,
                 notes: formData.notes || null,
                 photo_uri: formData.imageUri,
-                catch_location_lat: formData.catch_location_lat || catchLocationLat || null,
-                catch_location_lng: formData.catch_location_lng || catchLocationLng || null,
+                catch_location_lat: formData.catch_location_lat,
+                catch_location_lng: formData.catch_location_lng,
                 catch_location_accuracy: catchLocationAccuracy || null,
             });
             navigation.goBack();
