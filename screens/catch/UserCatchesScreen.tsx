@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker, Callout, Region } from 'react-native-maps';
 import Supercluster from 'supercluster';
 import { useAuth } from '../../contexts/AuthContext';
 import { CatchesService } from '../../services';
@@ -13,6 +13,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { Database } from '../../lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { CatchListScreen } from '../../components/catch/CatchListScreen';
+import * as Location from 'expo-location';
 
 type Catch = Database['public']['Tables']['catches']['Row'];
 type CatchesNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CatchDetail' | 'AddCatch' | 'ClusterCatches'>;
@@ -23,8 +24,9 @@ const { width, height } = Dimensions.get('window');
 const CatchMapScreen = ({ catches }: { catches: Catch[] }) => {
     const mapRef = useRef<MapView>(null);
     const navigation = useNavigation<CatchesNavigationProp>();
-    const [region, setRegion] = useState(() => calculateRegion(catches));
-    const [clusters, setClusters] = useState<any[]>([]);
+
+    const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined); // Use mapRegion to control the map
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false); // To prevent re-centering on every region change
 
     const points = useMemo(() => catches.map(c => ({
         type: 'Feature',
@@ -38,47 +40,108 @@ const CatchMapScreen = ({ catches }: { catches: Catch[] }) => {
         return index;
     }, [points]);
 
-    function calculateRegion(catches: Catch[]) {
-        if (catches.length > 0) {
-            const latitudes = catches.map(c => c.catch_location_lat!).filter(lat => lat !== null);
-            const longitudes = catches.map(c => c.catch_location_lng!).filter(lng => lng !== null);
-            if (latitudes.length === 0) return { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
-            const minLat = Math.min(...latitudes);
-            const maxLat = Math.max(...latitudes);
-            const minLng = Math.min(...longitudes);
-            const maxLng = Math.max(...longitudes);
-            return {
-                latitude: (minLat + maxLat) / 2,
-                longitude: (minLng + maxLng) / 2,
-                latitudeDelta: (maxLat - minLat) * 1.5 || 0.0922,
-                longitudeDelta: (maxLng - minLng) * 1.5 || 0.0421,
-            };
-        }
-        return { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
-    }
+    const updateClusters = useCallback(() => {
+        if (!mapRegion || !clusterIndex) return;
+        const zoom = Math.round(Math.log2(360 / mapRegion.longitudeDelta));
+        // console.log("Map Region Delta:", mapRegion.longitudeDelta, "Calculated Zoom:", zoom); // Pour le débogage
 
-    const updateClusters = () => {
-        if (!mapRef.current) return;
-        const zoom = Math.round(Math.log2(360 / region.longitudeDelta));
+        // Clamper le zoom pour s'assurer qu'il est dans la plage valide de Supercluster (0 à 16)
+        const clampedZoom = Math.max(0, Math.min(zoom, 16)); // 16 est le maxZoom défini dans Supercluster
+
         const bbox: [number, number, number, number] = [
-            region.longitude - region.longitudeDelta / 2,
-            region.latitude - region.latitudeDelta / 2,
-            region.longitude + region.longitudeDelta / 2,
-            region.latitude + region.latitudeDelta / 2,
+            mapRegion.longitude - mapRegion.longitudeDelta / 2,
+            mapRegion.latitude - mapRegion.latitudeDelta / 2,
+            mapRegion.longitude + mapRegion.longitudeDelta / 2,
+            mapRegion.latitude + mapRegion.latitudeDelta / 2,
         ];
-        const newClusters = clusterIndex.getClusters(bbox, zoom);
+        const newClusters = clusterIndex.getClusters(bbox, clampedZoom); // Utiliser le zoom clampé
         setClusters(newClusters);
-    };
+    }, [mapRegion, clusterIndex]);
+
+    const [clusters, setClusters] = useState<any[]>([]);
+
+    // Effect to determine the initial map region
+    useEffect(() => {
+        const determineInitialRegion = async () => {
+            // Initialiser calculatedRegion avec une valeur par défaut
+            let calculatedRegion: Region = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 12, longitudeDelta: 12 }; // Default to France
+
+            const defaultDelta = 0.0922; // Default delta for a single point or small area
+            const wideDelta = 12; // Wider delta for country view
+
+            const catchesWithLocation = catches.filter(c => c.catch_location_lat != null && c.catch_location_lng != null);
+
+            let userLocationObtained = false;
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+                try {
+                    const location = await Location.getCurrentPositionAsync({});
+                    calculatedRegion = {
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                        latitudeDelta: wideDelta,
+                        longitudeDelta: wideDelta,
+                    };
+                    userLocationObtained = true;
+                } catch (error) {
+                    console.error("Could not fetch user location:", error);
+                    // Si la localisation de l'utilisateur échoue, calculatedRegion conserve sa valeur par défaut initiale ou sera écrasée par la logique catchesWithLocation
+                }
+            }
+
+            // Si la localisation de l'utilisateur n'a pas été obtenue (permission refusée ou échec de la récupération),
+            // alors essayez d'utiliser catchesWithLocation ou conservez la valeur par défaut.
+            if (!userLocationObtained) {
+                if (catchesWithLocation.length > 0) {
+                    const latitudes = catchesWithLocation.map(c => c.catch_location_lat!);
+                    const longitudes = catchesWithLocation.map(c => c.catch_location_lng!);
+                    const minLat = Math.min(...latitudes);
+                    const maxLat = Math.max(...latitudes);
+                    const minLng = Math.min(...longitudes);
+                    const maxLng = Math.max(...longitudes);
+
+                    calculatedRegion = {
+                        latitude: (minLat + maxLat) / 2,
+                        longitude: (minLng + maxLng) / 2,
+                        latitudeDelta: (maxLat - minLat) * 1.5 || defaultDelta,
+                        longitudeDelta: (maxLng - minLng) * 1.5 || defaultDelta,
+                    };
+                }
+                // Si aucune localisation utilisateur et aucune prise avec localisation, calculatedRegion reste la valeur par défaut initiale.
+            }
+
+            setMapRegion(calculatedRegion);
+            setInitialLoadComplete(true);
+        };
+
+        if (!initialLoadComplete) {
+            determineInitialRegion();
+        }
+    }, [catches, initialLoadComplete]); // Depend on catches to re-calculate if data changes
 
     useEffect(() => {
-        updateClusters();
-    }, [region, clusterIndex]);
+        if (mapRegion) {
+            updateClusters();
+        }
+    }, [mapRegion, updateClusters]);
+
+    const handleRegionChangeComplete = (region: Region) => {
+        setMapRegion(region);
+    };
 
     const handleClusterPress = (clusterId: number) => {
         const leaves = clusterIndex.getLeaves(clusterId, Infinity);
         const clusterCatches = leaves.map(leaf => leaf.properties.catchData);
         navigation.navigate('ClusterCatches', { catches: clusterCatches });
     };
+
+    if (!mapRegion) { // Show loading indicator until mapRegion is determined
+        return (
+            <View style={styles.mapContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+            </View>
+        );
+    }
 
     if (catches.length === 0) {
         return (
@@ -92,8 +155,9 @@ const CatchMapScreen = ({ catches }: { catches: Catch[] }) => {
         <MapView
             ref={mapRef}
             style={styles.map}
-            initialRegion={region}
-            onRegionChangeComplete={setRegion}
+            region={mapRegion} // Use region prop for controlled component
+            onRegionChangeComplete={handleRegionChangeComplete}
+            showsUserLocation={false} // Always false as per user request
         >
             {clusters.map(item => {
                 const [longitude, latitude] = item.geometry.coordinates;

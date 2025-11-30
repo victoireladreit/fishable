@@ -296,15 +296,15 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                 initialRegion = {
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
+                    latitudeDelta: 12,
+                    longitudeDelta: 12,
                 };
             } catch (error) {
                 console.error("Could not fetch location: ", error);
-                initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 5, longitudeDelta: 5 }; // Default to France
+                initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 12, longitudeDelta: 12 }; // Default to France
             }
         } else {
-            initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 5, longitudeDelta: 5 }; // Default to France
+            initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 12, longitudeDelta: 12 }; // Default to France
         }
         setMapRegion(initialRegion);
         setIsMapModalVisible(true);
@@ -351,7 +351,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                             style={{ flex: 1 }}
                             initialRegion={mapRegion}
                             onRegionChangeComplete={setMapRegion}
-                            showsUserLocation={isLocationPermissionGranted}
+                            showsUserLocation={false} // Always false as per user request
                         />
                     )}
                     <View style={styles.mapMarkerFixed}>
