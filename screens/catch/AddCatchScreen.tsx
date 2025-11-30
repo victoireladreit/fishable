@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRoute, RouteProp, useNavigation, usePreventRemove } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatchesService, FishingSessionsService } from '../../services';
@@ -49,6 +49,7 @@ export const AddCatchScreen = () => {
                 selectedSessionId: initialSessionId ?? null,
                 catch_location_lat: catchLocationLat ?? null,
                 catch_location_lng: catchLocationLng ?? null,
+                photoTakenAt: new Date().toISOString(), // Default to now
             };
 
             if (initialSessionId) {
@@ -105,7 +106,7 @@ export const AddCatchScreen = () => {
                 species_name: formData.speciesName,
                 size_cm: formData.sizeCm ? parseFloat(formData.sizeCm.replace(',', '.')) : null,
                 weight_kg: formData.weightKg ? parseFloat(formData.weightKg.replace(',', '.')) : null,
-                caught_at: formData.photoTakenAt || new Date().toISOString(),
+                caught_at: formData.photoTakenAt, // Now guaranteed to have a value
                 technique: formData.technique || null,
                 lure_name: formData.lureName || null,
                 lure_color: formData.lureColor || null,
@@ -132,8 +133,11 @@ export const AddCatchScreen = () => {
     };
 
     if (!initialFormState) {
-        // Render a loading state or null while the initial form state is being prepared
-        return null;
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+            </View>
+        );
     }
 
     return (
@@ -154,5 +158,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background.default,
         padding: theme.layout.containerPadding,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.background.default,
     },
 });

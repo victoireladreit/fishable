@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch, Image, Modal, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch, Image, Modal, Alert, Platform, ActivityIndicator } from 'react-native';
 import { SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
@@ -8,6 +8,8 @@ import { supabase } from '../../config/supabase';
 import {Ionicons} from "@expo/vector-icons";
 import MapView, { Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 type WaterType = Database['public']['Tables']['catches']['Row']['water_type'];
 export type CatchFormData = {
@@ -56,6 +58,9 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
     const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState(false);
     const mapRef = useRef<MapView>(null);
+    const [date, setDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showDateWarning, setShowDateWarning] = useState(false);
 
 
     // Autocomplete states
@@ -66,6 +71,15 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     const [allSessions, setAllSessions] = useState<FishingSession[]>([]);
     const [filteredSessions, setFilteredSessions] = useState<FishingSession[]>([]);
     const [sessionSearchText, setSessionSearchText] = useState(formData.sessionSearchText || ''); // Nouvel état local pour le texte de recherche de session
+
+    useEffect(() => {
+        // Synchroniser l'état de la date locale avec les props
+        if (formData.photoTakenAt) {
+            setDate(new Date(formData.photoTakenAt));
+        } else {
+            setDate(new Date());
+        }
+    }, [formData.photoTakenAt]);
 
     useEffect(() => {
         // Synchroniser les états locaux avec formData lors du chargement initial ou de la mise à jour de formData
@@ -94,6 +108,27 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     useEffect(() => {
         onFormChange({ imageUri: image?.uri ?? null });
     }, [image]);
+
+    useEffect(() => {
+        const checkDateMismatch = () => {
+            if (formData.selectedSessionId && formData.photoTakenAt) {
+                const selectedSession = allSessions.find(s => s.id === formData.selectedSessionId);
+                if (selectedSession && selectedSession.created_at) {
+                    const catchDate = new Date(formData.photoTakenAt);
+                    const sessionDate = new Date(selectedSession.created_at);
+                    // Comparer uniquement la partie date (ignorer l'heure)
+                    if (catchDate.toDateString() !== sessionDate.toDateString()) {
+                        setShowDateWarning(true);
+                    } else {
+                        setShowDateWarning(false);
+                    }
+                }
+            } else {
+                setShowDateWarning(false);
+            }
+        };
+        checkDateMismatch();
+    }, [formData.selectedSessionId, formData.photoTakenAt, allSessions]);
 
     const extractPhotoTakenDate = (asset: CustomImagePickerAsset | null) => {
         if (asset && asset.exif && asset.exif.DateTimeOriginal) {
@@ -138,41 +173,42 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         return { lat: null, lng: null };
     };
 
+    const handleImageSelection = async (imagePromise: Promise<CustomImagePickerAsset | null>) => {
+        const asset = await imagePromise;
+        const { lat, lng } = extractPhotoLocation(asset);
+        const photoDate = extractPhotoTakenDate(asset);
+
+        const updateData: Partial<CatchFormData> = {
+            imageUri: asset?.uri ?? null,
+            catch_location_lat: lat,
+            catch_location_lng: lng,
+        };
+
+        if (photoDate) {
+            updateData.photoTakenAt = photoDate;
+        }
+
+        onFormChange(updateData);
+
+        if (!lat && !lng && asset) {
+            Alert.alert(
+                "Localisation non trouvée",
+                "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
+                [
+                    { text: "Non", style: "cancel" },
+                    { text: "Oui", onPress: () => openMapModal() }
+                ]
+            );
+        }
+    };
+
     const handleImagePress = () => {
         if (image) {
             setModalVisible(true);
         } else {
             Alert.alert("Ajouter une photo", "Choisissez une source", [
-                { text: "Prendre une photo", onPress: async () => {
-                    const asset = await takePhoto();
-                    const { lat, lng } = extractPhotoLocation(asset);
-                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
-                    if (!lat && !lng) {
-                        Alert.alert(
-                            "Localisation non trouvée",
-                            "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
-                            [
-                                { text: "Non", style: "cancel" },
-                                { text: "Oui", onPress: () => openMapModal() }
-                            ]
-                        );
-                    }
-                }},
-                { text: "Choisir depuis la galerie", onPress: async () => {
-                    const asset = await pickImage();
-                    const { lat, lng } = extractPhotoLocation(asset);
-                    onFormChange({ imageUri: asset?.uri ?? null, photoTakenAt: extractPhotoTakenDate(asset), catch_location_lat: lat, catch_location_lng: lng });
-                    if (!lat && !lng) {
-                        Alert.alert(
-                            "Localisation non trouvée",
-                            "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
-                            [
-                                { text: "Non", style: "cancel" },
-                                { text: "Oui", onPress: () => openMapModal() }
-                            ]
-                        );
-                    }
-                }},
+                { text: "Prendre une photo", onPress: () => handleImageSelection(takePhoto()) },
+                { text: "Choisir depuis la galerie", onPress: () => handleImageSelection(pickImage()) },
                 { text: "Annuler", style: "cancel" }
             ]);
         }
@@ -183,15 +219,18 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             { text: "Annuler", style: "cancel" },
             { text: "Supprimer", onPress: () => {
                 setImage(null);
-                onFormChange({ imageUri: null, photoTakenAt: null, catch_location_lat: null, catch_location_lng: null }); // Réinitialiser photoTakenAt et la localisation
+                onFormChange({
+                    imageUri: null,
+                    photoTakenAt: new Date().toISOString(), // Réinitialiser la date à maintenant
+                    catch_location_lat: null,
+                    catch_location_lng: null
+                });
             }, style: 'destructive' }
         ]);
     };
 
     const handleSpeciesSearch = (text: string) => {
         setSpeciesSearchText(text); // Met à jour l'état local du texte de recherche
-        // Toujours mettre à jour formData.speciesName à vide si le texte ne correspond pas à une sélection
-        // Cela permet de s'assurer que seule une espèce sélectionnée est enregistrée
         onFormChange({ speciesName: '' });
         if (text) {
             setFilteredSpecies(allSpecies.filter(s => s.name.toLowerCase().includes(text.toLowerCase())));
@@ -208,8 +247,6 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
 
     const handleSessionSearch = (text: string) => {
         setSessionSearchText(text); // Met à jour l'état local du texte de recherche
-        // Toujours réinitialiser selectedSessionId et mettre à jour sessionSearchText dans formData
-        // Cela permet de s'assurer que seule une session sélectionnée est enregistrée
         onFormChange({ selectedSessionId: null, sessionSearchText: text });
         if (text) {
             const filtered = allSessions.filter(session =>
@@ -271,6 +308,18 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         }
         setMapRegion(initialRegion);
         setIsMapModalVisible(true);
+    };
+
+    const onDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false); // Always close the picker after selection
+        if (event.type === 'set' && selectedDate) { // Only update if a date was actually selected (not dismissed)
+            setDate(selectedDate);
+            onFormChange({ photoTakenAt: selectedDate.toISOString() });
+        }
+    };
+
+    const showDatepicker = () => {
+        setShowDatePicker(true);
     };
 
     return (
@@ -357,6 +406,31 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                     <Text>Lat: {formData.catch_location_lat.toFixed(4)}, Lng: {formData.catch_location_lng.toFixed(4)}</Text>
                 ) : (
                     <Text style={{color: theme.colors.text.disabled}}>Aucune localisation sélectionnée</Text>
+                )}
+            </View>
+
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Date de la prise</Text>
+                <TouchableOpacity onPress={showDatepicker} style={[styles.input, { justifyContent: 'center' }]}>
+                    <Text style={{color: theme.colors.text.primary, fontSize: theme.typography.fontSize.base}}>{date.toLocaleDateString('fr-FR')}</Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                    <DateTimePicker
+                        testID="dateTimePicker"
+                        value={date}
+                        mode="date"
+                        is24Hour={true}
+                        display="spinner"
+                        onChange={onDateChange}
+                    />
+                )}
+                {showDateWarning && (
+                    <View style={styles.warningContainer}>
+                        <Ionicons name="warning-outline" size={14} color={theme.colors.warning.dark} />
+                        <Text style={styles.warningText}>
+                            La date de la prise ne correspond pas à la date de la session.
+                        </Text>
+                    </View>
                 )}
             </View>
 
@@ -482,7 +556,11 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             </View>
 
             <TouchableOpacity style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled]} onPress={onSubmit} disabled={isSaving}>
-                <Text style={styles.buttonText}>{submitButtonText}</Text>
+                {isSaving ? (
+                    <ActivityIndicator color={theme.colors.text.inverse} />
+                ) : (
+                    <Text style={styles.buttonText}>{submitButtonText}</Text>
+                )}
             </TouchableOpacity>
         </ScrollView>
     );
@@ -535,5 +613,19 @@ const styles = StyleSheet.create({
         marginTop: -40,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    warningContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: theme.spacing[2],
+        padding: theme.spacing[2],
+        backgroundColor: theme.colors.warning.light,
+        borderRadius: theme.borderRadius.base,
+    },
+    warningText: {
+        marginLeft: theme.spacing[2],
+        color: theme.colors.warning.dark,
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.xs,
     },
 });

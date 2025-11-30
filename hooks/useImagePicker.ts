@@ -30,6 +30,7 @@ export const useImagePicker = (initialImageUri: string | null = null) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
             exif: true, // Demander les données EXIF
+            quality: 0.7, // Ajouter la compression d'image
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -57,6 +58,7 @@ export const useImagePicker = (initialImageUri: string | null = null) => {
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: false,
             exif: true, // Demander les données EXIF
+            quality: 0.7, // Ajouter la compression d'image
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
