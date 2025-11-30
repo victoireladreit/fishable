@@ -20,8 +20,20 @@ export interface ProfileStats {
     averageCatchesPerSession: number;
 }
 
+export interface ContributionChartData {
+    date: string;
+    count: number;
+}
+
+export interface HeatmapPoint {
+    latitude: number;
+    longitude: number;
+    weight: number;
+}
+
 const TABLE = 'profiles';
 const BUCKET = 'fishable-avatars';
+const SESSION_BASE_VALUE = 10; // Base value for a day with a session
 
 export const ProfileService = {
     async getProfile(userId: string) {
@@ -212,6 +224,77 @@ export const ProfileService = {
             totalCaughtLastMonth,
             averageCatchesPerSession,
         };
+    },
+
+    async getContributionDataForYear(userId: string, year: number): Promise<ContributionChartData[]> {
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year, 11, 31);
+
+        const [catchesRes, sessionsRes] = await Promise.all([
+            supabase
+                .from('catches')
+                .select('caught_at')
+                .eq('user_id', userId)
+                .gte('caught_at', startDate.toISOString())
+                .lte('caught_at', endDate.toISOString()),
+            supabase
+                .from('fishing_sessions')
+                .select('started_at')
+                .eq('user_id', userId)
+                .eq('status', 'completed')
+                .gte('started_at', startDate.toISOString())
+                .lte('started_at', endDate.toISOString())
+        ]);
+
+        if (catchesRes.error) throw catchesRes.error;
+        if (sessionsRes.error) throw sessionsRes.error;
+
+        const activityMap: { [key: string]: { catches: number; hasSession: boolean } } = {};
+
+        sessionsRes.data?.forEach(s => {
+            const date = new Date(s.started_at).toISOString().split('T')[0];
+            if (!activityMap[date]) activityMap[date] = { catches: 0, hasSession: false };
+            activityMap[date].hasSession = true;
+        });
+
+        catchesRes.data?.forEach(c => {
+            const date = new Date(c.caught_at).toISOString().split('T')[0];
+            if (!activityMap[date]) activityMap[date] = { catches: 0, hasSession: false };
+            activityMap[date].catches++;
+        });
+
+        return Object.keys(activityMap).map(date => {
+            const dayData = activityMap[date];
+            const count = dayData.hasSession 
+                ? SESSION_BASE_VALUE + dayData.catches 
+                : dayData.catches;
+            return { date, count };
+        });
+    },
+
+    async getHeatmapDataForYear(userId: string, year: number): Promise<HeatmapPoint[]> {
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year, 11, 31);
+
+        const { data, error } = await supabase
+            .from('catches')
+            .select('catch_location_lat, catch_location_lng')
+            .eq('user_id', userId)
+            .gte('caught_at', startDate.toISOString())
+            .lte('caught_at', endDate.toISOString())
+            .not('catch_location_lat', 'is', null)
+            .not('catch_location_lng', 'is', null);
+
+        if (error) {
+            console.error(`Error fetching heatmap data for year ${year}:`, error);
+            throw error;
+        }
+
+        return data.map(item => ({
+            latitude: item.catch_location_lat!,
+            longitude: item.catch_location_lng!,
+            weight: 1
+        }));
     },
 
     async uploadAvatar(userId: string, uri: string) {
