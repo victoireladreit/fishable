@@ -31,7 +31,6 @@ export interface Database {
                     caught_at: string | null
                     fight_duration_minutes: number | null
                     is_released: boolean | null
-                    is_record: boolean | null
                     photo_url: string | null
                     video_url: string | null
                     notes: string | null
@@ -59,7 +58,6 @@ export interface Database {
                     caught_at?: string | null
                     fight_duration_minutes?: number | null
                     is_released?: boolean | null
-                    is_record?: boolean | null
                     photo_url?: string | null
                     video_url?: string | null
                     notes?: string | null
@@ -87,7 +85,6 @@ export interface Database {
                     caught_at?: string | null
                     fight_duration_minutes?: number | null
                     is_released?: boolean | null
-                    is_record?: boolean | null
                     photo_url?: string | null
                     video_url?: string | null
                     notes?: string | null
@@ -284,7 +281,7 @@ export interface Database {
                     scientific_name: string
                     common_names: Json | null
                     family: string | null
-                    category: 'freshwater' | 'saltwater' | 'brackish' | 'migratory' | null
+                    category: string | null
                     habitat_types: string[] | null
                     water_types: string[] | null
                     depth_range_min: number | null

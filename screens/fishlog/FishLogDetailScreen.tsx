@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { Database } from '../../lib/types';
@@ -17,8 +18,8 @@ type FishLogDetailScreenRouteProp = RouteProp<FishLogStackParamList, 'FishLogDet
 
 
 const waterTypeTranslations: { [key: string]: string } = {
-    'freshwater': 'Eau douce',
-    'saltwater': 'Mer',
+    'fresh': 'Eau douce',
+    'salt': 'Mer',
     'brackish': 'Saumâtre',
 };
 
@@ -116,9 +117,13 @@ export const FishLogDetailScreen = () => {
                             isFeatured={true} 
                         />
                     ) : (
-                        <View style={[styles.speciesImage, styles.iconPlaceholder]}>
-                            <MaterialCommunityIcons name="fish" size={100} color={theme.colors.text.disabled} />
-                        </View>
+                        species.photo_url ? (
+                            <Image source={{ uri: species.photo_url }} style={styles.speciesImage} resizeMode="contain" />
+                        ) : (
+                            <View style={[styles.speciesImage, styles.iconPlaceholder]}>
+                                <MaterialCommunityIcons name="fish" size={100} color={theme.colors.text.disabled} />
+                            </View>
+                        )
                     )}
                 </View>
 
@@ -133,6 +138,17 @@ export const FishLogDetailScreen = () => {
                     </View>
                 )}
 
+                {isCaught && userPokedexEntry && (
+                    <Card style={styles.infoCard}>
+                        <Text style={styles.cardTitle}>Mes Statistiques</Text>
+                        <InfoRow iconName="trophy-outline" label="Plus grosse prise" value={userPokedexEntry.biggest_size_cm || userPokedexEntry.biggest_weight_kg} unit={userPokedexEntry.biggest_size_cm ? ' cm' : ' kg'} />
+                        <InfoRow iconName="stats-chart-outline" label="Nombre de captures" value={userPokedexEntry.total_caught} />
+                        <InfoRow iconName="calendar-outline" label="Date 1ère prise" value={new Date(userPokedexEntry.first_caught_at).toLocaleDateString()} />
+                        <InfoRow iconName="location-outline" label="Lieu 1ère prise" value={userPokedexEntry.first_region} />
+                        <InfoRow iconName="hammer-outline" label="Technique favorite" value={userPokedexEntry.favorite_technique} />
+                    </Card>
+                )}
+
                 <Card style={styles.infoCard}>
                     <Text style={styles.cardTitle}>Informations Générales</Text>
                     <InfoRow iconName="flask-outline" label="Nom scientifique" value={species.scientific_name} />
@@ -143,14 +159,17 @@ export const FishLogDetailScreen = () => {
                     <InfoRow iconName="scale-outline" label="Poids max." value={species.max_weight_kg} unit=" kg" />
                 </Card>
 
-                {isCaught && userPokedexEntry && (
+                {species.description && (
                     <Card style={styles.infoCard}>
-                        <Text style={styles.cardTitle}>Mes Statistiques</Text>
-                        <InfoRow iconName="trophy-outline" label="Plus grosse prise" value={userPokedexEntry.biggest_size_cm || userPokedexEntry.biggest_weight_kg} unit={userPokedexEntry.biggest_size_cm ? ' cm' : ' kg'} />
-                        <InfoRow iconName="stats-chart-outline" label="Nombre de captures" value={userPokedexEntry.total_caught} />
-                        <InfoRow iconName="calendar-outline" label="Date 1ère prise" value={new Date(userPokedexEntry.first_caught_at).toLocaleDateString()} />
-                        <InfoRow iconName="location-outline" label="Lieu 1ère prise" value={userPokedexEntry.first_region} />
-                        <InfoRow iconName="hammer-outline" label="Technique favorite" value={userPokedexEntry.favorite_technique} />
+                        <Text style={styles.cardTitle}>Description</Text>
+                        <Text style={styles.descriptionText}>{species.description}</Text>
+                    </Card>
+                )}
+
+                {species.habitat_types && species.habitat_types.length > 0 && (
+                    <Card style={styles.infoCard}>
+                        <Text style={styles.cardTitle}>Types d'Habitat</Text>
+                        <Text style={styles.habitatText}>{species.habitat_types.join(', ')}</Text>
                     </Card>
                 )}
 
@@ -192,11 +211,15 @@ const styles = StyleSheet.create({
         width: '100%',
         aspectRatio: 1.2,
         borderRadius: theme.borderRadius.lg,
+        borderWidth: 1, // Ajouté pour la bordure
+        borderColor: theme.colors.border.main, // Ajouté pour la couleur de la bordure
     },
     iconPlaceholder: {
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: theme.colors.gray[200],
+        borderWidth: 1, // Ajouté pour la bordure
+        borderColor: theme.colors.border.main, // Ajouté pour la couleur de la bordure
     },
     infoCard: {
         marginBottom: theme.spacing[4],
@@ -207,6 +230,21 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.fontSize.xl,
         color: theme.colors.text.primary,
         marginBottom: theme.spacing[4],
+    },
+    descriptionText: {
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+    },
+    habitatText: { // Nouveau style pour les types d'habitat
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
+    },
+    countriesText: { // Ce style n'est plus utilisé si vous utilisez la carte SVG
+        fontFamily: theme.typography.fontFamily.regular,
+        fontSize: theme.typography.fontSize.base,
+        color: theme.colors.text.secondary,
     },
 
     leaderboardContainer: {

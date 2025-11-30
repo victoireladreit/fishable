@@ -354,8 +354,8 @@ export const ProfileScreen = () => {
                                 <View style={styles.statsGrid}>
                                     <StatItem iconName="fish-outline" label="Prises" value={profileStats.totalCaught} />
                                 <StatItem iconName="leaf-outline" label="Esp. uniques" value={profileStats.uniqueSpeciesCount} />
-                                    <StatItem iconName="scale-outline" label="Max poids" value={profileStats.biggestWeightKg || 0} unit=" kg" />
-                                    <StatItem iconName="resize-outline" label="Max taille" value={profileStats.biggestSizeCm || 0} unit=" cm" />
+                                    <StatItem iconName="scale-outline" label="Max poids" value={profileStats.biggestWeightKg ? profileStats.biggestWeightKg : '-'} unit={profileStats.biggestWeightKg ? " kg" : ""} />
+                                    <StatItem iconName="resize-outline" label="Max taille" value={profileStats.biggestSizeCm ? profileStats.biggestSizeCm : '-'} unit={profileStats.biggestSizeCm ? " cm" : ""} />
                                     <StatItem iconName="arrow-undo-outline" label="Relâché %" value={(profileStats.releaseRate || 0).toFixed(0)} unit="%" />
                                     <StatItem iconName="trophy-outline" label="Esp. la + pêchée" value={profileStats.mostCaughtSpecies || '-'} />
                                     <StatItem iconName="hammer-outline" label="Technique fav." value={profileStats.favoriteTechnique || '-'} />
