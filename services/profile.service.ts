@@ -15,6 +15,9 @@ export interface ProfileStats {
     mostCaughtSpecies: string | null; // New stat: most caught species
     favoriteTechnique: string | null;
     totalSessions: number;
+    totalSessionsLastMonth: number;
+    totalCaughtLastMonth: number;
+    averageCatchesPerSession: number;
 }
 
 const TABLE = 'profiles';
@@ -165,6 +168,36 @@ export const ProfileService = {
             console.error("Error fetching fishing sessions count:", sessionsError);
             throw sessionsError;
         }
+        
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        const { count: totalSessionsLastMonth, error: sessionsLastMonthError } = await supabase
+            .from('fishing_sessions')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .gte('started_at', oneMonthAgo.toISOString());
+
+        if (sessionsLastMonthError) {
+            console.error("Error fetching fishing sessions count for the last month:", sessionsLastMonthError);
+            throw sessionsLastMonthError;
+        }
+
+        const { data: catchesLastMonth, error: catchesLastMonthError } = await supabase
+            .from('catches')
+            .select('id')
+            .eq('user_id', userId)
+            .gte('caught_at', oneMonthAgo.toISOString());
+
+        if (catchesLastMonthError) {
+            console.error("Error fetching catches for the last month:", catchesLastMonthError);
+            throw catchesLastMonthError;
+        }
+        
+        const totalCaughtLastMonth = catchesLastMonth?.length || 0;
+        const averageCatchesPerSession = totalSessions && totalSessions > 0 ? totalCaught / totalSessions : 0;
+
 
         return {
             totalCaught,
@@ -175,6 +208,9 @@ export const ProfileService = {
             mostCaughtSpecies: mostCaughtSpeciesName, // Return new stat
             favoriteTechnique,
             totalSessions: totalSessions || 0,
+            totalSessionsLastMonth: totalSessionsLastMonth || 0,
+            totalCaughtLastMonth,
+            averageCatchesPerSession,
         };
     },
 

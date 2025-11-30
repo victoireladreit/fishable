@@ -328,6 +328,17 @@ export const ProfileScreen = () => {
                                 </View>
                             </View>
                         )}
+                         {/* Activity Stats Section */}
+                         {profileStats && (
+                            <View style={styles.statsContainer}>
+                                <Text style={styles.statsTitle}>Activité récente</Text>
+                                <View style={styles.statsGrid}>
+                                    {profileStats.totalSessionsLastMonth !== null && <StatItem iconName="calendar-outline" label="Sessions (30j)" value={profileStats.totalSessionsLastMonth} />}
+                                    {profileStats.totalCaughtLastMonth !== null && <StatItem iconName="fish-outline" label="Prises (30j)" value={profileStats.totalCaughtLastMonth} />}
+                                    {profileStats.averageCatchesPerSession !== null && <StatItem iconName="stats-chart-outline" label="Moy. par session" value={profileStats.averageCatchesPerSession.toFixed(1)} />}
+                                </View>
+                            </View>
+                        )}
                     </Card>
                 )}
             </ScrollView>
