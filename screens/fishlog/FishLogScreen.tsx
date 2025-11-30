@@ -9,7 +9,7 @@ import {
     FlatList,
     TouchableOpacity
 } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../config/supabase';
@@ -128,8 +128,12 @@ export const FishLogScreen = () => {
         return Array.from(types).sort();
     };
 
-    const fetchFishLogData = useCallback(async () => {
+    const fetchFishLogData = useCallback(async (showLoader: boolean = true) => {
         if (!user) return;
+
+        if (showLoader) {
+            setLoading(true);
+        }
 
         try {
             const [speciesResponse, userPokedexResponse] = await Promise.all([
@@ -200,19 +204,21 @@ export const FishLogScreen = () => {
         } catch (error: any) {
             Alert.alert('Erreur', "Impossible de charger le FishLog : " + error.message);
         } finally {
-            setLoading(false);
+            // Always set loading to false, regardless of showLoader
+            setLoading(false); 
             setIsRefreshing(false);
         }
     }, [user]);
 
-    useEffect(() => {
-        setLoading(true);
-        fetchFishLogData();
-    }, [fetchFishLogData]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchFishLogData(false); // Fetch data silently
+        }, [fetchFishLogData])
+    );
 
     const onRefresh = () => {
         setIsRefreshing(true);
-        fetchFishLogData();
+        fetchFishLogData(true); // Show loader for manual refresh
     };
 
     if (loading) {
