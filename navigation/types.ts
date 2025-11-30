@@ -1,4 +1,7 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { Database } from '../lib/types';
+
+type Catch = Database['public']['Tables']['catches']['Row'];
 
 // Paramètres pour le StackNavigator du FishLog
 export type FishLogStackParamList = {
@@ -26,4 +29,5 @@ export type RootStackParamList = {
     SessionSummary: { sessionId: string };
     AddCatch: { sessionId?: string; catchLocationLat?: number; catchLocationLng?: number; catchLocationAccuracy?: number; onGoBack?: () => void; };
     CatchDetail: { catchId: string; onGoBack?: (modified: boolean) => void; };
+    ClusterCatches: { catches: Catch[] };
 };
