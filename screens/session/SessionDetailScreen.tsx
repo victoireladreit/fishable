@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
@@ -110,7 +110,7 @@ export const SessionDetailScreen = () => {
         setSelectedTargetSpeciesNames(selectedTargetSpeciesNames.filter(s => s !== speciesToRemove));
     };
 
-    const sessionRoute = session?.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [];
+    const sessionRoute = useMemo(() => session?.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [], [session?.route]);
 
     useEffect(() => {
         if (sessionRoute && sessionRoute.length > 1) {
@@ -144,10 +144,10 @@ export const SessionDetailScreen = () => {
         } else {
             setMapRegion(undefined);
         }
-    }, [session, sessionRoute]);
+    }, [session?.location_lat, session?.location_lng, sessionRoute]);
 
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         const success = await saveChanges();
         if (success) {
             const updates: FishingSessionUpdate = {
@@ -172,7 +172,7 @@ export const SessionDetailScreen = () => {
                 Alert.alert("Erreur", "Impossible de sauvegarder les modifications supplémentaires.");
             }
         }
-    };
+    }, [saveChanges, weatherTemp, weatherConditions, windStrength, isPublished, selectedTargetSpeciesNames, sessionId, reload, onGoBack]);
 
     const recenterMap = () => {
         if (mapViewRef.current && mapRegion) {
@@ -251,6 +251,18 @@ export const SessionDetailScreen = () => {
                             </View>
                         </Marker>
                     </>
+                )}
+                {!hasRouteData && session?.location_lat && session?.location_lng && (
+                    <Marker
+                        coordinate={{
+                            latitude: session.location_lat,
+                            longitude: session.location_lng,
+                        }}
+                        title="Départ"
+                        anchor={{ x: 0.5, y: 0.5 }}
+                    >
+                        <View style={styles.startMarker} />
+                    </Marker>
                 )}
             </SessionMap>
             <SessionNotes

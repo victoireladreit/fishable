@@ -100,6 +100,15 @@ export const SessionScreen = () => {
         });
     }, [navigation, loadData]);
 
+    const handleNavigateToPostNewSession = useCallback(() => {
+        navigation.navigate('NewSession', {
+            isPostSession: true,
+            onGoBack: () => {
+                loadData(true); // Silently refresh data
+            },
+        });
+    }, [navigation, loadData]);
+
     const handleNavigateToActiveSession = useCallback(() => {
         if (activeSession) {
             navigation.navigate('ActiveSession', {
@@ -126,6 +135,7 @@ export const SessionScreen = () => {
                 onDelete={handleDelete}
                 onNavigateToDetail={handleNavigateToDetail}
                 onNavigateToNewSession={handleNavigateToNewSession}
+                onNavigateToPostNewSession={handleNavigateToPostNewSession}
                 onNavigateToActiveSession={handleNavigateToActiveSession}
             />
         </SafeAreaView>

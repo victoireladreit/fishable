@@ -13,6 +13,7 @@ interface SessionListProps {
     onDelete: (sessionId: string) => void;
     onNavigateToDetail: (sessionId: string) => void;
     onNavigateToNewSession: () => void;
+    onNavigateToPostNewSession: () => void;
     onNavigateToActiveSession: () => void;
 }
 
@@ -25,6 +26,7 @@ export const SessionList = ({
     onDelete,
     onNavigateToDetail,
     onNavigateToNewSession,
+    onNavigateToPostNewSession,
     onNavigateToActiveSession,
 }: SessionListProps) => {
 
@@ -37,9 +39,14 @@ export const SessionList = ({
                         <Text style={styles.buttonText}>Reprendre la session en cours</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={styles.buttonPrimary} onPress={onNavigateToNewSession}>
-                        <Text style={styles.buttonText}>🚀 Nouvelle session</Text>
-                    </TouchableOpacity>
+                    <View style={styles.buttonsContainer}>
+                        <TouchableOpacity style={styles.buttonSecondary} onPress={onNavigateToPostNewSession}>
+                            <Text style={styles.buttonSecondaryText}>🗒️ Logger</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.buttonPrimary} onPress={onNavigateToNewSession}>
+                            <Text style={styles.buttonText}>⏱️ En direct</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
             <Text style={styles.subtitle}>Historique</Text>
@@ -100,6 +107,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.layout.screenPadding,
         marginTop: theme.spacing[4],
     },
+    buttonsContainer: {
+        flexDirection: 'row',
+        gap: theme.spacing[2],
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -112,7 +123,15 @@ const styles = StyleSheet.create({
         color: theme.colors.text.secondary,
     },
     buttonPrimary: {
+        flex: 1,
         backgroundColor: colors.primary["500"],
+        padding: 15,
+        borderRadius: 8,
+    },
+    buttonSecondary: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: colors.primary["500"],
         padding: 15,
         borderRadius: 8,
     },
@@ -123,6 +142,12 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    buttonSecondaryText: {
+        color: colors.primary["500"],
         textAlign: 'center',
         fontWeight: 'bold',
         fontSize: 16,

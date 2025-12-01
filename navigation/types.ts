@@ -23,11 +23,15 @@ export type RootStackParamList = {
     ForgotPassword: undefined;
     Home: NavigatorScreenParams<MainTabParamList>; // Onglets imbriqués
     Settings: undefined;
-    NewSession: { onGoBack: () => void };
+    NewSession: { onGoBack: () => void; isPostSession?: boolean };
     ActiveSession: { sessionId: string; onGoBack: () => void; };
     SessionDetail: { sessionId: string; onGoBack?: (modified: boolean) => void };
     SessionSummary: { sessionId: string };
     AddCatch: { sessionId?: string; catchLocationLat?: number; catchLocationLng?: number; catchLocationAccuracy?: number; onGoBack?: () => void; };
     CatchDetail: { catchId: string; onGoBack?: (modified: boolean) => void; };
     ClusterCatches: { catches: Catch[] };
+    SelectLocation: { 
+        onLocationSelect: (location: { latitude: number; longitude: number }) => void;
+        initialLocation?: { latitude: number; longitude: number };
+    };
 };

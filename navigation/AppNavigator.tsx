@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,7 @@ import { AddCatchScreen, CatchDetailScreen, ClusterCatchesScreen } from '../scre
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { SelectLocationScreen } from '../screens/map/SelectLocationScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -50,6 +51,15 @@ const RootNavigator = () => {
                     <Stack.Screen name="AddCatch" component={AddCatchScreen} options={{ title: 'Nouvelle prise', presentation: 'modal' }} />
                     <Stack.Screen name="CatchDetail" component={CatchDetailScreen} options={{ title: 'Détails de la prise' }} />
                     <Stack.Screen name="ClusterCatches" component={ClusterCatchesScreen} options={{ title: 'Prises' }} />
+                    <Stack.Screen 
+                        name="SelectLocation" 
+                        component={SelectLocationScreen} 
+                        options={{ 
+                            presentation: 'modal', 
+                            headerShown: Platform.OS === 'android',
+                            title: 'Choisir une localisation'
+                        }} 
+                    />
                 </>
             ) : (
                 <>

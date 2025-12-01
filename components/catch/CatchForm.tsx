@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch, Image, Modal, Alert, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Switch, Image, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SpeciesService, FishingSessionsService, FishingSession } from '../../services';
 import { theme } from '../../theme';
 import { Database } from '../../lib/types';
 import { useImagePicker, CustomImagePickerAsset } from '../../hooks';
 import { supabase } from '../../config/supabase';
 import {Ionicons} from "@expo/vector-icons";
-import MapView, { Region } from 'react-native-maps';
-import * as Location from 'expo-location';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
+import { DatePickerInput } from '../common/DatePickerInput'; // Import the new component
 
 
 type WaterType = Database['public']['Tables']['catches']['Row']['water_type'];
@@ -51,15 +52,13 @@ const waterTypeOptions: { value: NonNullable<WaterType>; label: string }[] = [
 
 const INPUT_HEIGHT = 50;
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SelectLocation'>;
+
+
 export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, onSubmit, isSaving, submitButtonText }) => {
+    const navigation = useNavigation<NavigationProp>();
     const { image, takePhoto, pickImage, setImage } = useImagePicker(formData.imageUri);
     const [modalVisible, setModalVisible] = useState(false);
-    const [isMapModalVisible, setIsMapModalVisible] = useState(false);
-    const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
-    const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState(false);
-    const mapRef = useRef<MapView>(null);
-    const [date, setDate] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateWarning, setShowDateWarning] = useState(false);
 
 
@@ -71,15 +70,6 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     const [allSessions, setAllSessions] = useState<FishingSession[]>([]);
     const [filteredSessions, setFilteredSessions] = useState<FishingSession[]>([]);
     const [sessionSearchText, setSessionSearchText] = useState(formData.sessionSearchText || ''); // Nouvel état local pour le texte de recherche de session
-
-    useEffect(() => {
-        // Synchroniser l'état de la date locale avec les props
-        if (formData.photoTakenAt) {
-            setDate(new Date(formData.photoTakenAt));
-        } else {
-            setDate(new Date());
-        }
-    }, [formData.photoTakenAt]);
 
     useEffect(() => {
         // Synchroniser les états locaux avec formData lors du chargement initial ou de la mise à jour de formData
@@ -196,7 +186,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                 "Aucune donnée GPS n'a été trouvée pour cette photo. Voulez-vous choisir l'emplacement manuellement ?",
                 [
                     { text: "Non", style: "cancel" },
-                    { text: "Oui", onPress: () => openMapModal() }
+                    { text: "Oui", onPress: () => openMap() }
                 ]
             );
         }
@@ -268,58 +258,24 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         setFilteredSessions([]);
     };
 
-    const openMapModal = async () => {
-        if (!image) {
-            Alert.alert("Aucune photo", "Veuillez d'abord ajouter une photo pour pouvoir sélectionner une localisation.");
-            return;
-        }
+    const openMap = () => {
+        const initialLocation = formData.catch_location_lat && formData.catch_location_lng
+            ? { latitude: formData.catch_location_lat, longitude: formData.catch_location_lng }
+            : undefined;
 
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission refusée', 'La permission de localisation est nécessaire pour afficher votre position sur la carte.');
-            setIsLocationPermissionGranted(false);
-        } else {
-            setIsLocationPermissionGranted(true);
-        }
-
-        let initialRegion: Region;
-        if (formData.catch_location_lat && formData.catch_location_lng) {
-            initialRegion = {
-                latitude: formData.catch_location_lat,
-                longitude: formData.catch_location_lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            };
-        } else if (status === 'granted') {
-            try {
-                const location = await Location.getCurrentPositionAsync({});
-                initialRegion = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                    latitudeDelta: 12,
-                    longitudeDelta: 12,
-                };
-            } catch (error) {
-                console.error("Could not fetch location: ", error);
-                initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 12, longitudeDelta: 12 }; // Default to France
-            }
-        } else {
-            initialRegion = { latitude: 46.2276, longitude: 2.2137, latitudeDelta: 12, longitudeDelta: 12 }; // Default to France
-        }
-        setMapRegion(initialRegion);
-        setIsMapModalVisible(true);
+        navigation.navigate('SelectLocation', {
+            onLocationSelect: (location) => {
+                onFormChange({
+                    catch_location_lat: location.latitude,
+                    catch_location_lng: location.longitude,
+                });
+            },
+            initialLocation,
+        });
     };
 
-    const onDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false); // Always close the picker after selection
-        if (event.type === 'set' && selectedDate) { // Only update if a date was actually selected (not dismissed)
-            setDate(selectedDate);
-            onFormChange({ photoTakenAt: selectedDate.toISOString() });
-        }
-    };
-
-    const showDatepicker = () => {
-        setShowDatePicker(true);
+    const handlePhotoTakenAtChange = (newDate: Date) => {
+        onFormChange({ photoTakenAt: newDate.toISOString() });
     };
 
     return (
@@ -335,42 +291,6 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                         <Ionicons name="close" size={30} color={theme.colors.white} />
                     </TouchableOpacity>
                     <Image source={{ uri: image?.uri || '' }} style={styles.fullScreenImage} resizeMode="contain" />
-                </View>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={false}
-                visible={isMapModalVisible}
-                onRequestClose={() => setIsMapModalVisible(false)}
-            >
-                <View style={{ flex: 1 }}>
-                    {mapRegion && (
-                        <MapView
-                            ref={mapRef}
-                            style={{ flex: 1 }}
-                            initialRegion={mapRegion}
-                            onRegionChangeComplete={setMapRegion}
-                            showsUserLocation={false} // Always false as per user request
-                        />
-                    )}
-                    <View style={styles.mapMarkerFixed}>
-                        <Ionicons name="location-sharp" size={40} color={theme.colors.primary[500]} />
-                    </View>
-                    <TouchableOpacity
-                        style={styles.mapConfirmButton}
-                        onPress={() => {
-                            if (mapRegion) {
-                                onFormChange({ catch_location_lat: mapRegion.latitude, catch_location_lng: mapRegion.longitude });
-                            }
-                            setIsMapModalVisible(false);
-                        }}
-                    >
-                        <Text style={styles.buttonText}>Confirmer la localisation</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.closeButton} onPress={() => setIsMapModalVisible(false)}>
-                        <Ionicons name="close" size={30} color={theme.colors.text.primary} />
-                    </TouchableOpacity>
                 </View>
             </Modal>
 
@@ -398,7 +318,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             <View style={styles.formGroup}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={[styles.label, !image && styles.disabledLabel]}>Localisation</Text>
-                    <TouchableOpacity onPress={openMapModal} disabled={!image}>
+                    <TouchableOpacity onPress={openMap} disabled={!image}>
                         <Text style={{color: image ? theme.colors.primary[500] : theme.colors.text.disabled}}>Choisir sur la carte</Text>
                     </TouchableOpacity>
                 </View>
@@ -410,20 +330,14 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
             </View>
 
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Date de la prise</Text>
-                <TouchableOpacity onPress={showDatepicker} style={[styles.input, { justifyContent: 'center' }]}>
-                    <Text style={{color: theme.colors.text.primary, fontSize: theme.typography.fontSize.base}}>{date.toLocaleDateString('fr-FR')}</Text>
-                </TouchableOpacity>
-                {showDatePicker && (
-                    <DateTimePicker
-                        testID="dateTimePicker"
-                        value={date}
-                        mode="date"
-                        is24Hour={true}
-                        display="spinner"
-                        onChange={onDateChange}
-                    />
-                )}
+                <DatePickerInput
+                    label="Date de la prise"
+                    value={formData.photoTakenAt ? new Date(formData.photoTakenAt) : new Date()}
+                    onChange={handlePhotoTakenAtChange}
+                    maximumDate={new Date()}
+                    iconColor={theme.colors.text.secondary}
+                    mode="date" // Définir le mode sur "date"
+                />
                 {showDateWarning && (
                     <View style={styles.warningContainer}>
                         <Ionicons name="warning-outline" size={14} color={theme.colors.warning.dark} />

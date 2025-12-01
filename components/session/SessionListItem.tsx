@@ -1,63 +1,71 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
-import MapView, { Polyline, Region } from 'react-native-maps';
+import MapView, { Polyline, Region, Marker } from 'react-native-maps';
 import { theme } from '../../theme';
 import { FishingSession } from '../../services';
 import {formatDuration} from "../../lib/formatters";
 import { renderDeleteAction } from '../common/SwipeableActions';
 
-// Helper function to calculate map region from route coordinates
-const getMapRegion = (route: { latitude: number; longitude: number }[]): Region | undefined => {
-    if (!route || route.length === 0) {
-        return undefined;
-    }
+// Helper function to calculate map region from route coordinates or single point
+const getMapRegion = (
+    route: { latitude: number; longitude: number }[],
+    singlePointLat?: number | null,
+    singlePointLng?: number | null
+): Region | undefined => {
+    if (route && route.length > 0) {
+        // Existing logic for routes
+        if (route.length === 1) {
+            return {
+                latitude: route[0].latitude,
+                longitude: route[0].longitude,
+                latitudeDelta: 0.005, // Adjusted for closer view for single point
+                longitudeDelta: 0.005,
+            };
+        }
 
-    // Handle single point case
-    if (route.length === 1) {
+        const latitudes = route.map(p => p.latitude);
+        const longitudes = route.map(p => p.longitude);
+
+        const minLat = Math.min(...latitudes);
+        const maxLat = Math.max(...latitudes);
+        const minLng = Math.min(...longitudes);
+        const maxLng = Math.max(...longitudes);
+
+        const midLat = (minLat + maxLat) / 2;
+        const midLng = (minLng + maxLng) / 2;
+
+        let latSpan = maxLat - minLat;
+        let lngSpan = maxLng - minLng;
+
+        const paddingFactor = 1.05;
+        latSpan *= paddingFactor;
+        lngSpan *= paddingFactor;
+
+        const minSpan = 0.0001;
+        latSpan = Math.max(latSpan, minSpan);
+        lngSpan = Math.max(lngSpan, minSpan);
+
+        const maxOverallSpan = Math.max(latSpan, lngSpan);
+
         return {
-            latitude: route[0].latitude,
-            longitude: route[0].longitude,
-            latitudeDelta: 0.0005, // Adjusted for closer view for single point
-            longitudeDelta: 0.0005,
+            latitude: midLat,
+            longitude: midLng,
+            latitudeDelta: maxOverallSpan,
+            longitudeDelta: maxOverallSpan,
+        };
+    } else if (singlePointLat != null && singlePointLng != null) {
+        // New logic for single point (e.g., post-session without route)
+        return {
+            latitude: singlePointLat,
+            longitude: singlePointLng,
+            latitudeDelta: 0.005, // Adjusted for a slightly wider view
+            longitudeDelta: 0.005,
         };
     }
 
-    const latitudes = route.map(p => p.latitude);
-    const longitudes = route.map(p => p.longitude);
-
-    const minLat = Math.min(...latitudes);
-    const maxLat = Math.max(...latitudes);
-    const minLng = Math.min(...longitudes);
-    const maxLng = Math.max(...longitudes);
-
-    const midLat = (minLat + maxLat) / 2;
-    const midLng = (minLng + maxLng) / 2;
-
-    let latSpan = maxLat - minLat;
-    let lngSpan = maxLng - minLng;
-
-    // Apply a padding factor to ensure the route is not right at the edge
-    const paddingFactor = 1.05;
-    latSpan *= paddingFactor;
-    lngSpan *= paddingFactor;
-
-    // Ensure a minimum span to avoid issues with extremely small routes
-    const minSpan = 0.0001;
-    latSpan = Math.max(latSpan, minSpan);
-    lngSpan = Math.max(lngSpan, minSpan);
-
-    // To ensure the entire route fits in a square map preview,
-    // take the larger of the two spans and apply it to both deltas.
-    const maxOverallSpan = Math.max(latSpan, lngSpan);
-
-    return {
-        latitude: midLat,
-        longitude: midLng,
-        latitudeDelta: maxOverallSpan,
-        longitudeDelta: maxOverallSpan,
-    };
+    return undefined;
 };
 
 interface SessionListItemProps {
@@ -71,14 +79,16 @@ export const SessionListItem = ({ session, onDelete, onNavigate }: SessionListIt
     const duration = formatDuration(session.duration_minutes);
 
     const sessionRoute = session.route ? (session.route as unknown as { latitude: number; longitude: number }[]) : [];
-    const mapRegion = getMapRegion(sessionRoute);
+    const mapRegion = getMapRegion(sessionRoute, session.location_lat, session.location_lng);
+
+    const hasLocationData = (sessionRoute && sessionRoute.length > 0) || (session.location_lat != null && session.location_lng != null);
 
     return (
         <View style={styles.cardWrapper}>
             <Swipeable renderRightActions={(progress, dragX) => renderDeleteAction(progress, dragX, () => onDelete(session.id))}>
                 <TouchableOpacity onPress={() => onNavigate(session.id)}>
                     <View style={styles.card}>
-                        {mapRegion ? (
+                        {hasLocationData ? (
                             <View style={styles.mapPreviewContainer}>
                                 <MapView
                                     style={styles.mapPreview}
@@ -94,6 +104,14 @@ export const SessionListItem = ({ session, onDelete, onNavigate }: SessionListIt
                                             strokeColor={theme.colors.primary[500]}
                                             strokeWidth={3}
                                         />
+                                    )}
+                                    {session.location_lat != null && session.location_lng != null && sessionRoute.length === 0 && (
+                                        <Marker
+                                            coordinate={{ latitude: session.location_lat, longitude: session.location_lng }}
+                                            anchor={{ x: 0.5, y: 0.5 }}
+                                        >
+                                            <View style={styles.startMarker} />
+                                        </Marker>
                                     )}
                                 </MapView>
                             </View>
@@ -194,5 +212,13 @@ const styles = StyleSheet.create({
         color: theme.colors.text.secondary,
         textAlign: 'center',
         marginTop: 0,
+    },
+    startMarker: {
+        height: 14,
+        width: 14,
+        borderRadius: 7,
+        backgroundColor: theme.colors.success.main,
+        borderColor: theme.colors.white,
+        borderWidth: 2,
     },
 });
