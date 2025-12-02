@@ -103,9 +103,9 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
         const checkDateMismatch = () => {
             if (formData.selectedSessionId && formData.photoTakenAt) {
                 const selectedSession = allSessions.find(s => s.id === formData.selectedSessionId);
-                if (selectedSession && selectedSession.created_at) {
+                if (selectedSession && selectedSession.started_at) {
                     const catchDate = new Date(formData.photoTakenAt);
-                    const sessionDate = new Date(selectedSession.created_at);
+                    const sessionDate = new Date(selectedSession.started_at);
                     // Comparer uniquement la partie date (ignorer l'heure)
                     if (catchDate.toDateString() !== sessionDate.toDateString()) {
                         setShowDateWarning(true);
@@ -249,7 +249,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
     };
 
     const handleSelectSession = (session: FishingSession) => {
-        const sessionDisplay = `${session.location_name} - ${session.created_at ? new Date(session.created_at).toLocaleDateString() : ''}`;
+        const sessionDisplay = `${session.location_name} - ${session.started_at ? new Date(session.started_at).toLocaleDateString() : ''}`;
         onFormChange({
             selectedSessionId: session.id,
             sessionSearchText: sessionDisplay // Met à jour formData.sessionSearchText pour l'affichage
@@ -381,7 +381,7 @@ export const CatchForm: React.FC<CatchFormProps> = ({ formData, onFormChange, on
                     <ScrollView style={styles.suggestionsList}>
                         {filteredSessions.map(item => (
                             <TouchableOpacity key={item.id} onPress={() => handleSelectSession(item)} style={styles.suggestionItem}>
-                                <Text>{item.location_name} - {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</Text>
+                                <Text>{item.location_name} - {item.started_at ? new Date(item.started_at).toLocaleDateString() : ''}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>

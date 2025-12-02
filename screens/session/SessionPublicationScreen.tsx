@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { FishingSessionsService } from '../../services';
+import { FishingSessionsService, FishingSession } from '../../services';
 import { Selector } from '../../components/common';
+import { SessionMapPreview } from '../../components/common/SessionMapPreview'; // Import the new component
 import { theme, colors } from '../../theme';
 import { LocationVisibility, locationVisibilityOptions } from '../../lib/constants';
 
@@ -15,12 +16,14 @@ export const SessionPublicationScreen = () => {
   const [locationVisibility, setLocationVisibility] = useState<LocationVisibility>('public');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingSession, setIsFetchingSession] = useState(true);
+  const [sessionData, setSessionData] = useState<FishingSession | null>(null);
 
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
         const session = await FishingSessionsService.getSessionById(sessionId);
         if (session) {
+          setSessionData(session);
           setCaption(session.caption || '');
           if (session.location_visibility) {
             setLocationVisibility(session.location_visibility);
@@ -62,12 +65,11 @@ export const SessionPublicationScreen = () => {
     }
   };
 
-  // Formatted static info text for location visibility
-  const staticInfoText = `• Privé : Seuls vous pouvez voir le lieu exact.
+  const staticInfoText = `• Privée : La carte sera très dézoomée, sans détails précis du lieu.
+  
+• Région : La carte affichera une zone géographique assez précise de la session, sans le tracé exact.
 
-• Région : Les autres utilisateurs ne verront que la région ou la ville (ex: Paris, Île-de-France).
-
-• Public : Le lieu ou le parcours exact sera visible par tous.`;
+• Publique : La carte affichera la zone précise de la session ET le tracé exact.`;
 
   if (isFetchingSession) {
     return (
@@ -77,8 +79,20 @@ export const SessionPublicationScreen = () => {
     );
   }
 
+  const sessionRoute = sessionData?.route ? (sessionData.route as unknown as { latitude: number; longitude: number }[]) : [];
+
   return (
     <View style={styles.container}>
+        <View style={styles.mapContainer}>
+            <SessionMapPreview
+                sessionRoute={sessionRoute}
+                locationLat={sessionData?.location_lat}
+                locationLng={sessionData?.location_lng}
+                aspectRatio={1} // Ensure it's square
+                locationVisibility={locationVisibility} // Pass locationVisibility
+            />
+        </View>
+
       <TextInput
         style={styles.input}
         placeholder="Ajouter une légende..."
@@ -92,7 +106,7 @@ export const SessionPublicationScreen = () => {
         options={locationVisibilityOptions}
         selectedValue={locationVisibility}
         onSelect={setLocationVisibility}
-        info={staticInfoText} // Pass the formatted static info text
+        info={staticInfoText}
       />
 
       <View style={styles.buttonContainer}>
@@ -143,8 +157,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary["500"],
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center', // Center text horizontally
-    justifyContent: 'center', // Center text vertically
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     color: '#fff',
@@ -155,4 +169,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     backgroundColor: colors.gray["400"],
   },
+  mapContainer: { // Added a container for the map preview
+    marginBottom: theme.spacing[4],
+  }
 });
