@@ -186,7 +186,7 @@ export const SessionDetailScreen = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {!isEditing && canPublish && (
                         <TouchableOpacity onPress={handlePublish} style={{ marginRight: theme.spacing[4] }}>
-                            <Ionicons name="arrow-up-circle-outline" size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                            <Ionicons name="paper-plane-outline" size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>

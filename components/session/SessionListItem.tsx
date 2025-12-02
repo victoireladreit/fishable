@@ -40,7 +40,7 @@ export const SessionListItem = ({ session, onDelete, onNavigate, onPublish }: Se
                         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">{session.location_name || 'Session sans nom'}</Text>
                         {canPublish && (
                             <TouchableOpacity onPress={() => onPublish(session.id)} style={styles.publishButton}>
-                                <Ionicons name="arrow-up-circle-outline" size={24} color={theme.colors.primary[500]} />
+                                <Ionicons name="paper-plane-outline" size={24} color={theme.colors.primary[500]} />
                             </TouchableOpacity>
                         )}
                     </View>

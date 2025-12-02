@@ -3,27 +3,36 @@ import { View, Text, StyleSheet } from 'react-native';
 import MapView, { Polyline, Region, Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
-import { LocationVisibility } from '../../lib/constants'; // Import LocationVisibility type
+import { LocationVisibility } from '../../lib/constants';
+import { formatDuration } from '../../lib/formatters';
+
+// Define a type for the specific Ionicons names used for weather
+type WeatherIconName = 'cloud-outline' | 'sunny-outline' | 'cloudy-outline' | 'rainy-outline' | 'snow-outline' | 'thunderstorm-outline';
 
 interface SessionMapPreviewProps {
     sessionRoute?: { latitude: number; longitude: number }[];
     locationLat?: number | null;
     locationLng?: number | null;
-    mapHeight?: number; // Optional fixed height
-    aspectRatio?: number; // Optional aspect ratio, defaults to 1 for square. Only applies if mapHeight is NOT set.
-    locationVisibility?: LocationVisibility; // New prop for conditional rendering
-    forceShowDetailedLocation?: boolean; // New prop to force showing detailed location
+    mapHeight?: number;
+    aspectRatio?: number;
+    locationVisibility?: LocationVisibility;
+    forceShowDetailedLocation?: boolean;
+    duration?: number | null;
+    distance?: number | null;
+    weatherTemp?: number | null;
+    weatherConditions?: string | null;
+    catchCount?: number | null;
 }
 
 // Helper function to calculate map region from route coordinates or single point
 const getMapRegion = (
     route: { latitude: number; longitude: number }[],
-    isPrivateVisibility: boolean, // New parameter to adjust delta for private visibility
+    isPrivateVisibility: boolean,
     singlePointLat?: number | null,
     singlePointLng?: number | null,
 ): Region | undefined => {
-    const privateDelta = 0.2; // A larger delta for city/region view
-    const defaultDelta = 0.005; // Default zoomed-in delta
+    const privateDelta = 0.2;
+    const defaultDelta = 0.005;
 
     if (route && route.length > 0) {
         if (route.length === 1) {
@@ -77,6 +86,19 @@ const getMapRegion = (
     return undefined;
 };
 
+// Helper to get weather icon
+const getWeatherIcon = (conditions: string | null): WeatherIconName => { // Explicitly type return
+    if (!conditions) return 'cloud-outline'; // Default icon
+    const lowerConditions = conditions.toLowerCase();
+    if (lowerConditions.includes('soleil') || lowerConditions.includes('clair')) return 'sunny-outline';
+    if (lowerConditions.includes('nuageux')) return 'cloudy-outline';
+    if (lowerConditions.includes('pluie')) return 'rainy-outline';
+    if (lowerConditions.includes('neige')) return 'snow-outline';
+    if (lowerConditions.includes('orage')) return 'thunderstorm-outline';
+    if (lowerConditions.includes('brouillard')) return 'cloud-outline';
+    return 'cloud-outline';
+};
+
 export const SessionMapPreview: React.FC<SessionMapPreviewProps> = ({
     sessionRoute = [],
     locationLat,
@@ -85,6 +107,11 @@ export const SessionMapPreview: React.FC<SessionMapPreviewProps> = ({
     aspectRatio = 1,
     locationVisibility,
     forceShowDetailedLocation = false,
+    duration,
+    distance,
+    weatherTemp,
+    weatherConditions,
+    catchCount,
 }) => {
     const showDetailedLocation = forceShowDetailedLocation || locationVisibility === 'public';
     const isPrivateVisibility = !showDetailedLocation && locationVisibility === 'private';
@@ -120,11 +147,23 @@ export const SessionMapPreview: React.FC<SessionMapPreviewProps> = ({
         );
     }
 
+    const stats: { label: string; value?: string; icon?: WeatherIconName }[] = []; // Explicitly type stats array
+    if (duration != null) stats.push({ label: 'Durée', value: formatDuration(duration) ?? '- min' });
+    if (distance != null) stats.push({ label: 'Distance', value: `${distance.toFixed(2)} km` });
+    if (weatherTemp != null || weatherConditions) {
+        stats.push({
+            label: 'Météo',
+            icon: weatherConditions ? getWeatherIcon(weatherConditions) : undefined,
+            value: weatherTemp != null ? `${weatherTemp}°C` : undefined,
+        });
+    }
+    if (catchCount != null) stats.push({ label: 'Poissons', value: `${catchCount}` }); // Changed 'Prises' to 'Poissons'
+
     return (
         <View style={[styles.mapPreviewContainer, dynamicContainerStyle]}>
             <MapView
                 style={styles.mapPreview}
-                region={mapRegion} // Changed from initialRegion to region
+                region={mapRegion}
                 scrollEnabled={false}
                 zoomEnabled={false}
                 rotateEnabled={false}
@@ -146,6 +185,22 @@ export const SessionMapPreview: React.FC<SessionMapPreviewProps> = ({
                     </Marker>
                 )}
             </MapView>
+            {stats.length > 0 && (
+                <View style={styles.statsBanner}>
+                    {stats.map((stat, index) => (
+                        <React.Fragment key={stat.label}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>{stat.label}</Text>
+                                <View style={styles.weatherInfo}>
+                                    {stat.icon && <Ionicons name={stat.icon} size={16} color={theme.colors.gray["700"]} />}
+                                    {stat.value && <Text style={styles.statValue}> {stat.value}</Text>}
+                                </View>
+                            </View>
+                            {index < stats.length - 1 && <View style={styles.statSeparator} />}
+                        </React.Fragment>
+                    ))}
+                </View>
+            )}
         </View>
     );
 };
@@ -181,5 +236,46 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.success.main,
         borderColor: theme.colors.white,
         borderWidth: 2,
+    },
+    statsBanner: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: theme.colors.gray["100"], // Changed to light gray
+        paddingVertical: theme.spacing[2] + 2,
+        paddingHorizontal: theme.spacing[4],
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        borderBottomLeftRadius: theme.borderRadius.md,
+        borderBottomRightRadius: theme.borderRadius.md,
+    },
+    statItem: {
+        alignItems: 'center',
+        flex: 1,
+        paddingHorizontal: theme.spacing[1],
+    },
+    statLabel: {
+        color: theme.colors.gray["600"], // Changed to medium gray
+        fontSize: theme.typography.fontSize.xs,
+        fontFamily: theme.typography.fontFamily.regular,
+        marginBottom: theme.spacing[0],
+    },
+    statValue: {
+        color: theme.colors.gray["800"], // Changed to dark gray
+        fontSize: theme.typography.fontSize.base,
+        fontFamily: theme.typography.fontFamily.bold,
+    },
+    weatherInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statSeparator: {
+        height: '60%',
+        width: 1,
+        backgroundColor: theme.colors.gray[300], // Changed to light gray
+        opacity: 0.7,
     },
 });

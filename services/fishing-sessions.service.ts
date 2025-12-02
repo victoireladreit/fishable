@@ -75,4 +75,17 @@ export const FishingSessionsService = {
 
         return true
     },
+
+    async getCatchesCountBySessionId(sessionId: string): Promise<number> {
+        const { count, error } = await supabase
+            .from('catches')
+            .select('*', { count: 'exact' })
+            .eq('session_id', sessionId);
+
+        if (error) {
+            console.error("Error fetching catches count:", error);
+            throw error;
+        }
+        return count || 0;
+    },
 }
