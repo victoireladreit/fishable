@@ -41,6 +41,17 @@ export const FishingSessionsService = {
         return data
     },
 
+    async getPublishedSessions() {
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .not('published_at', 'is', null)
+            .order('published_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    },
+
     async updateSession(id: string, updates: FishingSessionUpdate) {
         const { data, error } = await supabase
             .from(TABLE)

@@ -26,6 +26,7 @@ export type RootStackParamList = {
     NewSession: { onGoBack: () => void; isPostSession?: boolean };
     ActiveSession: { sessionId: string; onGoBack: () => void; };
     SessionDetail: { sessionId: string; onGoBack?: (modified: boolean) => void };
+    SessionPublication: { sessionId: string };
     SessionSummary: { sessionId: string };
     AddCatch: { sessionId?: string; catchLocationLat?: number; catchLocationLng?: number; catchLocationAccuracy?: number; onGoBack?: () => void; };
     CatchDetail: { catchId: string; onGoBack?: (modified: boolean) => void; };

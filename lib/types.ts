@@ -140,7 +140,7 @@ export interface Database {
                     water_level: 'normal' | 'high' | 'flood' | null
                     status: 'active' | 'completed' | 'draft' | null
                     caption: string | null
-                    is_published: boolean | null
+                    published_at: string | null
                     created_at: string | null
                     updated_at: string | null
                     route: Json | null
@@ -166,7 +166,7 @@ export interface Database {
                     water_level?: 'normal' | 'high' | 'flood' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null
-                    is_published?: boolean | null
+                    published_at?: string | null
                     created_at?: string | null
                     updated_at?: string | null
                     route?: Json | null
@@ -192,7 +192,7 @@ export interface Database {
                     water_level?: 'normal' | 'high' | 'flood' | null
                     status?: 'active' | 'completed' | 'draft' | null
                     caption?: string | null
-                    is_published?: boolean | null
+                    published_at?: string | null
                     created_at?: string | null
                     updated_at?: string | null
                     route?: Json | null

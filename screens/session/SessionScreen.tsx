@@ -9,7 +9,7 @@ import { theme } from '../../theme';
 import { RootStackParamList } from '../../navigation/types';
 import { SessionList } from '../../components/session/SessionList'; // Import the new SessionList component
 
-type SessionNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession' | 'ActiveSession'>;
+type SessionNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewSession' | 'ActiveSession' | 'SessionPublication'>;
 
 export const SessionScreen = () => {
     const { user, refreshUser } = useAuth();
@@ -92,6 +92,10 @@ export const SessionScreen = () => {
         });
     }, [navigation]);
 
+    const handlePublish = useCallback((sessionId: string) => {
+        navigation.navigate('SessionPublication', { sessionId });
+    }, [navigation]);
+
     const handleNavigateToNewSession = useCallback(() => {
         navigation.navigate('NewSession', {
             onGoBack: () => {
@@ -137,6 +141,7 @@ export const SessionScreen = () => {
                 onNavigateToNewSession={handleNavigateToNewSession}
                 onNavigateToPostNewSession={handleNavigateToPostNewSession}
                 onNavigateToActiveSession={handleNavigateToActiveSession}
+                onPublish={handlePublish}
             />
         </SafeAreaView>
     );

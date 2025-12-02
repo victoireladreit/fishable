@@ -9,10 +9,10 @@ export const windStrengthOptions: { key: WindStrength; label: string }[] = [
     { key: 'strong', label: 'Fort' },
 ];
 
-export const locationVisibilityOptions: { key: LocationVisibility; label: string }[] = [
-    { key: 'private', label: 'Privé' },
-    { key: 'region', label: 'Région' },
-    { key: 'public', label: 'Public' },
+export const locationVisibilityOptions: { key: LocationVisibility; label: string; description: string }[] = [
+    { key: 'private', label: 'Privée', description: 'Seuls vous pouvez voir le lieu exact.' },
+    { key: 'region', label: 'Région', description: 'Les autres utilisateurs ne verront que la région ou la ville' },
+    { key: 'public', label: 'Public', description: 'Le lieu ou le parcours exact sera visible par tous.' },
 ];
 
 export const waterLevelOptions: { key: WaterLevel; label: string }[] = [

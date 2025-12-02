@@ -7,7 +7,7 @@ import { RootStackParamList } from './types';
 import { theme } from '../theme';
 import { LocationTrackingProvider } from '../hooks';
 
-import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen } from '../screens/session';
+import { NewSessionScreen, ActiveSessionScreen, SessionDetailScreen, SessionPublicationScreen } from '../screens/session';
 import { AddCatchScreen, CatchDetailScreen, ClusterCatchesScreen } from '../screens/catch';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen } from '../screens/auth';
@@ -47,6 +47,7 @@ const RootNavigator = () => {
                     <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ActiveSession" component={ActiveSessionScreen} options={{ title: 'Session en cours' }} />
                     <Stack.Screen name="SessionDetail" component={SessionDetailScreen} options={{ title: 'Détails de la session' }} />
+                    <Stack.Screen name="SessionPublication" component={SessionPublicationScreen} options={{ title: 'Publier la session' }} />
                     <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ title: 'Nouvelle session', presentation: 'modal' }} />
                     <Stack.Screen name="AddCatch" component={AddCatchScreen} options={{ title: 'Nouvelle prise', presentation: 'modal' }} />
                     <Stack.Screen name="CatchDetail" component={CatchDetailScreen} options={{ title: 'Détails de la prise' }} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
@@ -20,13 +20,12 @@ import { SpeciesSelector } from '../../components/session/SpeciesSelector';
 import { Card, InfoRow} from '../../components/common';
 import { SessionMap } from '../../components/session/SessionMap';
 import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
-import { windStrengthOptions, waterLevelOptions, locationVisibilityOptions, WindStrength } from '../../lib/constants';
+import { windStrengthOptions, waterLevelOptions, WindStrength } from '../../lib/constants';
 import { formatDuration } from '../../lib/formatters';
 import { SessionHeader } from '../../components/session/SessionHeader';
-import { SessionNotes } from '../../components/session/SessionNotes';
 
 type SessionDetailRouteProp = RouteProp<RootStackParamList, 'SessionDetail'>;
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SessionDetail' | 'SessionPublication'>;
 
 export const SessionDetailScreen = () => {
     const route = useRoute<SessionDetailRouteProp>();
@@ -43,8 +42,6 @@ export const SessionDetailScreen = () => {
         isSaving,
         locationName,
         setLocationName,
-        caption,
-        setCaption,
         locationVisibility,
         setLocationVisibility,
         waterColor,
@@ -68,7 +65,6 @@ export const SessionDetailScreen = () => {
     const [weatherTemp, setWeatherTemp] = useState<string>('');
     const [weatherConditions, setWeatherConditions] = useState('');
     const [windStrength, setWindStrength] = useState<WindStrength | null>(null);
-    const [isPublished, setIsPublished] = useState(false);
 
     // Use the custom hook for catch management
     const { handleAddCatch, handleDeleteCatch } = useCatchManagement(sessionId, setCatches);
@@ -77,12 +73,15 @@ export const SessionDetailScreen = () => {
         navigation.navigate('CatchDetail', { catchId });
     };
 
+    const handlePublish = () => {
+        navigation.navigate('SessionPublication', { sessionId });
+    };
+
     useEffect(() => {
         if (session) {
             setWeatherTemp(session.weather_temp?.toString() || '');
             setWeatherConditions(session.weather_conditions || '');
             setWindStrength(session.wind_strength || null);
-            setIsPublished(session.is_published || false);
             setSelectedTargetSpeciesNames(targetSpecies);
         }
     }, [session, targetSpecies]);
@@ -153,8 +152,7 @@ export const SessionDetailScreen = () => {
             const updates: FishingSessionUpdate = {
                 weather_temp: weatherTemp ? parseFloat(weatherTemp) : null,
                 weather_conditions: weatherConditions,
-                wind_strength: windStrength,
-                is_published: isPublished,
+                wind_strength: windStrength
             };
             try {
                 await FishingSessionsService.updateSession(sessionId, updates);
@@ -172,7 +170,7 @@ export const SessionDetailScreen = () => {
                 Alert.alert("Erreur", "Impossible de sauvegarder les modifications supplémentaires.");
             }
         }
-    }, [saveChanges, weatherTemp, weatherConditions, windStrength, isPublished, selectedTargetSpeciesNames, sessionId, reload, onGoBack]);
+    }, [saveChanges, weatherTemp, weatherConditions, windStrength, selectedTargetSpeciesNames, sessionId, reload, onGoBack]);
 
     const recenterMap = () => {
         if (mapViewRef.current && mapRegion) {
@@ -181,11 +179,20 @@ export const SessionDetailScreen = () => {
     };
 
     useEffect(() => {
+        const canPublish = session?.ended_at && !session.published_at;
+
         navigation.setOptions({
             headerRight: () => (
-                <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>
-                    <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {!isEditing && canPublish && (
+                        <TouchableOpacity onPress={handlePublish} style={{ marginRight: theme.spacing[4] }}>
+                            <Ionicons name="arrow-up-circle-outline" size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading || isSaving}>
+                        <Ionicons name={isEditing ? "save-outline" : "create-outline"} size={theme.iconSizes.lg} color={theme.colors.primary[500]} />
+                    </TouchableOpacity>
+                </View>
             ),
             headerLeft: () => (
                 isEditing ? (
@@ -199,7 +206,7 @@ export const SessionDetailScreen = () => {
                 ) : undefined
             ),
         });
-    }, [navigation, isEditing, loading, isSaving, handleSave, reload, onGoBack]);
+    }, [navigation, isEditing, loading, isSaving, handleSave, reload, onGoBack, session]);
 
     if (loading && !session) {
         return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary[500]} /></View>;
@@ -265,11 +272,6 @@ export const SessionDetailScreen = () => {
                     </Marker>
                 )}
             </SessionMap>
-            <SessionNotes
-                isEditing={isEditing}
-                caption={caption}
-                onCaptionChange={setCaption}
-            />
         </View>
     );
 
@@ -282,8 +284,6 @@ export const SessionDetailScreen = () => {
                 <InfoRow iconName="color-palette-outline" label="Couleur de l'eau" value={session.water_color} />
                 <InfoRow iconName="swap-vertical-outline" label="Courant" value={session.water_current} />
                 <InfoRow iconName="pulse-outline" label="Niveau d'eau" value={waterLevelOptions.find(o => o.key === session.water_level)?.label} />
-                <InfoRow iconName="eye-outline" label="Visibilité Loc." value={locationVisibilityOptions.find(o => o.key === session.location_visibility)?.label} />
-                <InfoRow iconName="share-social-outline" label="Publiée" value={session.is_published ? 'Oui' : 'Non'} />
             </Card>
         </View>
     );
@@ -306,11 +306,6 @@ export const SessionDetailScreen = () => {
                         onSelectSpecies={handleSelectSpecies}
                         onRemoveSpecies={handleRemoveSpecies}
                     />
-                    <SessionNotes
-                        isEditing={isEditing}
-                        caption={caption}
-                        onCaptionChange={setCaption}
-                    />
                     <SessionForm
                         waterColor={waterColor}
                         setWaterColor={setWaterColor}
@@ -321,15 +316,6 @@ export const SessionDetailScreen = () => {
                         locationVisibility={locationVisibility}
                         setLocationVisibility={setLocationVisibility}
                     />
-                    <View style={styles.switchGroup}>
-                        <Text style={styles.label}>Publier la session</Text>
-                        <Switch
-                            trackColor={{ false: theme.colors.gray[400], true: theme.colors.primary[300] }}
-                            thumbColor={isPublished ? theme.colors.primary[500] : theme.colors.gray[200]}
-                            onValueChange={setIsPublished}
-                            value={isPublished}
-                        />
-                    </View>
                 </ScrollView>
             ) : (
                 <CatchList

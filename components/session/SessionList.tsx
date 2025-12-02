@@ -15,6 +15,7 @@ interface SessionListProps {
     onNavigateToNewSession: () => void;
     onNavigateToPostNewSession: () => void;
     onNavigateToActiveSession: () => void;
+    onPublish: (sessionId: string) => void;
 }
 
 export const SessionList = ({
@@ -28,6 +29,7 @@ export const SessionList = ({
     onNavigateToNewSession,
     onNavigateToPostNewSession,
     onNavigateToActiveSession,
+    onPublish,
 }: SessionListProps) => {
 
     const renderHeader = () => (
@@ -70,6 +72,7 @@ export const SessionList = ({
                     session={item}
                     onDelete={onDelete}
                     onNavigate={onNavigateToDetail}
+                    onPublish={onPublish}
                 />
             )}
             keyExtractor={item => item.id}

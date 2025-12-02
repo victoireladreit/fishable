@@ -70,11 +70,12 @@ const getMapRegion = (
 
 interface SessionListItemProps {
     session: FishingSession;
-    onDelete: (sessionId: string) => void;
     onNavigate: (sessionId: string) => void;
+    onDelete?: (sessionId: string) => void;
+    onPublish?: (sessionId: string) => void;
 }
 
-export const SessionListItem = ({ session, onDelete, onNavigate }: SessionListItemProps) => {
+export const SessionListItem = ({ session, onDelete, onNavigate, onPublish }: SessionListItemProps) => {
     const date = session.ended_at ? new Date(session.ended_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Date inconnue';
     const duration = formatDuration(session.duration_minutes);
 
@@ -83,56 +84,73 @@ export const SessionListItem = ({ session, onDelete, onNavigate }: SessionListIt
 
     const hasLocationData = (sessionRoute && sessionRoute.length > 0) || (session.location_lat != null && session.location_lng != null);
 
+    const canPublish = session.ended_at && !session.published_at && onPublish;
+
+    const renderMainContent = () => (
+        <TouchableOpacity onPress={() => onNavigate(session.id)}>
+            <View style={styles.card}>
+                {hasLocationData ? (
+                    <View style={styles.mapPreviewContainer}>
+                        <MapView
+                            style={styles.mapPreview}
+                            initialRegion={mapRegion}
+                            scrollEnabled={false}
+                            zoomEnabled={false}
+                            rotateEnabled={false}
+                            pitchEnabled={false}
+                        >
+                            {sessionRoute.length > 1 && (
+                                <Polyline
+                                    coordinates={sessionRoute}
+                                    strokeColor={theme.colors.primary[500]}
+                                    strokeWidth={3}
+                                />
+                            )}
+                            {session.location_lat != null && session.location_lng != null && sessionRoute.length === 0 && (
+                                <Marker
+                                    coordinate={{ latitude: session.location_lat, longitude: session.location_lng }}
+                                    anchor={{ x: 0.5, y: 0.5 }}
+                                >
+                                    <View style={styles.startMarker} />
+                                </Marker>
+                            )}
+                        </MapView>
+                    </View>
+                ) : (
+                    <View style={[styles.mapPreviewContainer, styles.noRouteContainer]}>
+                        <Ionicons name="map-outline" size={20} color={theme.colors.text.secondary} style={{ marginBottom: 2 }} />
+                        <Text style={styles.noRouteText}>Aucun tracé</Text>
+                    </View>
+                )}
+                <View style={styles.cardContent}>
+                    <View style={styles.titleRow}>
+                        <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">{session.location_name || 'Session sans nom'}</Text>
+                        {canPublish && (
+                            <TouchableOpacity onPress={() => onPublish(session.id)} style={styles.publishButton}>
+                                <Ionicons name="arrow-up-circle-outline" size={24} color={theme.colors.primary[500]} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <View style={styles.cardInfoContainer}>
+                        <Text style={styles.cardInfoText}>{date}</Text>
+                        {duration && (
+                            <Text style={styles.cardInfoText}>{duration}</Text>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
     return (
         <View style={styles.cardWrapper}>
-            <Swipeable renderRightActions={(progress, dragX) => renderDeleteAction(progress, dragX, () => onDelete(session.id))}>
-                <TouchableOpacity onPress={() => onNavigate(session.id)}>
-                    <View style={styles.card}>
-                        {hasLocationData ? (
-                            <View style={styles.mapPreviewContainer}>
-                                <MapView
-                                    style={styles.mapPreview}
-                                    initialRegion={mapRegion}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    rotateEnabled={false}
-                                    pitchEnabled={false}
-                                >
-                                    {sessionRoute.length > 1 && (
-                                        <Polyline
-                                            coordinates={sessionRoute}
-                                            strokeColor={theme.colors.primary[500]}
-                                            strokeWidth={3}
-                                        />
-                                    )}
-                                    {session.location_lat != null && session.location_lng != null && sessionRoute.length === 0 && (
-                                        <Marker
-                                            coordinate={{ latitude: session.location_lat, longitude: session.location_lng }}
-                                            anchor={{ x: 0.5, y: 0.5 }}
-                                        >
-                                            <View style={styles.startMarker} />
-                                        </Marker>
-                                    )}
-                                </MapView>
-                            </View>
-                        ) : (
-                            <View style={[styles.mapPreviewContainer, styles.noRouteContainer]}>
-                                <Ionicons name="map-outline" size={20} color={theme.colors.text.secondary} style={{ marginBottom: 2 }} />
-                                <Text style={styles.noRouteText}>Aucun tracé</Text>
-                            </View>
-                        )}
-                        <View style={styles.cardContent}>
-                            <Text style={styles.cardTitle}>{session.location_name || 'Session sans nom'}</Text>
-                            <View style={styles.cardInfoContainer}>
-                                <Text style={styles.cardInfoText}>{date}</Text>
-                                {duration && (
-                                    <Text style={styles.cardInfoText}>{duration}</Text>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Swipeable>
+            {onDelete ? (
+                <Swipeable renderRightActions={(progress, dragX) => renderDeleteAction(progress, dragX, () => onDelete(session.id))}>
+                    {renderMainContent()}
+                </Swipeable>
+            ) : (
+                renderMainContent()
+            )}
         </View>
     );
 };
@@ -157,11 +175,21 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingLeft: theme.spacing[3],
     },
+    titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing[1],
+    },
     cardTitle: {
         fontFamily: theme.typography.fontFamily.bold,
         fontSize: theme.typography.fontSize.lg,
         color: theme.colors.text.primary,
-        marginBottom: theme.spacing[1],
+        flexShrink: 1,
+        marginRight: theme.spacing[2],
+    },
+    publishButton: {
+        // No specific styles needed if alignment is correct
     },
     cardInfoContainer: {
         flexDirection: 'row',
@@ -172,20 +200,6 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.regular,
         fontSize: theme.typography.fontSize.sm,
         color: theme.colors.text.secondary,
-    },
-    deleteButtonContainer: {
-        width: 80,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: theme.spacing[2],
-    },
-    deleteButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: theme.borderRadius.md,
-        borderColor: theme.colors.error.main,
     },
     mapPreviewContainer: {
         height: 80,

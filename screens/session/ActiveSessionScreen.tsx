@@ -16,7 +16,6 @@ import { SessionMap } from '../../components/session/SessionMap';
 import { TargetSpeciesList } from '../../components/session/TargetSpeciesList';
 import { windStrengthOptions } from '../../lib/constants';
 import { SessionHeader } from '../../components/session/SessionHeader';
-import { SessionNotes } from '../../components/session/SessionNotes';
 import { Card } from '../../components/common';
 
 type ActiveSessionRouteProp = RouteProp<RootStackParamList, 'ActiveSession'>;
@@ -268,12 +267,6 @@ export const ActiveSessionScreen = () => {
                 setWaterLevel={setWaterLevel}
                 locationVisibility={locationVisibility}
                 setLocationVisibility={setLocationVisibility}
-            />
-
-            <SessionNotes
-                isEditing={true}
-                caption={caption}
-                onCaptionChange={setCaption}
             />
 
             <View style={{width: '100%', marginTop: theme.spacing[4]}}>
